@@ -1,0 +1,23 @@
+# What publishes, and where.
+#
+# Everything under publish_dir is synced 1:1 to write_prefix. Data files are
+# never placed under publish_dir, so they cannot be published by accident.
+
+# The S3 URI uploads are written to.
+write_prefix: s3://us-west-2.opendata.source.coop/ftw/global-data-beta
+
+# The public base URL that serves write_prefix. Every href in the catalog is
+# built from this, so it goes in the STAC JSON and write_prefix does not.
+public_base: https://data.source.coop/ftw/global-data-beta
+
+region: us-west-2
+
+# The directory that IS the published catalog, synced 1:1 to write_prefix.
+# Nothing outside it is ever uploaded by tools/publish.py.
+publish_dir: catalog
+
+# The staging directory that holds data files, read by tools/upload_data.py.
+# tools/publish.py never reads this key, so setting it does not widen the
+# publish boundary. Data files are too large for git, so the directory is
+# gitignored. Only the suffixes in PUBLISHABLE_SUFFIXES upload.
+data_dir: staging-data
