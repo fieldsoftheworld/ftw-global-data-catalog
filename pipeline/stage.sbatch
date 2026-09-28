@@ -6,7 +6,7 @@
 #   cp pipeline/* ~/ftw-beta-pipeline/ && cd ~/ftw-beta-pipeline
 #   YEAR=2025 sbatch --export=ALL stage.sbatch
 #SBATCH --job-name=ftw-beta-stage
-#SBATCH --partition=cpu
+#SBATCH --partition=cpu,cpu_amd
 #SBATCH --account=bgtj-tgirails
 #SBATCH --time=12:00:00
 #SBATCH --nodes=1

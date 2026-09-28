@@ -16,7 +16,7 @@
 # The coarse job holds the full pass-1 feature table (~64 B/row -> ~97 GiB
 # at 1.58B rows) plus winner grids: it needs --mem=360G (tylertoo#543).
 #SBATCH --job-name=ftw-tile-fields
-#SBATCH --partition=cpu
+#SBATCH --partition=cpu,cpu_amd
 #SBATCH --account=bgtj-tgirails
 #SBATCH --time=24:00:00
 #SBATCH --nodes=1
@@ -37,8 +37,10 @@ export TYLERTOO_PROFILE_JSON="$PWD/profile-${YEAR}-${MODE}${IDX:-}.json"
 
 # --row-group-size 100000: shard outputs run ~1B overview rows; the default
 # 10k-row groups hit parquet's 32,767 row-group ceiling (tylertoo#507).
+# --exclude-property collection: constant per year — stays in the parquet,
+# has no business inflating every tile feature.
 COMMON=(--min-zoom 0 --max-zoom 13 --layer-name fields --profile bounded
-        --row-group-size 100000)
+        --row-group-size 100000 --exclude-property collection)
 
 case "$MODE" in
   plan)

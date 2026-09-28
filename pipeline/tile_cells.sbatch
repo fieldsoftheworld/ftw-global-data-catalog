@@ -7,7 +7,7 @@
 #   YEAR=2025 R=7 sbatch --export=ALL tile_cells.sbatch
 #   (IN=... to override; defaults to cells_a5r${R}_${YEAR}.parquet)
 #SBATCH --job-name=ftw-tile-cells
-#SBATCH --partition=cpu
+#SBATCH --partition=cpu,cpu_amd
 #SBATCH --account=bgtj-tgirails
 #SBATCH --time=12:00:00
 #SBATCH --nodes=1
