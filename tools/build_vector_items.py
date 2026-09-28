@@ -320,13 +320,21 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
     }
 
 
-def build_vector_catalog(per_year: dict[int, dict]) -> dict:
+def build_vector_catalog(per_year: dict[int, dict], out: Path) -> dict:
     children = []
     for year in sorted(per_year):
         children.append({
             "rel": "child", "href": f"./{year}/collection.json",
             "type": "application/json",
             "title": f"FTW Global — Field Boundaries {year} (GeoParquet)",
+        })
+    # The Phase 3 handover product, linked once its directory exists
+    # (tools/build_fields_yearly.py creates it).
+    if (out / "fields-yearly" / "collection.json").is_file():
+        children.append({
+            "rel": "child", "href": "./fields-yearly/collection.json",
+            "type": "application/json",
+            "title": "FTW Global (beta) — Fields by year (PMTiles)",
         })
     return {
         "type": "Catalog",
@@ -568,7 +576,8 @@ def main() -> int:
         print(f"{year}: {len(rows)} items, "
               f"{sum(r['n_parcels'] for r in rows):,} parcels")
 
-    write_json(args.out / "catalog.json", build_vector_catalog(per_year))
+    write_json(args.out / "catalog.json",
+               build_vector_catalog(per_year, args.out))
     (args.out / "README.md").write_text(vector_readme(per_year))
     (args.out / "AGENTS.md").write_text(vector_agents(per_year))
     (args.out / "llms.txt").write_text(vector_llms(per_year))
