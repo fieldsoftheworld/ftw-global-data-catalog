@@ -1,21 +1,29 @@
 #!/usr/bin/env python3
-"""Every relative link and asset href resolves to a file that exists.
+"""Every relative link and asset href resolves.
 
 This catches the most common hand-edit mistake: adding a child link before the
-directory it points at exists. Dependency-free and offline, so it runs in
-milliseconds on a clean checkout.
+directory it points at exists. Structural links always resolve on disk, so a
+clean checkout checks them in milliseconds.
 
-CI clones the metadata and not the bytes, because .gitignore keeps data out of
-git. Set CI_LIGHT=1 there. It exempts asset hrefs with a data suffix, and
-nothing else. Every structural link still resolves. Leave CI_LIGHT unset
-locally, where the bytes are on disk, and the gate checks every href.
+Data asset hrefs are different in this catalog: the metadata **overlays** the
+existing bucket layout, so a data href like ``../utm01.parquet`` is never on
+disk — the bytes live only at ``public_base``. Two modes:
+
+- ``CI_LIGHT=1`` (CI): asset hrefs with a data suffix are skipped. The
+  checkout holds the metadata and not the bytes, and CI should not depend on
+  a third-party host being up.
+- unset (locally, on rails): each data href is resolved against
+  ``public_base`` and HEAD-checked over HTTP, concurrently. This is the real
+  check that every advertised object actually exists in the bucket.
 
 Run: python3 tests/test_links.py
 """
 import json
 import os
 import sys
-from pathlib import Path
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor, as_completed
+from pathlib import Path, PurePosixPath
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
@@ -24,6 +32,7 @@ from publish import load_config  # noqa: E402
 
 config = load_config()
 BASE = ROOT / config["publish_dir"]
+PUBLIC_BASE = config["public_base"].rstrip("/")
 
 errors: list[str] = []
 skipped = 0
@@ -35,15 +44,38 @@ DATA_SUFFIXES = (
     ".parquet", ".pmtiles", ".tif", ".tiff", ".copc.laz", ".laz", ".gpkg",
     ".zarr", ".geojsonl", ".shp", ".zip",
 )
+HEAD_WORKERS = 16
+UA = "Mozilla/5.0 (ftw-global-data-catalog link check)"
 
 
 def is_remote(href: str) -> bool:
     return "://" in href or href.startswith(("#", "mailto:"))
 
 
-def is_unpublished_data(href: str) -> bool:
-    """True when href points at a file kept out of git on purpose."""
-    return CI_LIGHT and href.lower().endswith(DATA_SUFFIXES)
+def is_data(href: str) -> bool:
+    return href.lower().endswith(DATA_SUFFIXES)
+
+
+def published_url(doc_path: Path, href: str) -> str:
+    """The public URL a relative href resolves to when published."""
+    rel = PurePosixPath(
+        os.path.normpath(doc_path.parent.joinpath(href).relative_to(BASE))
+    )
+    return f"{PUBLIC_BASE}/{rel.as_posix()}"
+
+
+def head_ok(url: str) -> str | None:
+    """None when the object exists; otherwise the failure detail."""
+    request = urllib.request.Request(
+        url, method="HEAD", headers={"User-Agent": UA}
+    )
+    try:
+        with urllib.request.urlopen(request, timeout=60) as resp:
+            if resp.status == 200:
+                return None
+            return f"HTTP {resp.status}"
+    except Exception as exc:  # noqa: BLE001 - any failure is a finding
+        return str(exc)
 
 
 def stac_documents() -> list[Path]:
@@ -68,6 +100,7 @@ def stac_documents() -> list[Path]:
 
 documents = stac_documents()
 checked = 0
+to_head: list[tuple[Path, str, str]] = []  # (doc, asset key, url)
 
 for path in documents:
     doc = json.loads(path.read_text())
@@ -87,22 +120,42 @@ for path in documents:
         href = asset.get("href", "")
         if not href or is_remote(href):
             continue
-        if is_unpublished_data(href):
-            skipped += 1
+        if (path.parent / href).resolve().exists():
+            checked += 1
+            continue
+        if is_data(href):
+            if CI_LIGHT:
+                skipped += 1
+            else:
+                to_head.append((rel_path, key, published_url(path, href)))
             continue
         checked += 1
-        if not (path.parent / href).resolve().exists():
-            errors.append(f"{rel_path}: asset {key} -> {href} does not exist")
+        errors.append(f"{rel_path}: asset {key} -> {href} does not exist")
+
+if to_head:
+    print(f"HEAD-checking {len(to_head)} data href(s) against "
+          f"{PUBLIC_BASE} ...")
+    with ThreadPoolExecutor(max_workers=HEAD_WORKERS) as pool:
+        futures = {
+            pool.submit(head_ok, url): (rel_path, key, url)
+            for rel_path, key, url in to_head
+        }
+        for future in as_completed(futures):
+            rel_path, key, url = futures[future]
+            checked += 1
+            detail = future.result()
+            if detail is not None:
+                errors.append(f"{rel_path}: asset {key} -> {url}: {detail}")
 
 if skipped:
     print(
         f"note   {skipped} data href(s) not checked: CI_LIGHT is set and the "
         "bytes live in\n       object storage, not git. Run without CI_LIGHT "
-        "locally to check them."
+        "locally to HEAD-check them."
     )
 
 if errors:
     print("\n".join(f"error  {e}" for e in errors))
     raise SystemExit(1)
 
-print(f"OK: {checked} relative href(s) across {len(documents)} object(s)")
+print(f"OK: {checked} href(s) across {len(documents)} object(s)")

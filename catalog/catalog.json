@@ -41,6 +41,12 @@
       "title": "Agent/LLM usage guide"
     },
     {
+      "rel": "child",
+      "href": "./vector/catalog.json",
+      "type": "application/json",
+      "title": "FTW Global (beta) — Vector field boundaries"
+    },
+    {
       "rel": "about",
       "href": "https://source.coop/ftw/global-data-beta",
       "type": "text/html",

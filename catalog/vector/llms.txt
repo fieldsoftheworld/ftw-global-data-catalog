@@ -1,0 +1,6 @@
+# FTW Global (beta) — vector tree
+
+> 254,714,908 predicted field parcels across 2 years, per-UTM-zone GeoParquet. CC-BY-4.0.
+
+- 2024: https://data.source.coop/ftw/global-data-beta/vector/2024/collection.json
+- 2025: https://data.source.coop/ftw/global-data-beta/vector/2025/collection.json

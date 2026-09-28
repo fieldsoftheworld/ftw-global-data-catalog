@@ -1,0 +1,191 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+  ],
+  "id": "utm39",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          54.027413611223984,
+          -22.57488553342898
+        ],
+        [
+          54.027413611223984,
+          59.536237687427864
+        ],
+        [
+          47.97750367990329,
+          59.536237687427864
+        ],
+        [
+          47.97750367990329,
+          -22.57488553342898
+        ],
+        [
+          54.027413611223984,
+          -22.57488553342898
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    47.97750367990329,
+    -22.57488553342898,
+    54.027413611223984,
+    59.536237687427864
+  ],
+  "properties": {
+    "title": "UTM zone 39 — 2024 field boundaries",
+    "description": "Predicted field boundaries falling in UTM zone 39 for 2024: 1,714,821 parcels, 121,483 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, ftw:tile, ftw:field_prob, ftw:boundary_prob, ftw:frac_nodata_1q, ftw:frac_nodata_3q, ftw:frac_water, ftw:frac_crops_ever, ftw:slope_mean, ftw:frac_slope_gt30, ftw:elev_mean, ftw:patch_sat_mean, ftw:patch_sat_max, ftw:patch_pb_mean, ftw:touches_window_edge — see `table:columns` for definitions.",
+    "datetime": "2024-12-31T23:59:59Z",
+    "start_datetime": "2024-01-01T00:00:00Z",
+    "end_datetime": "2024-12-31T23:59:59Z",
+    "proj:code": "EPSG:4326",
+    "table:row_count": 1714821,
+    "table:columns": [
+      {
+        "name": "id",
+        "type": "string",
+        "description": "Parcel identifier, unique per collection ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+      },
+      {
+        "name": "collection",
+        "type": "string",
+        "description": "The vecorel collection the parcel belongs to (constant per year, e.g. `ftw-s2-2025`)."
+      },
+      {
+        "name": "geometry",
+        "type": "binary",
+        "description": "Parcel footprint (WKB Polygon/MultiPolygon, WGS 84)."
+      },
+      {
+        "name": "bbox",
+        "type": "struct",
+        "description": "Bounding box of the parcel (xmin, ymin, xmax, ymax)."
+      },
+      {
+        "name": "metrics:area",
+        "type": "float",
+        "description": "Area of the parcel in square meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
+      },
+      {
+        "name": "metrics:perimeter",
+        "type": "float",
+        "description": "Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
+      },
+      {
+        "name": "ftw:tile",
+        "type": "string",
+        "description": "Sentinel-2 MGRS tile the parcel was extracted from."
+      },
+      {
+        "name": "ftw:field_prob",
+        "type": "float",
+        "description": "Mean model field probability inside the parcel."
+      },
+      {
+        "name": "ftw:boundary_prob",
+        "type": "float",
+        "description": "Mean model boundary probability inside the parcel."
+      },
+      {
+        "name": "ftw:frac_nodata_1q",
+        "type": "float",
+        "description": "Fraction of the parcel with nodata in >= 1 of the 4 quarterly mosaics."
+      },
+      {
+        "name": "ftw:frac_nodata_3q",
+        "type": "float",
+        "description": "Fraction with nodata in >= 3 quarterly mosaics."
+      },
+      {
+        "name": "ftw:frac_water",
+        "type": "float",
+        "description": "Fraction classed water in io-lulc 2024 (30 m)."
+      },
+      {
+        "name": "ftw:frac_crops_ever",
+        "type": "float",
+        "description": "Fraction classed crops in io-lulc 2017, 2020 or 2024."
+      },
+      {
+        "name": "ftw:slope_mean",
+        "type": "float",
+        "description": "Mean slope, degrees (Copernicus 30 m DEM)."
+      },
+      {
+        "name": "ftw:frac_slope_gt30",
+        "type": "float",
+        "description": "Fraction with slope > 30 degrees."
+      },
+      {
+        "name": "ftw:elev_mean",
+        "type": "float",
+        "description": "Mean elevation, m."
+      },
+      {
+        "name": "ftw:patch_sat_mean",
+        "type": "float",
+        "description": "Mean over covering inference patches of the fraction of pixels with field prob >= 0.9 (flipped-patch detector)."
+      },
+      {
+        "name": "ftw:patch_sat_max",
+        "type": "float",
+        "description": "Max over covering inference patches of that fraction."
+      },
+      {
+        "name": "ftw:patch_pb_mean",
+        "type": "float",
+        "description": "Mean boundary probability over the covering inference patches."
+      },
+      {
+        "name": "ftw:touches_window_edge",
+        "type": "boolean",
+        "description": "Parcel touched a processing window edge (possible truncation)."
+      }
+    ]
+  },
+  "collection": "ftw-s2-2024",
+  "assets": {
+    "data": {
+      "href": "../utm39.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "UTM zone 39 — 2024 field boundaries (GeoParquet)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 2178386447,
+      "alternate": {
+        "s3": {
+          "href": "s3://ftw/global-data-beta/vector/2024/utm39.parquet",
+          "title": "S3 URI (us-west-2, anonymous read)"
+        }
+      },
+      "file:checksum": "1220217bca48f48bd4473b1066e3d7ca4d642487c3ad1425c2724cfd282b9d1485c5"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    }
+  ]
+}

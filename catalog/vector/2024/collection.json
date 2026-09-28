@@ -1,0 +1,560 @@
+{
+  "type": "Collection",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "ftw-s2-2024",
+  "title": "FTW Global — Field Boundaries 2024 (GeoParquet)",
+  "description": "Predicted agricultural field boundaries for 2024: 120,455,491 parcels (6,495,908 km² of field area) in 54 per-UTM-zone GeoParquet files, 111.5 GiB total, browsable in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2024 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, ftw:tile, ftw:field_prob, ftw:boundary_prob, ftw:frac_nodata_1q, ftw:frac_nodata_3q, ftw:frac_water, ftw:frac_crops_ever, ftw:slope_mean, ftw:frac_slope_gt30, ftw:elev_mean, ftw:patch_sat_mean, ftw:patch_sat_max, ftw:patch_pb_mean, ftw:touches_window_edge — see `table:columns` for definitions.",
+  "license": "CC-BY-4.0",
+  "keywords": [
+    "agriculture",
+    "field boundaries",
+    "Fields of the World",
+    "FTW",
+    "global",
+    "Sentinel-2",
+    "GeoParquet",
+    "2024"
+  ],
+  "providers": [
+    {
+      "name": "Taylor Geospatial",
+      "roles": [
+        "producer",
+        "licensor",
+        "processor",
+        "host"
+      ],
+      "url": "https://taylorgeospatial.org/"
+    }
+  ],
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -176.0354820499458,
+          -46.95171550317665,
+          179.8119751994405,
+          65.82145317850726
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2024-01-01T00:00:00Z",
+          "2024-12-31T23:59:59Z"
+        ]
+      ]
+    }
+  },
+  "summaries": {
+    "proj:code": [
+      "EPSG:4326"
+    ]
+  },
+  "table:columns": [
+    {
+      "name": "id",
+      "type": "string",
+      "description": "Parcel identifier, unique per collection ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+    },
+    {
+      "name": "collection",
+      "type": "string",
+      "description": "The vecorel collection the parcel belongs to (constant per year, e.g. `ftw-s2-2025`)."
+    },
+    {
+      "name": "geometry",
+      "type": "binary",
+      "description": "Parcel footprint (WKB Polygon/MultiPolygon, WGS 84)."
+    },
+    {
+      "name": "bbox",
+      "type": "struct",
+      "description": "Bounding box of the parcel (xmin, ymin, xmax, ymax)."
+    },
+    {
+      "name": "metrics:area",
+      "type": "float",
+      "description": "Area of the parcel in square meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
+    },
+    {
+      "name": "metrics:perimeter",
+      "type": "float",
+      "description": "Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
+    },
+    {
+      "name": "ftw:tile",
+      "type": "string",
+      "description": "Sentinel-2 MGRS tile the parcel was extracted from."
+    },
+    {
+      "name": "ftw:field_prob",
+      "type": "float",
+      "description": "Mean model field probability inside the parcel."
+    },
+    {
+      "name": "ftw:boundary_prob",
+      "type": "float",
+      "description": "Mean model boundary probability inside the parcel."
+    },
+    {
+      "name": "ftw:frac_nodata_1q",
+      "type": "float",
+      "description": "Fraction of the parcel with nodata in >= 1 of the 4 quarterly mosaics."
+    },
+    {
+      "name": "ftw:frac_nodata_3q",
+      "type": "float",
+      "description": "Fraction with nodata in >= 3 quarterly mosaics."
+    },
+    {
+      "name": "ftw:frac_water",
+      "type": "float",
+      "description": "Fraction classed water in io-lulc 2024 (30 m)."
+    },
+    {
+      "name": "ftw:frac_crops_ever",
+      "type": "float",
+      "description": "Fraction classed crops in io-lulc 2017, 2020 or 2024."
+    },
+    {
+      "name": "ftw:slope_mean",
+      "type": "float",
+      "description": "Mean slope, degrees (Copernicus 30 m DEM)."
+    },
+    {
+      "name": "ftw:frac_slope_gt30",
+      "type": "float",
+      "description": "Fraction with slope > 30 degrees."
+    },
+    {
+      "name": "ftw:elev_mean",
+      "type": "float",
+      "description": "Mean elevation, m."
+    },
+    {
+      "name": "ftw:patch_sat_mean",
+      "type": "float",
+      "description": "Mean over covering inference patches of the fraction of pixels with field prob >= 0.9 (flipped-patch detector)."
+    },
+    {
+      "name": "ftw:patch_sat_max",
+      "type": "float",
+      "description": "Max over covering inference patches of that fraction."
+    },
+    {
+      "name": "ftw:patch_pb_mean",
+      "type": "float",
+      "description": "Mean boundary probability over the covering inference patches."
+    },
+    {
+      "name": "ftw:touches_window_edge",
+      "type": "boolean",
+      "description": "Parcel touched a processing window edge (possible truncation)."
+    }
+  ],
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "license",
+      "href": "https://creativecommons.org/licenses/by/4.0/",
+      "type": "text/html",
+      "title": "CC-BY-4.0"
+    },
+    {
+      "rel": "derived_from",
+      "href": "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/",
+      "type": "text/html",
+      "title": "TGE Labs Sentinel-2 quarterly cloudless mosaics"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Collection README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Collection agent guide"
+    },
+    {
+      "rel": "llms",
+      "href": "./llms.txt",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "describedby",
+      "href": "https://github.com/fiboa/specification",
+      "type": "text/html",
+      "title": "fiboa specification (core parcel fields)"
+    },
+    {
+      "rel": "item",
+      "href": "./utm01/utm01.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 1"
+    },
+    {
+      "rel": "item",
+      "href": "./utm04/utm04.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 4"
+    },
+    {
+      "rel": "item",
+      "href": "./utm05/utm05.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 5"
+    },
+    {
+      "rel": "item",
+      "href": "./utm10/utm10.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 10"
+    },
+    {
+      "rel": "item",
+      "href": "./utm11/utm11.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 11"
+    },
+    {
+      "rel": "item",
+      "href": "./utm12/utm12.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 12"
+    },
+    {
+      "rel": "item",
+      "href": "./utm13/utm13.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 13"
+    },
+    {
+      "rel": "item",
+      "href": "./utm14/utm14.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 14"
+    },
+    {
+      "rel": "item",
+      "href": "./utm15/utm15.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 15"
+    },
+    {
+      "rel": "item",
+      "href": "./utm16/utm16.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 16"
+    },
+    {
+      "rel": "item",
+      "href": "./utm17/utm17.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 17"
+    },
+    {
+      "rel": "item",
+      "href": "./utm18/utm18.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 18"
+    },
+    {
+      "rel": "item",
+      "href": "./utm19/utm19.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 19"
+    },
+    {
+      "rel": "item",
+      "href": "./utm20/utm20.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 20"
+    },
+    {
+      "rel": "item",
+      "href": "./utm21/utm21.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 21"
+    },
+    {
+      "rel": "item",
+      "href": "./utm22/utm22.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 22"
+    },
+    {
+      "rel": "item",
+      "href": "./utm23/utm23.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 23"
+    },
+    {
+      "rel": "item",
+      "href": "./utm24/utm24.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 24"
+    },
+    {
+      "rel": "item",
+      "href": "./utm25/utm25.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 25"
+    },
+    {
+      "rel": "item",
+      "href": "./utm26/utm26.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 26"
+    },
+    {
+      "rel": "item",
+      "href": "./utm27/utm27.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 27"
+    },
+    {
+      "rel": "item",
+      "href": "./utm28/utm28.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 28"
+    },
+    {
+      "rel": "item",
+      "href": "./utm29/utm29.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 29"
+    },
+    {
+      "rel": "item",
+      "href": "./utm30/utm30.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 30"
+    },
+    {
+      "rel": "item",
+      "href": "./utm31/utm31.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 31"
+    },
+    {
+      "rel": "item",
+      "href": "./utm32/utm32.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 32"
+    },
+    {
+      "rel": "item",
+      "href": "./utm33/utm33.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 33"
+    },
+    {
+      "rel": "item",
+      "href": "./utm34/utm34.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 34"
+    },
+    {
+      "rel": "item",
+      "href": "./utm35/utm35.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 35"
+    },
+    {
+      "rel": "item",
+      "href": "./utm36/utm36.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 36"
+    },
+    {
+      "rel": "item",
+      "href": "./utm37/utm37.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 37"
+    },
+    {
+      "rel": "item",
+      "href": "./utm38/utm38.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 38"
+    },
+    {
+      "rel": "item",
+      "href": "./utm39/utm39.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 39"
+    },
+    {
+      "rel": "item",
+      "href": "./utm40/utm40.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 40"
+    },
+    {
+      "rel": "item",
+      "href": "./utm41/utm41.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 41"
+    },
+    {
+      "rel": "item",
+      "href": "./utm42/utm42.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 42"
+    },
+    {
+      "rel": "item",
+      "href": "./utm43/utm43.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 43"
+    },
+    {
+      "rel": "item",
+      "href": "./utm44/utm44.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 44"
+    },
+    {
+      "rel": "item",
+      "href": "./utm45/utm45.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 45"
+    },
+    {
+      "rel": "item",
+      "href": "./utm46/utm46.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 46"
+    },
+    {
+      "rel": "item",
+      "href": "./utm47/utm47.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 47"
+    },
+    {
+      "rel": "item",
+      "href": "./utm48/utm48.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 48"
+    },
+    {
+      "rel": "item",
+      "href": "./utm49/utm49.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 49"
+    },
+    {
+      "rel": "item",
+      "href": "./utm50/utm50.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 50"
+    },
+    {
+      "rel": "item",
+      "href": "./utm51/utm51.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 51"
+    },
+    {
+      "rel": "item",
+      "href": "./utm52/utm52.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 52"
+    },
+    {
+      "rel": "item",
+      "href": "./utm53/utm53.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 53"
+    },
+    {
+      "rel": "item",
+      "href": "./utm54/utm54.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 54"
+    },
+    {
+      "rel": "item",
+      "href": "./utm55/utm55.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 55"
+    },
+    {
+      "rel": "item",
+      "href": "./utm56/utm56.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 56"
+    },
+    {
+      "rel": "item",
+      "href": "./utm57/utm57.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 57"
+    },
+    {
+      "rel": "item",
+      "href": "./utm58/utm58.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 58"
+    },
+    {
+      "rel": "item",
+      "href": "./utm59/utm59.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 59"
+    },
+    {
+      "rel": "item",
+      "href": "./utm60/utm60.json",
+      "type": "application/geo+json",
+      "title": "UTM zone 60"
+    }
+  ],
+  "assets": {
+    "thumbnail": {
+      "href": "./thumbnail.png",
+      "type": "image/png",
+      "title": "UTM-zone coverage shaded by parcel count (2024)",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 8296,
+      "file:checksum": "1220f0d76b1179f0a6802bb1b2dc3f718d60aba0bc84e6e4d93685258d3ad4c7c419"
+    },
+    "mirror": {
+      "href": "./items.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "STAC GeoParquet mirror of the items",
+      "description": "All item metadata in one stac-geoparquet file, for bulk queries. Derived from the items; the item JSON stays normative.",
+      "roles": [
+        "collection-mirror",
+        "metadata"
+      ],
+      "file:size": 31980,
+      "file:checksum": "12207ddf752b9cf028b68d4400f7866949cce8677a2b1032e62b9a929b49b869983c"
+    }
+  }
+}
