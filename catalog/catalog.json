@@ -47,6 +47,12 @@
       "title": "FTW Global (beta) — Vector field boundaries"
     },
     {
+      "rel": "child",
+      "href": "./raster/catalog.json",
+      "type": "application/json",
+      "title": "FTW Global (beta) — Field & boundary probability rasters"
+    },
+    {
       "rel": "about",
       "href": "https://source.coop/ftw/global-data-beta",
       "type": "text/html",
