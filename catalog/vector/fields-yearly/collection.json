@@ -151,7 +151,9 @@
       "title": "Field count (A5 r7 → fields) (2024)",
       "roles": [
         "style"
-      ]
+      ],
+      "file:size": 1333,
+      "file:checksum": "1220a4374cdda4c9f0cb50f15025600b97265e86821ce0dc7ccf7602c3a180918f91"
     },
     "styles/coverage-2024": {
       "href": "./styles/coverage-2024.json",
@@ -159,7 +161,9 @@
       "title": "Field coverage (A5 r7 → fields) (2024)",
       "roles": [
         "style"
-      ]
+      ],
+      "file:size": 1375,
+      "file:checksum": "122012d40df418fc76daf70b8c036a60f210c3e2a84a0bc434c6aaf8bf073849d66b"
     },
     "styles/avg-size-2024": {
       "href": "./styles/avg-size-2024.json",
@@ -167,7 +171,9 @@
       "title": "Mean field size (A5 r7 → fields) (2024)",
       "roles": [
         "style"
-      ]
+      ],
+      "file:size": 1656,
+      "file:checksum": "12200ff1041358f13e50e1d142c81e2a6e73075aa2cf30a78156d27ee9622d9917c5"
     },
     "styles/field-prob-2024": {
       "href": "./styles/field-prob-2024.json",
@@ -175,7 +181,9 @@
       "title": "Field probability (A5 r7 → fields) (2024)",
       "roles": [
         "style"
-      ]
+      ],
+      "file:size": 1405,
+      "file:checksum": "12202298748b7dbfa067e823dbe7de35e58522d31f0e20fb2adba3de933da6f43c61"
     },
     "pmtiles_2025": {
       "href": "./fields-2025.pmtiles",
@@ -203,7 +211,9 @@
       "title": "Field count (A5 r7 → fields) (2025)",
       "roles": [
         "style"
-      ]
+      ],
+      "file:size": 1333,
+      "file:checksum": "12203f9a91ce5fd645a6f7fdcf2d26f3a25c251ecef8a323f262c19462cfe44aef7c"
     },
     "styles/coverage-2025": {
       "href": "./styles/coverage-2025.json",
@@ -212,7 +222,9 @@
       "roles": [
         "style",
         "default"
-      ]
+      ],
+      "file:size": 1375,
+      "file:checksum": "12207b4cc1061873f3bbf616082be995807fe9aa33f660882f337e5878979c41fd11"
     },
     "styles/avg-size-2025": {
       "href": "./styles/avg-size-2025.json",
@@ -220,7 +232,9 @@
       "title": "Mean field size (A5 r7 → fields) (2025)",
       "roles": [
         "style"
-      ]
+      ],
+      "file:size": 1656,
+      "file:checksum": "1220412d0de4ba5c89888fbb7820faecc472ca347c903412d4987f9758be118f759b"
     },
     "styles/field-prob-2025": {
       "href": "./styles/field-prob-2025.json",
@@ -228,7 +242,9 @@
       "title": "Field probability (A5 r7 → fields) (2025)",
       "roles": [
         "style"
-      ]
+      ],
+      "file:size": 1405,
+      "file:checksum": "122089c1a71fdca7e7819095b0cb0ae910253fc590e10e6ac1fa5fae78acd4df74b7"
     },
     "thumbnail": {
       "href": "./thumbnail.png",

@@ -4,6 +4,8 @@ Field and boundary probability rasters for 2025: **7,467 Cloud-Optimized GeoTIFF
 
 Browse it in the [data browser](https://source.coop/ftw/global-data-beta).
 
+Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
+
 ## The rasters
 
 Each COG is 40,032 × 40,032 pixels at 2.5 m in its tile's UTM zone, with two uint8 bands scaled by 1/255: `field` (band 1, field-interior probability) and `boundary` (band 2, field-boundary probability). ZSTD-compressed COG layout with average-resampled overviews down to 626 px. Produced by the `unet_balanced_fp32` FTW model from 16 input bands (B02/B03/B04/B08 × quarters Q1–Q4 of the year's [Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/), 10 m); each COG's GDAL metadata records its four source mosaic tiles (`source_items`).

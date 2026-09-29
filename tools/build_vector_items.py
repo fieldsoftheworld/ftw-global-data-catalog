@@ -371,6 +371,7 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         f"parcels** in {len(rows)} per-UTM-zone GeoParquet files "
         f"({gib:,.1f} GiB). {_PROJECT}", "",
         f"Browse it in the [data browser]({DATA_BROWSER}).", "",
+        "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## How it was made", "",
         f"{meta['determination:details']} Source imagery: the "
         f"[TGE Labs Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}).",
@@ -447,6 +448,7 @@ def vector_readme(per_year: dict[int, list[dict]]) -> str:
         f"({years}): **{total:,} parcels** total, as per-UTM-zone "
         f"cloud-native GeoParquet. {_PROJECT}", "",
         f"Browse it in the [data browser]({DATA_BROWSER}).", "",
+        "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## Collections", "",
         *[f"- [{y}](./{y}/collection.json) — "
           f"{sum(r['n_parcels'] for r in per_year[y]):,} parcels"

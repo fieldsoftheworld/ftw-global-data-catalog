@@ -4,6 +4,8 @@ Per-year collections of 2.5 m field/boundary probability COGs, 2017–2025: **67
 
 Browse it in the [data browser](https://source.coop/ftw/global-data-beta).
 
+Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
+
 ## Collections
 
 - [2017](./2017/collection.json) — 7,466 tiles, 2.95 TB

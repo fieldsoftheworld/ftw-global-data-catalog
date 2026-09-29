@@ -166,6 +166,10 @@ def stamp_file_meta(asset: dict, local: Path) -> None:
         print(f"note: {local} absent; asset left without file:* "
               "(stage it and re-run)")
         return
+    # A re-run must not re-hash a 29 GB archive whose size is unchanged.
+    if (asset.get("file:size") == local.stat().st_size
+            and asset.get("file:checksum")):
+        return
     digest = hashlib.sha256()
     with local.open("rb") as handle:
         for chunk in iter(lambda: handle.read(1 << 20), b""):
@@ -275,6 +279,7 @@ def collection_readme(years: list[int], bins: dict) -> str:
         "# FTW Global (beta) — Fields by year (PMTiles)", "",
         f"Browsable field-boundary tiles for {', '.join(map(str, years))}. "
         f"{_PROJECT}", "",
+        "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         f"Open it in the [data browser]({DATA_BROWSER}): each year is one "
         "PMTiles archive with a zoom handover — A5 r7 cell aggregates at "
         "z0–8 switching to the full field polygons (all parquet "
@@ -359,12 +364,11 @@ def main() -> int:
                         STAGING / f"fields-{year}.pmtiles")
         stamp_file_meta(collection["assets"][f"cells_{year}"],
                         STAGING / f"cells_a5r7_{year}.parquet")
-    thumb = OUT / "thumbnail.png"
-    if thumb.is_file():
-        stamp_file_meta(collection["assets"]["thumbnail"], thumb)
-    else:
-        print("note: thumbnail.png absent (chiitiler render pending); "
-              "asset left without file:*")
+    for key, asset in collection["assets"].items():
+        href = asset["href"]
+        if "://" in href or key.startswith(("pmtiles_", "cells_")):
+            continue
+        stamp_file_meta(asset, (OUT / href).resolve())
     write_json(OUT / "collection.json", collection)
     (OUT / "README.md").write_text(collection_readme(years, bins))
     (OUT / "AGENTS.md").write_text(collection_agents(years))

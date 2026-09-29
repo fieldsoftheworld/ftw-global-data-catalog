@@ -220,6 +220,7 @@ def year_readme(year: int, stats: dict) -> str:
         f"**{stats['n']:,} Cloud-Optimized GeoTIFFs** at 2.5 m "
         f"({tb:.2f} TB), one per Sentinel-2 MGRS-based tile. {_PROJECT}", "",
         f"Browse it in the [data browser]({DATA_BROWSER}).", "",
+        "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## The rasters", "",
         _BANDS, "",
         "## Find tiles", "",
@@ -278,6 +279,7 @@ def tree_readme(stats: dict[int, dict]) -> str:
         f"Per-year collections of 2.5 m field/boundary probability COGs, "
         f"{min(stats)}–{max(stats)}: **{total:,} tiles**. {_PROJECT}", "",
         f"Browse it in the [data browser]({DATA_BROWSER}).", "",
+        "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## Collections", "",
         *[f"- [{y}](./{y}/collection.json) — {stats[y]['n']:,} tiles, "
           f"{stats[y]['bytes'] / 1e12:.2f} TB" for y in sorted(stats)], "",

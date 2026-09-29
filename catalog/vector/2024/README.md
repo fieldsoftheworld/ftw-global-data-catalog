@@ -4,6 +4,8 @@ Predicted agricultural field boundaries for 2024: **120,455,491 parcels** in 54 
 
 Browse it in the [data browser](https://source.coop/ftw/global-data-beta).
 
+Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
+
 ## How it was made
 
 Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2024 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/).

@@ -4,6 +4,8 @@ Per-year collections of predicted agricultural field boundaries (2024, 2025): **
 
 Browse it in the [data browser](https://source.coop/ftw/global-data-beta).
 
+Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
+
 ## Collections
 
 - [2024](./2024/collection.json) — 120,455,491 parcels
