@@ -33,20 +33,24 @@ not the cause here. Two code-level causes:
 
 ## Fix plan
 
-### 1. Wire connection settings through the aggregate/overview paths
+### 1. Route the aggregate/overview connections through the #1154 funnel
 
-- Add `memory_limit`, `threads`, `temp_directory` parameters to
-  `aggregate_grid_file` and pass them at all five call sites listed above.
-- Default `memory_limit` to ~60% of the effective limit: read
-  `/sys/fs/cgroup/memory.max` (v2) then `/sys/fs/cgroup/memory/memory.limit_in_bytes`
-  (v1), falling back to `psutil`/total RAM. Default `temp_directory` to a
-  `.gpio-spill/` dir beside the output file, cleaned on success.
-- Set `preserve_insertion_order = false` on these connections (already done
-  elsewhere in the codebase: `core/add/admin_divisions.py:469`,
+This is another instance of the family #1154 → #1156/#1166 → #1174 have
+been closing: DuckDB work running at its own default (80% of host RAM,
+blind to a Slurm job cgroup). #1154 already built the cgroup-aware limit
+(50% of the process ceiling, threads capped) for writes — reuse that same
+helper here rather than inventing a second default:
+
+- Pass `memory_limit`/`threads`/`temp_directory` (from the #1154 sizing
+  helper) into `get_duckdb_connection` at the five aggregate/overview call
+  sites listed above. Default `temp_directory` to a `.gpio-spill/` dir
+  beside the output, cleaned on success.
+- Set `preserve_insertion_order = false` on these connections (already
+  done elsewhere: `core/add/admin_divisions.py:469`,
   `core/partition/staging.py:135`).
-- Surface `--memory-limit` and `--threads` in the shared
+- Surface `--memory-limit`/`--threads` overrides in the shared
   `grid_aggregate_options` decorator (`cli/decorators.py:505` area) and the
-  admin command.
+  admin command, consistent with whatever flag shape #1174 settles on.
 
 ### 2. Project only the needed columns
 
