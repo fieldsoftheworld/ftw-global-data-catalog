@@ -50,9 +50,14 @@ case "$MODE" in
     "$TT" shard-plan "$IN" --shards "$N" --pivot 9 -o "shard-plan-${YEAR}.json"
     ;;
   coarse)
-    "$TT" tiles "$IN" "coarse-${YEAR}.pmtiles" \
+    # Plan-only (tylertoo #541/#574, needs main after 2026-09-27): the
+    # handover merge uses the cells archive as COARSE, so the coarse z0-8
+    # archive was always discarded — write only the convert plan the
+    # shards need. No output archive, no pass-2 buffering.
+    rm -f "convert-${YEAR}.plan"
+    "$TT" tiles "$IN" \
       --shard coarse --shard-plan "shard-plan-${YEAR}.json" \
-      "${COMMON[@]}" --save-plan "convert-${YEAR}.plan"
+      "${COMMON[@]}" --plan-only --save-plan "convert-${YEAR}.plan"
     ;;
   shard)
     : "${IDX:?set IDX=0..N-1 for MODE=shard}"
