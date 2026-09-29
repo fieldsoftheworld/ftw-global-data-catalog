@@ -1,5 +1,5 @@
 {
-  "_comment": "Checkpoint-approved 2026-09-28 from measured 2025 a5 r7 distributions (job 205790; quantiles in the sbatch log and session ledger). colors has one more entry than edges (step expression).",
+  "_comment": "Checkpoint-approved 2026-09-28 from measured 2025 a5 r7 distributions (job 205790; quantiles in the sbatch log and session ledger); field-prob edges are the approved 0.45/0.55/0.65/0.80 x100 after the upstream schema change replaced ftw:field_prob with uint8 score. colors has one more entry than edges (step expression).",
   "count": {
     "colors": ["#ffffe5", "#addd8e", "#41ab5d", "#006837", "#004529"],
     "edges": [100, 1000, 10000, 50000]
@@ -14,6 +14,6 @@
   },
   "field-prob": {
     "colors": ["#d73027", "#fdae61", "#ffffbf", "#a6d96a", "#1a9850"],
-    "edges": [0.45, 0.55, 0.65, 0.8]
+    "edges": [45, 55, 65, 80]
   }
 }

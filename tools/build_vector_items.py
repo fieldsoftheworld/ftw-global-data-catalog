@@ -78,9 +78,9 @@ _PROJECT = (
 _FIBOA = f"[fiboa 0.3.0]({FIBOA_SPEC})"
 _VECOREL = f"[vecorel 0.1.0]({VECOREL_SPEC})"
 
-# The 20 columns of every zone parquet. The ftw:* descriptions are the
-# dataset's own, from the parquet's embedded schemas:custom; the core fields
-# follow fiboa/vecorel.
+# The 9 columns of every zone parquet (second bucket revision, 2026-09-28).
+# The `score` description is the dataset's own, from the parquet's embedded
+# schemas:custom; the core fields follow fiboa/vecorel.
 TABLE_COLUMNS = [
     {"name": "id", "type": "string",
      "description": f"Parcel identifier, unique per collection ({_FIBOA})."},
@@ -97,38 +97,14 @@ TABLE_COLUMNS = [
     {"name": "metrics:perimeter", "type": "float",
      "description": f"Perimeter of the parcel in meters ({_VECOREL} "
                     "geometry-metrics)."},
-    {"name": "ftw:tile", "type": "string",
-     "description": "Sentinel-2 MGRS tile the parcel was extracted from."},
-    {"name": "ftw:field_prob", "type": "float",
-     "description": "Mean model field probability inside the parcel."},
-    {"name": "ftw:boundary_prob", "type": "float",
-     "description": "Mean model boundary probability inside the parcel."},
-    {"name": "ftw:frac_nodata_1q", "type": "float",
-     "description": "Fraction of the parcel with nodata in >= 1 of the 4 "
-                    "quarterly mosaics."},
-    {"name": "ftw:frac_nodata_3q", "type": "float",
-     "description": "Fraction with nodata in >= 3 quarterly mosaics."},
-    {"name": "ftw:frac_water", "type": "float",
-     "description": "Fraction classed water in io-lulc 2024 (30 m)."},
-    {"name": "ftw:frac_crops_ever", "type": "float",
-     "description": "Fraction classed crops in io-lulc 2017, 2020 or 2024."},
-    {"name": "ftw:slope_mean", "type": "float",
-     "description": "Mean slope, degrees (Copernicus 30 m DEM)."},
-    {"name": "ftw:frac_slope_gt30", "type": "float",
-     "description": "Fraction with slope > 30 degrees."},
-    {"name": "ftw:elev_mean", "type": "float",
-     "description": "Mean elevation, m."},
-    {"name": "ftw:patch_sat_mean", "type": "float",
-     "description": "Mean over covering inference patches of the fraction of "
-                    "pixels with field prob >= 0.9 (flipped-patch detector)."},
-    {"name": "ftw:patch_sat_max", "type": "float",
-     "description": "Max over covering inference patches of that fraction."},
-    {"name": "ftw:patch_pb_mean", "type": "float",
-     "description": "Mean boundary probability over the covering inference "
-                    "patches."},
-    {"name": "ftw:touches_window_edge", "type": "boolean",
-     "description": "Parcel touched a processing window edge (possible "
-                    "truncation)."},
+    {"name": "score", "type": "uint8",
+     "description": "Mean model field probability inside the parcel, × 100 "
+                    "rounded (0–100)."},
+    {"name": "determination:datetime", "type": "timestamp",
+     "description": "The prediction year's UTC start marker, constant per "
+                    f"year ({_FIBOA})."},
+    {"name": "determination:method", "type": "string",
+     "description": f"Constant `auto-imagery` ({_FIBOA})."},
 ]
 
 _COLS_SHORT = ", ".join(c["name"] for c in TABLE_COLUMNS)
@@ -218,7 +194,7 @@ def build_item(row: dict, meta: dict, checksums: dict) -> dict:
                 f"cloud-native GeoParquet file. {_PROJECT} Columns: "
                 f"{_COLS_SHORT} — see `table:columns` for definitions."
             ),
-            "datetime": meta["determination:datetime"],
+            "datetime": f"{year}-01-01T00:00:00Z",
             "start_datetime": f"{year}-01-01T00:00:00Z",
             "end_datetime": f"{year}-12-31T23:59:59Z",
             "proj:code": "EPSG:4326",
@@ -378,7 +354,7 @@ def _query_block(year: int) -> list[str]:
         "con.sql(f\"\"\"",
         "    SELECT count(*) AS parcels,",
         "           round(sum(\"metrics:area\") / 1e6, 1) AS km2,",
-        "           round(avg(\"ftw:field_prob\"), 3) AS avg_field_prob",
+        "           round(avg(score), 1) AS avg_score",
         "    FROM read_parquet('{url}')",
         "\"\"\").show()",
         "```",
@@ -413,9 +389,9 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         "",
         "## Query it", "",
         *_query_block(year), "",
-        "The attributes are for filtering: no land-cover masking was applied "
-        "upstream, so filter on `ftw:field_prob`, `ftw:frac_water`, "
-        "`ftw:frac_crops_ever` etc. to taste.", "",
+        "No land-cover masking was applied upstream: filter on `score` (the "
+        "model's field probability × 100) to trade precision against "
+        "recall.", "",
     ]
     return "\n".join(lines)
 
@@ -428,11 +404,12 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         "dataset's embedded metadata or measured from the data.", "",
         f"- {n:,} parcels in {len(rows)} per-UTM-zone GeoParquet files at "
         f"`{PUBLIC_BASE}/vector/{year}/utm{{NN}}.parquet` (anonymous read).",
-        f"- Schema: 20 columns ({_COLS_SHORT}); definitions live in "
-        "`table:columns` on the collection and every item.",
-        "- Parcel ids are unique within a zone file; parcels on zone "
-        "boundaries can appear in more than one file — check "
-        "`ftw:touches_window_edge` before cross-zone aggregation.",
+        f"- Schema: {len(TABLE_COLUMNS)} columns ({_COLS_SHORT}); "
+        "definitions live in `table:columns` on the collection and every "
+        "item.",
+        "- Parcel ids are unique within a zone file; zones partition the "
+        "parcels cleanly (measured: zero shared ids or geometries in the "
+        "6°E utm31/utm32 boundary strip).",
         "- `metrics:area` is m²; the upstream post-processing removed "
         "parcels larger than 5 km².",
         "- Query with DuckDB over https:// URLs (s3:// hangs on some "

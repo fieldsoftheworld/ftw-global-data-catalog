@@ -4,8 +4,7 @@
 # Produces cells_a5r${R}_${YEAR}.parquet with, per a5 cell:
 #   count             number of parcels
 #   area_ha           total field area (whole hectares)
-#   avg_field_prob    mean model field probability, 2dp
-#   avg_boundary_prob mean model boundary probability, 2dp
+#   avg_score         mean parcel score (field probability x 100), 1dp
 #   pct_covered       100 * field area / a5 cell area (r7 cell = 2,075.5 km2),
 #                     1dp — can exceed 100: a boundary parcel's full area
 #                     counts in its home cell
@@ -39,10 +38,10 @@ OUT="cells_a5r${R}_${YEAR}.parquet"
 
 echo "== a5 aggregate r${R} from ${IN}"
 # Metric naming verified on gpio 1.5.0: outputs count, sum_metrics:area,
-# avg_ftw:field_prob, avg_ftw:boundary_prob.
+# avg_score.
 [ -f "$RAW" ] || gpio process aggregate a5 "$IN" "$RAW" \
   --resolution "$R" \
-  --metric "sum:metrics:area,avg:ftw:field_prob,avg:ftw:boundary_prob" \
+  --metric "sum:metrics:area,avg:score" \
   --out-geometry polygon --geoparquet-version 2.0
 
 echo "== add pct_covered + final names"
@@ -57,11 +56,10 @@ c = duckdb.connect(); c.execute("INSTALL spatial; LOAD spatial")
 print(c.execute(f"DESCRIBE SELECT * FROM '{sys.argv[1]}'").df().to_string(), flush=True)
 print(c.execute(f"""SELECT count(*) cells, sum(count) parcels,
     round(sum(area_ha)/1e8,2) mkm2, round(avg(pct_covered),2) mean_pct,
-    round(max(pct_covered),1) max_pct,
-    round(avg(avg_field_prob),3) mean_fp, round(avg(avg_boundary_prob),3) mean_bp
+    round(max(pct_covered),1) max_pct, round(avg(avg_score),1) mean_score
     FROM '{sys.argv[1]}'""").df().to_string(), flush=True)
 # Distributions for the style-plan checkpoint: quantiles per styled metric.
-for col in ("count", "area_ha", "pct_covered", "avg_field_prob", "avg_boundary_prob"):
+for col in ("count", "area_ha", "pct_covered", "avg_score"):
     q = c.execute(f"""SELECT list_transform(
             quantile_cont({col}, [0.05,0.25,0.5,0.75,0.9,0.99]),
             x -> round(x::DOUBLE, 3)) FROM '{sys.argv[1]}'""").fetchone()[0]

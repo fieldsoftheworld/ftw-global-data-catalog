@@ -150,12 +150,12 @@ def style_specs(bins: dict) -> dict[str, dict]:
         },
         "field-prob": {
             "title": "Field probability (A5 r7 → fields)",
-            "description": "Mean model field probability per A5 r7 cell at "
-                           "z0–8; from z9 each {year} field polygon is "
-                           "colored by its own probability on the same "
-                           "bins.",
-            "cell_prop": ["get", "avg_field_prob"],
-            "field_prop": ["get", "ftw:field_prob"],
+            "description": "Mean parcel score (model field probability × "
+                           "100) per A5 r7 cell at z0–8; from z9 each "
+                           "{year} field polygon is colored by its own "
+                           "score on the same bins.",
+            "cell_prop": ["get", "avg_score"],
+            "field_prop": ["get", "score"],
             **bins["field-prob"],
         },
     }
@@ -245,8 +245,8 @@ def build_collection(years: list[int], bins: dict, default: str) -> dict:
         "description": (
             f"Browsable field-boundary tiles for {year_span}: one PMTiles "
             "archive per year with a zoom handover — A5 r7 cell aggregates "
-            "(`cells` layer, z0–8: count, area_ha, avg_field_prob, "
-            "avg_boundary_prob, pct_covered) switching to the full field "
+            "(`cells` layer, z0–8: count, area_ha, avg_score, "
+            "pct_covered) switching to the full field "
             "polygons with all attributes (`fields` layer, z9–13). Open it "
             f"in the [data browser]({DATA_BROWSER}). {_PROJECT}"
         ),
@@ -280,11 +280,11 @@ def collection_readme(years: list[int], bins: dict) -> str:
         "z0–8 switching to the full field polygons (all parquet "
         "attributes) from z9.", "",
         "## Layers", "",
-        "- `cells` (z0–8): per-cell `count`, `area_ha`, `avg_field_prob`, "
-        "`avg_boundary_prob`, `pct_covered` (A5 r7, ≈2,075.5 km² per "
-        "cell).",
-        "- `fields` (z9–13): every predicted parcel with its parquet "
-        "attributes (the constant `collection` column is excluded).", "",
+        "- `cells` (z0–8): per-cell `count`, `area_ha`, `avg_score`, "
+        "`pct_covered` (A5 r7, ≈2,075.5 km² per cell).",
+        "- `fields` (z9–13): every predicted parcel with `id`, "
+        "`metrics:area`, `metrics:perimeter`, `score` (constant columns "
+        "are excluded).", "",
         "## Styles", "",
         *[f"- **{name}** — {spec['title']}"
           for name, spec in specs.items()], "",

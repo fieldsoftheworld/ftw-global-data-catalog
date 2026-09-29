@@ -37,3 +37,6 @@ __pycache__/
 .venv/
 .ruff_cache/
 .superpowers/
+
+# NFS silly-rename leftovers (a deleted file still held open)
+.nfs*

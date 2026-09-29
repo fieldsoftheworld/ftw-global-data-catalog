@@ -1,0 +1,178 @@
+{
+  "type": "Collection",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+  ],
+  "id": "fields-yearly",
+  "title": "FTW Global (beta) — Fields by year (PMTiles)",
+  "description": "Browsable field-boundary tiles for 2025: one PMTiles archive per year with a zoom handover — A5 r7 cell aggregates (`cells` layer, z0–8: count, area_ha, avg_field_prob, avg_boundary_prob, pct_covered) switching to the full field polygons with all attributes (`fields` layer, z9–13). Open it in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
+  "license": "CC-BY-4.0",
+  "keywords": [
+    "agriculture",
+    "field boundaries",
+    "Fields of the World",
+    "FTW",
+    "global",
+    "PMTiles",
+    "visualization"
+  ],
+  "providers": [
+    {
+      "name": "Taylor Geospatial",
+      "roles": [
+        "producer",
+        "licensor",
+        "processor",
+        "host"
+      ],
+      "url": "https://taylorgeospatial.org/"
+    }
+  ],
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -180.0,
+          -60.0,
+          180.0,
+          84.0
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2025-01-01T00:00:00Z",
+          "2025-12-31T23:59:59Z"
+        ]
+      ]
+    }
+  },
+  "portolan:styles": [
+    "styles/count-2025",
+    "styles/coverage-2025",
+    "styles/avg-size-2025",
+    "styles/field-prob-2025"
+  ],
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "license",
+      "href": "https://creativecommons.org/licenses/by/4.0/",
+      "type": "text/html",
+      "title": "CC-BY-4.0"
+    },
+    {
+      "rel": "derived_from",
+      "href": "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/",
+      "type": "text/html",
+      "title": "TGE Labs Sentinel-2 quarterly cloudless mosaics"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Collection README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Collection agent guide"
+    },
+    {
+      "rel": "llms",
+      "href": "./llms.txt",
+      "type": "text/markdown",
+      "title": "Agent/LLM usage guide"
+    },
+    {
+      "rel": "pmtiles",
+      "href": "./fields-2025.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "Fields 2025 (cells z0–8 → fields z9–13)",
+      "pmtiles:layers": [
+        "cells",
+        "fields"
+      ]
+    }
+  ],
+  "assets": {
+    "pmtiles_2025": {
+      "href": "./fields-2025.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "Fields 2025 — A5 r7 cells z0–8 → field polygons z9–13 (PMTiles)",
+      "roles": [
+        "visual"
+      ],
+      "file:size": 44060860881,
+      "file:checksum": "1220e4c7869fca677cccb8850765d0c1353f4f457faca875fad7551419cedf400bb9"
+    },
+    "cells_2025": {
+      "href": "./cells_a5r7_2025.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r7 cell aggregates 2025 (GeoParquet)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 1660519,
+      "file:checksum": "1220ce49f44dfdff021a95e17ee675a53ca6f4f7abd845994c0c8b02aaf0720b5add"
+    },
+    "styles/count-2025": {
+      "href": "./styles/count-2025.json",
+      "type": "application/json",
+      "title": "Field count (A5 r7 → fields) (2025)",
+      "roles": [
+        "style"
+      ]
+    },
+    "styles/coverage-2025": {
+      "href": "./styles/coverage-2025.json",
+      "type": "application/json",
+      "title": "Field coverage (A5 r7 → fields) (2025) — default",
+      "roles": [
+        "style",
+        "default"
+      ]
+    },
+    "styles/avg-size-2025": {
+      "href": "./styles/avg-size-2025.json",
+      "type": "application/json",
+      "title": "Mean field size (A5 r7 → fields) (2025)",
+      "roles": [
+        "style"
+      ]
+    },
+    "styles/field-prob-2025": {
+      "href": "./styles/field-prob-2025.json",
+      "type": "application/json",
+      "title": "Field probability (A5 r7 → fields) (2025)",
+      "roles": [
+        "style"
+      ]
+    },
+    "thumbnail": {
+      "href": "./thumbnail.png",
+      "type": "image/png",
+      "title": "Fields rendered with the default style",
+      "roles": [
+        "thumbnail"
+      ],
+      "file:size": 207772,
+      "file:checksum": "12202f5ee7833f4aeb797018f019c1d257fa7e255b68c58d34ca4e6853a9531673f1"
+    }
+  }
+}

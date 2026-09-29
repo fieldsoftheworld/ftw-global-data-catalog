@@ -37,10 +37,13 @@ export TYLERTOO_PROFILE_JSON="$PWD/profile-${YEAR}-${MODE}${IDX:-}.json"
 
 # --row-group-size 100000: shard outputs run ~1B overview rows; the default
 # 10k-row groups hit parquet's 32,767 row-group ceiling (tylertoo#507).
-# --exclude-property collection: constant per year — stays in the parquet,
-# has no business inflating every tile feature.
+# The excluded properties are constant per year (collection,
+# determination:*) — they stay in the parquet and have no business inflating
+# every tile feature. Tiles carry id, metrics:area, metrics:perimeter, score.
 COMMON=(--min-zoom 0 --max-zoom 13 --layer-name fields --profile bounded
-        --row-group-size 100000 --exclude-property collection)
+        --row-group-size 100000 --exclude-property collection
+        --exclude-property "determination:datetime"
+        --exclude-property "determination:method")
 
 case "$MODE" in
   plan)

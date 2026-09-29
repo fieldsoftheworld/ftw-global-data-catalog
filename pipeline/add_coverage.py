@@ -2,10 +2,9 @@
 """Add pct_covered and final column names to a beta a5 cells file.
 
 Input: the raw ``gpio process aggregate a5`` output with columns
-``a5_cell, count, sum_metrics:area, avg_ftw:field_prob,
-avg_ftw:boundary_prob, geometry`` (naming verified against gpio 1.5.0).
-Output columns: ``a5_cell, count, area_ha, avg_field_prob,
-avg_boundary_prob, pct_covered, geometry``.
+``a5_cell, count, sum_metrics:area, avg_score, geometry`` (naming verified
+against gpio 1.5.0). Output columns: ``a5_cell, count, area_ha, avg_score,
+pct_covered, geometry``.
 
 pct_covered = 100 * sum_area / a5 cell area. a5 is an equal-area grid, so
 the denominator is one constant per resolution. We self-calibrate it by
@@ -14,7 +13,7 @@ spread <0.1%). DuckDB's ST_Area_Spheroid is NOT usable here: it returns NaN
 for 38% of the cell polygons and areas off by up to 100x on the rest
 (duckdb-spatial bug, observed 2026-09-26 v1.1.x).
 
-Rounded output (area to whole hectares, probabilities to 2dp, pct to 1dp):
+Rounded output (area to whole hectares, avg_score and pct to 1dp):
 full-double attributes nearly double tile weights — rounding is what held
 the worst alpha z2 tile under the 600 KB budget. The precision kept is far
 beyond the data's real accuracy anyway.
@@ -79,8 +78,7 @@ con.execute(f"""
     COPY (
       SELECT t.a5_cell, t.count,
              CAST(round(t."sum_metrics:area" / 1e4) AS BIGINT)     AS area_ha,
-             round(t."avg_ftw:field_prob", 2)               AS avg_field_prob,
-             round(t."avg_ftw:boundary_prob", 2)         AS avg_boundary_prob,
+             round(t."avg_score", 1)                         AS avg_score,
              round(100 * t."sum_metrics:area" / {cell_area!r}, 1)
                                                               AS pct_covered,
              COALESCE(ST_GeomFromText(f.wkt), t.geometry)       AS geometry
