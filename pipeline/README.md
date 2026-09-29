@@ -76,12 +76,24 @@ Env vars go through the shell + `--export=ALL` (a value inside
   self-calibrates with pyproj. Dateline cells have vertices past ±180 and
   must be wrapped or tile exporters drop them.
 
-## Measured reference points (alpha global 2025, 1.58 B fields)
+## Measured timings (beta, tylertoo main @ dabed9f, 2026-09-29)
 
-| step | wall |
-|---|---|
-| stage (598 files, one year) | ~6 h |
-| coarse (z0–8 + convert plan, 360 G) | 4 h 12 m |
-| 8 shards (z9–13, parallel) | 0.9–3.5 h |
-| merge | 8.6 min |
-| **fields archive total** | **~7 h 50 m** (115.5 GB) |
+Wall time per step (Slurm sacct; queue waits excluded). The coarse step is
+`--plan-only` (tylertoo #541/#574): it writes only the convert plan, so it
+needs neither the 192–360 G of the old full-convert coarse nor its hours.
+
+| step | 2024 (120.5 M) | 2025 (134.3 M) |
+|---|---|---|
+| stage (54 zones → GP2) | 51 m | 1 h 03 m |
+| a5 r7 aggregate | 41 s | 40 s |
+| cells archive z0–8 | seconds | seconds |
+| shard plan | 1 s | 1 s |
+| plan-only coarse | 6 m 31 s | 4 m 19 s (MaxRSS 22.6 GiB) |
+| 4 shards z9–13 (parallel) | 12–24 m | 13–25 m |
+| handover merge | 2 m 33 s | 3 m 57 s |
+| **compute wall, stage→archive** | **≈ 1 h 25 m** (27.6 GB) | **≈ 1 h 35 m** (29.1 GB) |
+
+Reference: the same 2025 build on tylertoo 6b9c3ff (pre plan-only, 17-column
+schema) took 37 m 44 s at 192 GiB MaxRSS for the coarse step alone and
+produced a 44.1 GB archive. The alpha run (1.58 B features) took ~7 h 50 m
+for its 115.5 GB archive with a 360 G coarse node.

@@ -9,7 +9,7 @@
   ],
   "id": "ftw-s2-2024",
   "title": "FTW Global — Field Boundaries 2024 (GeoParquet)",
-  "description": "Predicted agricultural field boundaries for 2024: 120,455,491 parcels (6,495,908 km² of field area) in 54 per-UTM-zone GeoParquet files, 111.5 GiB total, browsable in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2024 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, ftw:tile, ftw:field_prob, ftw:boundary_prob, ftw:frac_nodata_1q, ftw:frac_nodata_3q, ftw:frac_water, ftw:frac_crops_ever, ftw:slope_mean, ftw:frac_slope_gt30, ftw:elev_mean, ftw:patch_sat_mean, ftw:patch_sat_max, ftw:patch_pb_mean, ftw:touches_window_edge — see `table:columns` for definitions.",
+  "description": "Predicted agricultural field boundaries for 2024: 120,455,491 parcels (6,495,908 km² of field area) in 54 per-UTM-zone GeoParquet files, 108.1 GiB total, browsable in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2024 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
   "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
@@ -90,74 +90,19 @@
       "description": "Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
     },
     {
-      "name": "ftw:tile",
+      "name": "score",
+      "type": "uint8",
+      "description": "Mean model field probability inside the parcel, × 100 rounded (0–100)."
+    },
+    {
+      "name": "determination:datetime",
+      "type": "timestamp",
+      "description": "The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+    },
+    {
+      "name": "determination:method",
       "type": "string",
-      "description": "Sentinel-2 MGRS tile the parcel was extracted from."
-    },
-    {
-      "name": "ftw:field_prob",
-      "type": "float",
-      "description": "Mean model field probability inside the parcel."
-    },
-    {
-      "name": "ftw:boundary_prob",
-      "type": "float",
-      "description": "Mean model boundary probability inside the parcel."
-    },
-    {
-      "name": "ftw:frac_nodata_1q",
-      "type": "float",
-      "description": "Fraction of the parcel with nodata in >= 1 of the 4 quarterly mosaics."
-    },
-    {
-      "name": "ftw:frac_nodata_3q",
-      "type": "float",
-      "description": "Fraction with nodata in >= 3 quarterly mosaics."
-    },
-    {
-      "name": "ftw:frac_water",
-      "type": "float",
-      "description": "Fraction classed water in io-lulc 2024 (30 m)."
-    },
-    {
-      "name": "ftw:frac_crops_ever",
-      "type": "float",
-      "description": "Fraction classed crops in io-lulc 2017, 2020 or 2024."
-    },
-    {
-      "name": "ftw:slope_mean",
-      "type": "float",
-      "description": "Mean slope, degrees (Copernicus 30 m DEM)."
-    },
-    {
-      "name": "ftw:frac_slope_gt30",
-      "type": "float",
-      "description": "Fraction with slope > 30 degrees."
-    },
-    {
-      "name": "ftw:elev_mean",
-      "type": "float",
-      "description": "Mean elevation, m."
-    },
-    {
-      "name": "ftw:patch_sat_mean",
-      "type": "float",
-      "description": "Mean over covering inference patches of the fraction of pixels with field prob >= 0.9 (flipped-patch detector)."
-    },
-    {
-      "name": "ftw:patch_sat_max",
-      "type": "float",
-      "description": "Max over covering inference patches of that fraction."
-    },
-    {
-      "name": "ftw:patch_pb_mean",
-      "type": "float",
-      "description": "Mean boundary probability over the covering inference patches."
-    },
-    {
-      "name": "ftw:touches_window_edge",
-      "type": "boolean",
-      "description": "Parcel touched a processing window edge (possible truncation)."
+      "description": "Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
     }
   ],
   "links": [

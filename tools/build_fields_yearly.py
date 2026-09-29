@@ -224,7 +224,7 @@ def build_collection(years: list[int], bins: dict, default: str) -> dict:
                 roles.append("default")
             assets[key] = {
                 "href": f"./styles/{name}-{year}.json",
-                "type": "application/json",
+                "type": "application/vnd.mapbox.style+json",
                 "title": f"{specs[name]['title']} ({year})"
                          + (" — default" if "default" in roles else ""),
                 "roles": roles,

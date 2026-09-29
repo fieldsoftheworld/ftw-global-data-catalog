@@ -47,6 +47,9 @@ COMMON=(--min-zoom 0 --max-zoom 13 --layer-name fields --profile bounded
 
 case "$MODE" in
   plan)
+    # A stale plan from an abandoned fleet must go: every job of a fleet
+    # gets the SAME plan, and we always (re)submit the whole fleet together.
+    rm -f "shard-plan-${YEAR}.json"
     "$TT" shard-plan "$IN" --shards "$N" --pivot 9 -o "shard-plan-${YEAR}.json"
     ;;
   coarse)

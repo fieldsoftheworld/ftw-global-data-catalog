@@ -48,6 +48,12 @@
       "href": "./2025/collection.json",
       "type": "application/json",
       "title": "FTW Global — Field Boundaries 2025 (GeoParquet)"
+    },
+    {
+      "rel": "child",
+      "href": "./fields-yearly/collection.json",
+      "type": "application/json",
+      "title": "FTW Global (beta) — Fields by year (PMTiles)"
     }
   ]
 }

@@ -8,7 +8,7 @@
   ],
   "id": "fields-yearly",
   "title": "FTW Global (beta) — Fields by year (PMTiles)",
-  "description": "Browsable field-boundary tiles for 2025: one PMTiles archive per year with a zoom handover — A5 r7 cell aggregates (`cells` layer, z0–8: count, area_ha, avg_field_prob, avg_boundary_prob, pct_covered) switching to the full field polygons with all attributes (`fields` layer, z9–13). Open it in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
+  "description": "Browsable field-boundary tiles for 2024–2025: one PMTiles archive per year with a zoom handover — A5 r7 cell aggregates (`cells` layer, z0–8: count, area_ha, avg_score, pct_covered) switching to the full field polygons with all attributes (`fields` layer, z9–13). Open it in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
   "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
@@ -45,13 +45,17 @@
     "temporal": {
       "interval": [
         [
-          "2025-01-01T00:00:00Z",
+          "2024-01-01T00:00:00Z",
           "2025-12-31T23:59:59Z"
         ]
       ]
     }
   },
   "portolan:styles": [
+    "styles/count-2024",
+    "styles/coverage-2024",
+    "styles/avg-size-2024",
+    "styles/field-prob-2024",
     "styles/count-2025",
     "styles/coverage-2025",
     "styles/avg-size-2025",
@@ -101,6 +105,16 @@
     },
     {
       "rel": "pmtiles",
+      "href": "./fields-2024.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "Fields 2024 (cells z0–8 → fields z9–13)",
+      "pmtiles:layers": [
+        "cells",
+        "fields"
+      ]
+    },
+    {
+      "rel": "pmtiles",
       "href": "./fields-2025.pmtiles",
       "type": "application/vnd.pmtiles",
       "title": "Fields 2025 (cells z0–8 → fields z9–13)",
@@ -111,6 +125,58 @@
     }
   ],
   "assets": {
+    "pmtiles_2024": {
+      "href": "./fields-2024.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "Fields 2024 — A5 r7 cells z0–8 → field polygons z9–13 (PMTiles)",
+      "roles": [
+        "visual"
+      ],
+      "file:size": 27571375794,
+      "file:checksum": "1220ca0158682f2c60fe52e67800bb570ca3a31278f264587f6d294766cd23cc381a"
+    },
+    "cells_2024": {
+      "href": "./cells_a5r7_2024.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r7 cell aggregates 2024 (GeoParquet)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 1667658,
+      "file:checksum": "122086164b3b9da1fae178e6a91190dda6fe219b8348d62b374ad4b9e770bcda1512"
+    },
+    "styles/count-2024": {
+      "href": "./styles/count-2024.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Field count (A5 r7 → fields) (2024)",
+      "roles": [
+        "style"
+      ]
+    },
+    "styles/coverage-2024": {
+      "href": "./styles/coverage-2024.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Field coverage (A5 r7 → fields) (2024)",
+      "roles": [
+        "style"
+      ]
+    },
+    "styles/avg-size-2024": {
+      "href": "./styles/avg-size-2024.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Mean field size (A5 r7 → fields) (2024)",
+      "roles": [
+        "style"
+      ]
+    },
+    "styles/field-prob-2024": {
+      "href": "./styles/field-prob-2024.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Field probability (A5 r7 → fields) (2024)",
+      "roles": [
+        "style"
+      ]
+    },
     "pmtiles_2025": {
       "href": "./fields-2025.pmtiles",
       "type": "application/vnd.pmtiles",
@@ -118,8 +184,8 @@
       "roles": [
         "visual"
       ],
-      "file:size": 44060860881,
-      "file:checksum": "1220e4c7869fca677cccb8850765d0c1353f4f457faca875fad7551419cedf400bb9"
+      "file:size": 29124168722,
+      "file:checksum": "12208c1fef2cf054a75a6e4831ffe0eb758153305f085ec78c4391c8ec1141f198d7"
     },
     "cells_2025": {
       "href": "./cells_a5r7_2025.parquet",
@@ -128,12 +194,12 @@
       "roles": [
         "data"
       ],
-      "file:size": 1660519,
-      "file:checksum": "1220ce49f44dfdff021a95e17ee675a53ca6f4f7abd845994c0c8b02aaf0720b5add"
+      "file:size": 1652120,
+      "file:checksum": "12201d2c532fbf1ffa71fe22f94c4dc963fec2a98ded7121054b6894a62fcdd571cd"
     },
     "styles/count-2025": {
       "href": "./styles/count-2025.json",
-      "type": "application/json",
+      "type": "application/vnd.mapbox.style+json",
       "title": "Field count (A5 r7 → fields) (2025)",
       "roles": [
         "style"
@@ -141,7 +207,7 @@
     },
     "styles/coverage-2025": {
       "href": "./styles/coverage-2025.json",
-      "type": "application/json",
+      "type": "application/vnd.mapbox.style+json",
       "title": "Field coverage (A5 r7 → fields) (2025) — default",
       "roles": [
         "style",
@@ -150,7 +216,7 @@
     },
     "styles/avg-size-2025": {
       "href": "./styles/avg-size-2025.json",
-      "type": "application/json",
+      "type": "application/vnd.mapbox.style+json",
       "title": "Mean field size (A5 r7 → fields) (2025)",
       "roles": [
         "style"
@@ -158,7 +224,7 @@
     },
     "styles/field-prob-2025": {
       "href": "./styles/field-prob-2025.json",
-      "type": "application/json",
+      "type": "application/vnd.mapbox.style+json",
       "title": "Field probability (A5 r7 → fields) (2025)",
       "roles": [
         "style"
@@ -171,8 +237,8 @@
       "roles": [
         "thumbnail"
       ],
-      "file:size": 207772,
-      "file:checksum": "12202f5ee7833f4aeb797018f019c1d257fa7e255b68c58d34ca4e6853a9531673f1"
+      "file:size": 208064,
+      "file:checksum": "12200777d3fb6ffb38c783a920834239a7117f59e68675714f0b0c8cadd88a168694"
     }
   }
 }

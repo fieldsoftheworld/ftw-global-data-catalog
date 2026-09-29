@@ -110,11 +110,23 @@ for path in documents:
         href = link.get("href", "")
         if not href or is_remote(href):
             continue
+        if (path.parent / href).resolve().exists():
+            checked += 1
+            continue
+        # A rel:pmtiles (or other data-suffix) link points at bytes that
+        # live only in the bucket, exactly like a data asset href.
+        if is_data(href):
+            if CI_LIGHT:
+                skipped += 1
+            else:
+                to_head.append(
+                    (rel_path, f"link:{link.get('rel')}", published_url(path, href))
+                )
+            continue
         checked += 1
-        if not (path.parent / href).resolve().exists():
-            errors.append(
-                f"{rel_path}: rel:{link.get('rel')} -> {href} does not exist"
-            )
+        errors.append(
+            f"{rel_path}: rel:{link.get('rel')} -> {href} does not exist"
+        )
 
     for key, asset in (doc.get("assets") or {}).items():
         href = asset.get("href", "")
