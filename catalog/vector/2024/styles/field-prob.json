@@ -1,13 +1,13 @@
 {
   "version": 8,
-  "name": "Field probability (A5 r7 → fields) (2025)",
+  "name": "Field probability (A5 r7 → fields) (2024)",
   "metadata": {
-    "description": "Mean parcel score (model field probability × 100) per A5 r7 cell at z0–8; from z9 each 2025 field polygon is colored by its own score on the same bins."
+    "description": "Mean parcel score (model field probability × 100) per A5 r7 cell at z0–8; from z9 each 2024 field polygon is colored by its own score on the same bins."
   },
   "sources": {
     "data": {
       "type": "vector",
-      "url": "pmtiles://https://data.source.coop/ftw/global-data-beta/vector/fields-yearly/fields-2025.pmtiles"
+      "url": "pmtiles://https://data.source.coop/ftw/global-data-beta/vector/2024/fields-2024.pmtiles"
     }
   },
   "layers": [

@@ -1,13 +1,13 @@
 {
   "version": 8,
-  "name": "Field coverage (A5 r7 → fields) (2025)",
+  "name": "Field coverage (A5 r7 → fields) (2024)",
   "metadata": {
-    "description": "Percent of each A5 r7 cell covered by 2025 fields at z0–8, handing over to the actual field polygons from z9."
+    "description": "Percent of each A5 r7 cell covered by 2024 fields at z0–8, handing over to the actual field polygons from z9."
   },
   "sources": {
     "data": {
       "type": "vector",
-      "url": "pmtiles://https://data.source.coop/ftw/global-data-beta/vector/fields-yearly/fields-2025.pmtiles"
+      "url": "pmtiles://https://data.source.coop/ftw/global-data-beta/vector/2024/fields-2024.pmtiles"
     }
   },
   "layers": [

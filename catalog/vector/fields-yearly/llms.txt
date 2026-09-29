@@ -1,7 +1,0 @@
-# FTW Global (beta) — fields-yearly PMTiles
-
-> One browsable PMTiles archive per year: A5 r7 cell aggregates z0–8 handing over to full field polygons z9–13. CC-BY-4.0.
-
-- fields-2024.pmtiles + cells_a5r7_2024.parquet
-- fields-2025.pmtiles + cells_a5r7_2025.parquet
-- Collection: https://data.source.coop/ftw/global-data-beta/vector/fields-yearly/collection.json

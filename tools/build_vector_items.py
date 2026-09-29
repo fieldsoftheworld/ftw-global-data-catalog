@@ -42,12 +42,15 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
+BINS_FILE = ROOT / "pipeline" / "style_bins.json"
+TILES_META = ROOT / "staging-data" / "checksums" / "tiles_meta.json"
 
 PUBLIC_BASE = "https://data.source.coop/ftw/global-data-beta"
 INDEX_URL = f"{PUBLIC_BASE}/index/vector.parquet"
 YEARS = (2024, 2025)
 
 PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+WEBMAP_EXT = "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json"
 TABLE_EXT = "https://stac-extensions.github.io/table/v1.2.0/schema.json"
 PROJ_EXT = "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
 FILE_EXT = "https://stac-extensions.github.io/file/v2.1.0/schema.json"
@@ -151,6 +154,102 @@ def fetch_year_meta(con, year: int) -> dict:
     return meta
 
 
+GREEN = "#33a02c"
+
+
+def step(prop_expr, colors: list[str], edges: list[float]) -> list:
+    """A MapLibre step expression: len(colors) == len(edges) + 1."""
+    assert len(colors) == len(edges) + 1, (colors, edges)
+    out = ["step", prop_expr, colors[0]]
+    for edge, color in zip(edges, colors[1:]):
+        out += [edge, color]
+    return out
+
+
+def style_specs() -> dict[str, dict]:
+    """The four per-year styles; bins are the checkpoint-approved edges."""
+    bins = json.loads(BINS_FILE.read_text())
+    return {
+        "count": {
+            "title": "Field count (A5 r7 → fields)",
+            "description": "Fields per A5 r7 cell at z0–8 (stepped bins), "
+                           "handing over to the actual {year} field "
+                           "polygons from z9.",
+            "cell_prop": ["get", "count"], "field_prop": None,
+            **bins["count"],
+        },
+        "coverage": {
+            "title": "Field coverage (A5 r7 → fields)",
+            "description": "Percent of each A5 r7 cell covered by {year} "
+                           "fields at z0–8, handing over to the actual "
+                           "field polygons from z9.",
+            "cell_prop": ["get", "pct_covered"], "field_prop": None,
+            **bins["coverage"],
+        },
+        "avg-size": {
+            "title": "Mean field size (A5 r7 → fields)",
+            "description": "Mean field size per A5 r7 cell (hectares, "
+                           "stepped bins) at z0–8; from z9 each {year} "
+                           "field polygon is colored by its own size on "
+                           "the same bins.",
+            "cell_prop": ["/", ["get", "area_ha"],
+                          ["max", ["get", "count"], 1]],
+            "field_prop": ["/", ["get", "metrics:area"], 10000],
+            **bins["avg-size"],
+        },
+        "field-prob": {
+            "title": "Field probability (A5 r7 → fields)",
+            "description": "Mean parcel score (model field probability × "
+                           "100) per A5 r7 cell at z0–8; from z9 each "
+                           "{year} field polygon is colored by its own "
+                           "score on the same bins.",
+            "cell_prop": ["get", "avg_score"],
+            "field_prop": ["get", "score"],
+            **bins["field-prob"],
+        },
+    }
+
+
+def build_style(year: int, name: str, spec: dict) -> dict:
+    """One style: cells choropleth to z9, fields beyond."""
+    url = f"pmtiles://{PUBLIC_BASE}/vector/{year}/fields-{year}.pmtiles"
+    cells = {
+        "id": "cells-fill", "type": "fill", "source": "data",
+        "source-layer": "cells", "maxzoom": 9,
+        "paint": {
+            "fill-color": step(spec["cell_prop"], spec["colors"],
+                               spec["edges"]),
+            "fill-opacity": 0.8,
+        },
+    }
+    if spec.get("field_prop") is not None:
+        fields = [{
+            "id": "fields-fill", "type": "fill", "source": "data",
+            "source-layer": "fields", "minzoom": 9,
+            "paint": {
+                "fill-color": step(spec["field_prop"], spec["colors"],
+                                   spec["edges"]),
+                "fill-opacity": 0.7,
+            },
+        }]
+    else:
+        fields = [
+            {"id": "fields-fill", "type": "fill", "source": "data",
+             "source-layer": "fields", "minzoom": 9,
+             "paint": {"fill-color": GREEN, "fill-opacity": 0.25}},
+            {"id": "fields-outline", "type": "line", "source": "data",
+             "source-layer": "fields", "minzoom": 9,
+             "paint": {"line-color": GREEN, "line-width": 1}},
+        ]
+    return {
+        "version": 8,
+        "name": f"{spec['title']} ({year})",
+        "metadata": {"description": spec["description"].format(year=year)},
+        "sources": {"data": {"type": "vector", "url": url}},
+        "layers": [cells, *fields],
+    }
+
+
 def zone_stem(zone: int) -> str:
     return f"utm{zone:02d}"
 
@@ -239,6 +338,10 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
          "title": "Agent/LLM usage guide"},
         {"rel": "describedby", "href": FIBOA_README, "type": "text/html",
          "title": "fiboa specification (core parcel fields)"},
+        {"rel": "pmtiles", "href": f"./fields-{year}.pmtiles",
+         "type": "application/vnd.pmtiles",
+         "title": f"Fields {year} (cells z0–8 → fields z9–13)",
+         "pmtiles:layers": ["cells", "fields"]},
     ]
     for row in rows:
         stem = zone_stem(row["zone"])
@@ -247,10 +350,59 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             "type": "application/geo+json",
             "title": f"UTM zone {row['zone']}",
         })
+    tiles_meta = json.loads(TILES_META.read_text()) if TILES_META.is_file() else {}
+    specs = style_specs()
+    assets: dict[str, dict] = {
+        "pmtiles": {
+            "href": f"./fields-{year}.pmtiles",
+            "type": "application/vnd.pmtiles",
+            "title": f"Fields {year} — A5 r7 cells z0–8 → field polygons "
+                     "z9–13 (PMTiles)",
+            "roles": ["visual"],
+        },
+        "cells": {
+            "href": f"./cells_a5r7_{year}.parquet",
+            "type": "application/vnd.apache.parquet",
+            "title": f"A5 r7 cell aggregates {year} (GeoParquet)",
+            "description": "Per-cell count, area_ha, avg_score, "
+                           "pct_covered — the z0–8 exploration layer, "
+                           "also useful for analysis.",
+            "roles": ["data"],
+        },
+    }
+    for kind, key in (("pmtiles", "pmtiles"), ("cells", "cells")):
+        entry = tiles_meta.get(f"{kind}_{year}")
+        if entry:
+            assets[key]["file:size"] = entry["size"]
+            assets[key]["file:checksum"] = entry["checksum"]
+    for name, spec in specs.items():
+        roles = ["style", "default"] if name == "coverage" else ["style"]
+        assets[f"styles/{name}"] = {
+            "href": f"./styles/{name}.json",
+            "type": "application/vnd.mapbox.style+json",
+            "title": f"{spec['title']} ({year})"
+                     + (" — default" if "default" in roles else ""),
+            "roles": roles,
+        }
+    assets["thumbnail"] = {
+        "href": "./thumbnail.png", "type": "image/png",
+        "title": f"Fields {year} rendered with the default (coverage) style",
+        "roles": ["thumbnail"],
+    }
+    assets["mirror"] = {
+        "href": "./items.parquet",
+        "type": "application/vnd.apache.parquet",
+        "title": "STAC GeoParquet mirror of the items",
+        "description": "All item metadata in one stac-geoparquet "
+                       "file, for bulk queries. Derived from the "
+                       "items; the item JSON stays normative.",
+        "roles": ["collection-mirror", "metadata"],
+    }
     return {
         "type": "Collection",
         "stac_version": "1.1.0",
-        "stac_extensions": [PORTOLAN_EXT, PROJ_EXT, TABLE_EXT, FILE_EXT],
+        "stac_extensions": [PORTOLAN_EXT, PROJ_EXT, TABLE_EXT, FILE_EXT,
+                            WEBMAP_EXT],
         "id": meta["collection"],
         "title": f"FTW Global — Field Boundaries {year} (GeoParquet)",
         "description": (
@@ -275,24 +427,9 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
         },
         "summaries": {"proj:code": ["EPSG:4326"]},
         "table:columns": TABLE_COLUMNS,
+        "portolan:styles": [f"styles/{n}" for n in specs],
         "links": links,
-        "assets": {
-            "thumbnail": {
-                "href": "./thumbnail.png",
-                "type": "image/png",
-                "title": f"UTM-zone coverage shaded by parcel count ({year})",
-                "roles": ["thumbnail"],
-            },
-            "mirror": {
-                "href": "./items.parquet",
-                "type": "application/vnd.apache.parquet",
-                "title": "STAC GeoParquet mirror of the items",
-                "description": "All item metadata in one stac-geoparquet "
-                               "file, for bulk queries. Derived from the "
-                               "items; the item JSON stays normative.",
-                "roles": ["collection-mirror", "metadata"],
-            },
-        },
+        "assets": assets,
     }
 
 
@@ -303,14 +440,6 @@ def build_vector_catalog(per_year: dict[int, dict], out: Path) -> dict:
             "rel": "child", "href": f"./{year}/collection.json",
             "type": "application/json",
             "title": f"FTW Global — Field Boundaries {year} (GeoParquet)",
-        })
-    # The Phase 3 handover product, linked once its directory exists
-    # (tools/build_fields_yearly.py creates it).
-    if (out / "fields-yearly" / "collection.json").is_file():
-        children.append({
-            "rel": "child", "href": "./fields-yearly/collection.json",
-            "type": "application/json",
-            "title": "FTW Global (beta) — Fields by year (PMTiles)",
         })
     return {
         "type": "Catalog",
@@ -387,6 +516,17 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         "(also machine-readable in each item's `table:columns`):", "",
         "| Column | Description |", "|---|---|",
         *[f"| `{c['name']}` | {c['description']} |" for c in TABLE_COLUMNS],
+        "",
+        "## Browse it", "",
+        f"One [PMTiles archive]({PUBLIC_BASE}/vector/{year}/fields-{year}.pmtiles) "
+        "renders the whole year with a zoom handover: A5 r7 cell "
+        "aggregates (`cells` layer, z0–8: `count`, `area_ha`, `avg_score`, "
+        "`pct_covered`) switching to the full field polygons (`fields` "
+        "layer, z9–13: `id`, `metrics:area`, `metrics:perimeter`, "
+        "`score`). Four styles — count, coverage (default), avg-size, "
+        "field-prob — live beside it in `styles/`; the per-cell "
+        f"aggregates are also published as "
+        f"[GeoParquet]({PUBLIC_BASE}/vector/{year}/cells_a5r7_{year}.parquet).",
         "",
         "## Query it", "",
         *_query_block(year), "",
@@ -496,8 +636,9 @@ def patch_local_assets(year_dir: Path, collection: dict) -> None:
             continue
         local = (year_dir / href).resolve()
         if not local.is_file():
-            print(f"note: {local} absent; asset '{key}' left without file:* "
-                  "(generate it and re-run this script)")
+            if not (asset.get("file:size") and asset.get("file:checksum")):
+                print(f"note: {local} absent; asset '{key}' left without "
+                      "file:* (generate it and re-run this script)")
             continue
         digest = hashlib.sha256()
         with local.open("rb") as handle:
@@ -546,6 +687,9 @@ def main() -> int:
             stem = zone_stem(row["zone"])
             write_json(year_dir / stem / f"{stem}.json",
                        build_item(row, meta, checksums))
+        for name, spec in style_specs().items():
+            write_json(year_dir / "styles" / f"{name}.json",
+                       build_style(year, name, spec))
         collection = build_collection(year, rows, meta)
         patch_local_assets(year_dir, collection)
         write_json(year_dir / "collection.json", collection)

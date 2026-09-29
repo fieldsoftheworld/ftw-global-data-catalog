@@ -5,7 +5,8 @@
     "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
     "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
     "https://stac-extensions.github.io/table/v1.2.0/schema.json",
-    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json"
   ],
   "id": "ftw-s2-2024",
   "title": "FTW Global — Field Boundaries 2024 (GeoParquet)",
@@ -105,6 +106,12 @@
       "description": "Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
     }
   ],
+  "portolan:styles": [
+    "styles/count",
+    "styles/coverage",
+    "styles/avg-size",
+    "styles/field-prob"
+  ],
   "links": [
     {
       "rel": "root",
@@ -152,6 +159,16 @@
       "href": "https://github.com/fiboa/specification",
       "type": "text/html",
       "title": "fiboa specification (core parcel fields)"
+    },
+    {
+      "rel": "pmtiles",
+      "href": "./fields-2024.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "Fields 2024 (cells z0–8 → fields z9–13)",
+      "pmtiles:layers": [
+        "cells",
+        "fields"
+      ]
     },
     {
       "rel": "item",
@@ -479,15 +496,77 @@
     }
   ],
   "assets": {
+    "pmtiles": {
+      "href": "./fields-2024.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "Fields 2024 — A5 r7 cells z0–8 → field polygons z9–13 (PMTiles)",
+      "roles": [
+        "visual"
+      ],
+      "file:size": 27571375794,
+      "file:checksum": "1220ca0158682f2c60fe52e67800bb570ca3a31278f264587f6d294766cd23cc381a"
+    },
+    "cells": {
+      "href": "./cells_a5r7_2024.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r7 cell aggregates 2024 (GeoParquet)",
+      "description": "Per-cell count, area_ha, avg_score, pct_covered — the z0–8 exploration layer, also useful for analysis.",
+      "roles": [
+        "data"
+      ],
+      "file:size": 1667658,
+      "file:checksum": "122086164b3b9da1fae178e6a91190dda6fe219b8348d62b374ad4b9e770bcda1512"
+    },
+    "styles/count": {
+      "href": "./styles/count.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Field count (A5 r7 → fields) (2024)",
+      "roles": [
+        "style"
+      ],
+      "file:size": 1324,
+      "file:checksum": "1220cd5c574c36be4b5ff73c673981db4fdecb291ea231bbfb4d6ffd028247fdc574"
+    },
+    "styles/coverage": {
+      "href": "./styles/coverage.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Field coverage (A5 r7 → fields) (2024) — default",
+      "roles": [
+        "style",
+        "default"
+      ],
+      "file:size": 1366,
+      "file:checksum": "1220f47d9b898a7ec88565f56a6fb26fd7818f14f339564efa68a7a62d4a2d54e074"
+    },
+    "styles/avg-size": {
+      "href": "./styles/avg-size.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Mean field size (A5 r7 → fields) (2024)",
+      "roles": [
+        "style"
+      ],
+      "file:size": 1647,
+      "file:checksum": "122000a6ba9f57acbcf69050f82d447eccd960b312208d24b941757340d46dca8013"
+    },
+    "styles/field-prob": {
+      "href": "./styles/field-prob.json",
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Field probability (A5 r7 → fields) (2024)",
+      "roles": [
+        "style"
+      ],
+      "file:size": 1396,
+      "file:checksum": "1220409dfd536ab3e287bcfaa859243c419d7fe5ea1292788ea19330e6e7423291b0"
+    },
     "thumbnail": {
       "href": "./thumbnail.png",
       "type": "image/png",
-      "title": "UTM-zone coverage shaded by parcel count (2024)",
+      "title": "Fields 2024 rendered with the default (coverage) style",
       "roles": [
         "thumbnail"
       ],
-      "file:size": 8296,
-      "file:checksum": "1220f0d76b1179f0a6802bb1b2dc3f718d60aba0bc84e6e4d93685258d3ad4c7c419"
+      "file:size": 208064,
+      "file:checksum": "12200777d3fb6ffb38c783a920834239a7117f59e68675714f0b0c8cadd88a168694"
     },
     "mirror": {
       "href": "./items.parquet",

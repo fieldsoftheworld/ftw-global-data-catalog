@@ -30,6 +30,10 @@ The schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.y
 | `determination:datetime` | The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)). |
 | `determination:method` | Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)). |
 
+## Browse it
+
+One [PMTiles archive](https://data.source.coop/ftw/global-data-beta/vector/2025/fields-2025.pmtiles) renders the whole year with a zoom handover: A5 r7 cell aggregates (`cells` layer, z0–8: `count`, `area_ha`, `avg_score`, `pct_covered`) switching to the full field polygons (`fields` layer, z9–13: `id`, `metrics:area`, `metrics:perimeter`, `score`). Four styles — count, coverage (default), avg-size, field-prob — live beside it in `styles/`; the per-cell aggregates are also published as [GeoParquet](https://data.source.coop/ftw/global-data-beta/vector/2025/cells_a5r7_2025.parquet).
+
 ## Query it
 
 ```python
