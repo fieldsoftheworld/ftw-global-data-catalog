@@ -1,0 +1,21 @@
+Coverage algorithms derived from GEOS 3.13.1, tag commit 431568d.
+Copyright (C) 2021-2023 Paul Ramsey <pramsey@cleverelephant.ca>
+Copyright (c) 2021-2023 Martin Davis.
+Rust port and parallel scheduling modifications, 2026 Isaac Corley.
+
+The code under pipeline/coverage-simplify is LGPL-2.1-or-later, independently
+of the surrounding repository's license. See LICENSE. GEOS source files:
+  src/coverage/CoverageSimplifier.cpp
+  src/coverage/CoverageRingEdges.cpp
+  src/coverage/CoverageEdge.cpp
+  src/coverage/CoverageBoundarySegmentFinder.cpp
+  src/coverage/VertexRingCounter.cpp
+  src/coverage/TPVWSimplifier.cpp
+  src/coverage/Corner.cpp
+  src/coverage/CoveragePolygonValidator.cpp
+  src/coverage/InvalidSegmentDetector.cpp
+  src/algorithm/Orientation.cpp
+  src/algorithm/PolygonNodeTopology.cpp
+  src/geom/Triangle.cpp
+  src/simplify/LinkedLine.cpp
+https://github.com/libgeos/geos/tree/3.13.1

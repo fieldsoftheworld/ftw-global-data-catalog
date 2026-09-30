@@ -1,0 +1,25 @@
+name: Coverage simplification
+on:
+  pull_request:
+    paths: ['pipeline/coverage-simplify/**', '.github/workflows/coverage-simplify.yml']
+  push:
+    branches: [main]
+    paths: ['pipeline/coverage-simplify/**']
+jobs:
+  geometry:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install shapely==2.1.2 pyproj==3.7.2
+      - run: cargo fmt --manifest-path pipeline/coverage-simplify/Cargo.toml --check
+      - run: cargo clippy --locked --manifest-path pipeline/coverage-simplify/Cargo.toml --all-targets -- -D warnings
+      - run: |
+          export NATIVE_SITE_PACKAGES=$(python -c 'import site; print(site.getsitepackages()[0])')
+          export LD_LIBRARY_PATH="$NATIVE_SITE_PACKAGES/shapely.libs:$NATIVE_SITE_PACKAGES/pyproj.libs:${LD_LIBRARY_PATH:-}"
+          cargo test --locked --manifest-path pipeline/coverage-simplify/Cargo.toml -- --include-ignored
