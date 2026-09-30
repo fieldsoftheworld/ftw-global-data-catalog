@@ -1,0 +1,7 @@
+numpy
+pyarrow>=19
+rasterio>=1.4
+pyproj>=3.7
+shapely>=2.1
+scipy
+duckdb>=1.5.4
