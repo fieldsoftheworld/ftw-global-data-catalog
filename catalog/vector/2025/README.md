@@ -1,6 +1,6 @@
 # FTW Global — Field Boundaries 2025 (GeoParquet)
 
-Predicted agricultural field boundaries for 2025: **134,259,417 parcels** in 54 per-UTM-zone GeoParquet files (112.1 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
+Predicted agricultural field boundaries for 2025: **134,047,870 parcels** in 54 per-UTM-zone GeoParquet files (112.0 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
 Browse it in the [data browser](https://source.coop/ftw/global-data-beta).
 
@@ -12,7 +12,7 @@ Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE 
 
 ## Files
 
-One file per UTM zone at `vector/2025/utm{NN}.parquet` (e.g. [utm48](https://data.source.coop/ftw/global-data-beta/vector/2025/utm48.parquet) is the largest, 19,617,748 parcels). Zone numbers with no land coverage are absent.
+One file per UTM zone at `vector/2025/zone=NN/utm{NN}.parquet` (hive-partitioned by `zone`) (e.g. [utm48](https://data.source.coop/ftw/global-data-beta/vector/2025/utm48.parquet) is the largest, 19,610,745 parcels). Zone numbers with no land coverage are absent.
 
 ## Columns
 
@@ -40,7 +40,7 @@ One [PMTiles archive](https://data.source.coop/ftw/global-data-beta/vector/2025/
 import duckdb
 con = duckdb.connect()
 con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
-url = "https://data.source.coop/ftw/global-data-beta/vector/2025/utm31.parquet"
+url = "https://data.source.coop/ftw/global-data-beta/vector/2025/zone=31/utm31.parquet"
 con.sql(f"""
     SELECT count(*) AS parcels,
            round(sum("metrics:area") / 1e6, 1) AS km2,

@@ -6,11 +6,12 @@
     "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
     "https://stac-extensions.github.io/table/v1.2.0/schema.json",
     "https://stac-extensions.github.io/file/v2.1.0/schema.json",
-    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json"
+    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json",
+    "https://schemas.portolan-sdi.org/incubating/partition/v1.0.0/schema.json"
   ],
   "id": "ftw-s2-2024",
   "title": "FTW Global — Field Boundaries 2024 (GeoParquet)",
-  "description": "Predicted agricultural field boundaries for 2024: 120,455,491 parcels (6,495,908 km² of field area) in 54 per-UTM-zone GeoParquet files, 108.1 GiB total, browsable in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2024 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+  "description": "Predicted agricultural field boundaries for 2024: 120,251,932 parcels (6,492,015 km² of field area) in 54 per-UTM-zone GeoParquet files, 108.0 GiB total, browsable in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2024 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
   "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
@@ -106,6 +107,15 @@
       "description": "Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
     }
   ],
+  "partition:scheme": "hive",
+  "partition:keys": [
+    {
+      "name": "zone",
+      "type": "string"
+    }
+  ],
+  "partition:glob": "./zone=*/utm*.parquet",
+  "partition:file_count": 54,
   "portolan:styles": [
     "styles/count",
     "styles/coverage",
@@ -172,330 +182,339 @@
     },
     {
       "rel": "item",
-      "href": "./utm01/utm01.json",
+      "href": "./zone=01/utm01.json",
       "type": "application/geo+json",
       "title": "UTM zone 1"
     },
     {
       "rel": "item",
-      "href": "./utm04/utm04.json",
+      "href": "./zone=04/utm04.json",
       "type": "application/geo+json",
       "title": "UTM zone 4"
     },
     {
       "rel": "item",
-      "href": "./utm05/utm05.json",
+      "href": "./zone=05/utm05.json",
       "type": "application/geo+json",
       "title": "UTM zone 5"
     },
     {
       "rel": "item",
-      "href": "./utm10/utm10.json",
+      "href": "./zone=10/utm10.json",
       "type": "application/geo+json",
       "title": "UTM zone 10"
     },
     {
       "rel": "item",
-      "href": "./utm11/utm11.json",
+      "href": "./zone=11/utm11.json",
       "type": "application/geo+json",
       "title": "UTM zone 11"
     },
     {
       "rel": "item",
-      "href": "./utm12/utm12.json",
+      "href": "./zone=12/utm12.json",
       "type": "application/geo+json",
       "title": "UTM zone 12"
     },
     {
       "rel": "item",
-      "href": "./utm13/utm13.json",
+      "href": "./zone=13/utm13.json",
       "type": "application/geo+json",
       "title": "UTM zone 13"
     },
     {
       "rel": "item",
-      "href": "./utm14/utm14.json",
+      "href": "./zone=14/utm14.json",
       "type": "application/geo+json",
       "title": "UTM zone 14"
     },
     {
       "rel": "item",
-      "href": "./utm15/utm15.json",
+      "href": "./zone=15/utm15.json",
       "type": "application/geo+json",
       "title": "UTM zone 15"
     },
     {
       "rel": "item",
-      "href": "./utm16/utm16.json",
+      "href": "./zone=16/utm16.json",
       "type": "application/geo+json",
       "title": "UTM zone 16"
     },
     {
       "rel": "item",
-      "href": "./utm17/utm17.json",
+      "href": "./zone=17/utm17.json",
       "type": "application/geo+json",
       "title": "UTM zone 17"
     },
     {
       "rel": "item",
-      "href": "./utm18/utm18.json",
+      "href": "./zone=18/utm18.json",
       "type": "application/geo+json",
       "title": "UTM zone 18"
     },
     {
       "rel": "item",
-      "href": "./utm19/utm19.json",
+      "href": "./zone=19/utm19.json",
       "type": "application/geo+json",
       "title": "UTM zone 19"
     },
     {
       "rel": "item",
-      "href": "./utm20/utm20.json",
+      "href": "./zone=20/utm20.json",
       "type": "application/geo+json",
       "title": "UTM zone 20"
     },
     {
       "rel": "item",
-      "href": "./utm21/utm21.json",
+      "href": "./zone=21/utm21.json",
       "type": "application/geo+json",
       "title": "UTM zone 21"
     },
     {
       "rel": "item",
-      "href": "./utm22/utm22.json",
+      "href": "./zone=22/utm22.json",
       "type": "application/geo+json",
       "title": "UTM zone 22"
     },
     {
       "rel": "item",
-      "href": "./utm23/utm23.json",
+      "href": "./zone=23/utm23.json",
       "type": "application/geo+json",
       "title": "UTM zone 23"
     },
     {
       "rel": "item",
-      "href": "./utm24/utm24.json",
+      "href": "./zone=24/utm24.json",
       "type": "application/geo+json",
       "title": "UTM zone 24"
     },
     {
       "rel": "item",
-      "href": "./utm25/utm25.json",
+      "href": "./zone=25/utm25.json",
       "type": "application/geo+json",
       "title": "UTM zone 25"
     },
     {
       "rel": "item",
-      "href": "./utm26/utm26.json",
+      "href": "./zone=26/utm26.json",
       "type": "application/geo+json",
       "title": "UTM zone 26"
     },
     {
       "rel": "item",
-      "href": "./utm27/utm27.json",
+      "href": "./zone=27/utm27.json",
       "type": "application/geo+json",
       "title": "UTM zone 27"
     },
     {
       "rel": "item",
-      "href": "./utm28/utm28.json",
+      "href": "./zone=28/utm28.json",
       "type": "application/geo+json",
       "title": "UTM zone 28"
     },
     {
       "rel": "item",
-      "href": "./utm29/utm29.json",
+      "href": "./zone=29/utm29.json",
       "type": "application/geo+json",
       "title": "UTM zone 29"
     },
     {
       "rel": "item",
-      "href": "./utm30/utm30.json",
+      "href": "./zone=30/utm30.json",
       "type": "application/geo+json",
       "title": "UTM zone 30"
     },
     {
       "rel": "item",
-      "href": "./utm31/utm31.json",
+      "href": "./zone=31/utm31.json",
       "type": "application/geo+json",
       "title": "UTM zone 31"
     },
     {
       "rel": "item",
-      "href": "./utm32/utm32.json",
+      "href": "./zone=32/utm32.json",
       "type": "application/geo+json",
       "title": "UTM zone 32"
     },
     {
       "rel": "item",
-      "href": "./utm33/utm33.json",
+      "href": "./zone=33/utm33.json",
       "type": "application/geo+json",
       "title": "UTM zone 33"
     },
     {
       "rel": "item",
-      "href": "./utm34/utm34.json",
+      "href": "./zone=34/utm34.json",
       "type": "application/geo+json",
       "title": "UTM zone 34"
     },
     {
       "rel": "item",
-      "href": "./utm35/utm35.json",
+      "href": "./zone=35/utm35.json",
       "type": "application/geo+json",
       "title": "UTM zone 35"
     },
     {
       "rel": "item",
-      "href": "./utm36/utm36.json",
+      "href": "./zone=36/utm36.json",
       "type": "application/geo+json",
       "title": "UTM zone 36"
     },
     {
       "rel": "item",
-      "href": "./utm37/utm37.json",
+      "href": "./zone=37/utm37.json",
       "type": "application/geo+json",
       "title": "UTM zone 37"
     },
     {
       "rel": "item",
-      "href": "./utm38/utm38.json",
+      "href": "./zone=38/utm38.json",
       "type": "application/geo+json",
       "title": "UTM zone 38"
     },
     {
       "rel": "item",
-      "href": "./utm39/utm39.json",
+      "href": "./zone=39/utm39.json",
       "type": "application/geo+json",
       "title": "UTM zone 39"
     },
     {
       "rel": "item",
-      "href": "./utm40/utm40.json",
+      "href": "./zone=40/utm40.json",
       "type": "application/geo+json",
       "title": "UTM zone 40"
     },
     {
       "rel": "item",
-      "href": "./utm41/utm41.json",
+      "href": "./zone=41/utm41.json",
       "type": "application/geo+json",
       "title": "UTM zone 41"
     },
     {
       "rel": "item",
-      "href": "./utm42/utm42.json",
+      "href": "./zone=42/utm42.json",
       "type": "application/geo+json",
       "title": "UTM zone 42"
     },
     {
       "rel": "item",
-      "href": "./utm43/utm43.json",
+      "href": "./zone=43/utm43.json",
       "type": "application/geo+json",
       "title": "UTM zone 43"
     },
     {
       "rel": "item",
-      "href": "./utm44/utm44.json",
+      "href": "./zone=44/utm44.json",
       "type": "application/geo+json",
       "title": "UTM zone 44"
     },
     {
       "rel": "item",
-      "href": "./utm45/utm45.json",
+      "href": "./zone=45/utm45.json",
       "type": "application/geo+json",
       "title": "UTM zone 45"
     },
     {
       "rel": "item",
-      "href": "./utm46/utm46.json",
+      "href": "./zone=46/utm46.json",
       "type": "application/geo+json",
       "title": "UTM zone 46"
     },
     {
       "rel": "item",
-      "href": "./utm47/utm47.json",
+      "href": "./zone=47/utm47.json",
       "type": "application/geo+json",
       "title": "UTM zone 47"
     },
     {
       "rel": "item",
-      "href": "./utm48/utm48.json",
+      "href": "./zone=48/utm48.json",
       "type": "application/geo+json",
       "title": "UTM zone 48"
     },
     {
       "rel": "item",
-      "href": "./utm49/utm49.json",
+      "href": "./zone=49/utm49.json",
       "type": "application/geo+json",
       "title": "UTM zone 49"
     },
     {
       "rel": "item",
-      "href": "./utm50/utm50.json",
+      "href": "./zone=50/utm50.json",
       "type": "application/geo+json",
       "title": "UTM zone 50"
     },
     {
       "rel": "item",
-      "href": "./utm51/utm51.json",
+      "href": "./zone=51/utm51.json",
       "type": "application/geo+json",
       "title": "UTM zone 51"
     },
     {
       "rel": "item",
-      "href": "./utm52/utm52.json",
+      "href": "./zone=52/utm52.json",
       "type": "application/geo+json",
       "title": "UTM zone 52"
     },
     {
       "rel": "item",
-      "href": "./utm53/utm53.json",
+      "href": "./zone=53/utm53.json",
       "type": "application/geo+json",
       "title": "UTM zone 53"
     },
     {
       "rel": "item",
-      "href": "./utm54/utm54.json",
+      "href": "./zone=54/utm54.json",
       "type": "application/geo+json",
       "title": "UTM zone 54"
     },
     {
       "rel": "item",
-      "href": "./utm55/utm55.json",
+      "href": "./zone=55/utm55.json",
       "type": "application/geo+json",
       "title": "UTM zone 55"
     },
     {
       "rel": "item",
-      "href": "./utm56/utm56.json",
+      "href": "./zone=56/utm56.json",
       "type": "application/geo+json",
       "title": "UTM zone 56"
     },
     {
       "rel": "item",
-      "href": "./utm57/utm57.json",
+      "href": "./zone=57/utm57.json",
       "type": "application/geo+json",
       "title": "UTM zone 57"
     },
     {
       "rel": "item",
-      "href": "./utm58/utm58.json",
+      "href": "./zone=58/utm58.json",
       "type": "application/geo+json",
       "title": "UTM zone 58"
     },
     {
       "rel": "item",
-      "href": "./utm59/utm59.json",
+      "href": "./zone=59/utm59.json",
       "type": "application/geo+json",
       "title": "UTM zone 59"
     },
     {
       "rel": "item",
-      "href": "./utm60/utm60.json",
+      "href": "./zone=60/utm60.json",
       "type": "application/geo+json",
       "title": "UTM zone 60"
     }
   ],
   "assets": {
+    "data": {
+      "href": "./zone=*/utm*.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "All 2024 field boundaries (GeoParquet glob, hive-partitioned by zone)",
+      "description": "One glob over every zone partition. Read it with hive partitioning on to get `zone` as a column; per-file sizes and checksums live on the items.",
+      "roles": [
+        "data"
+      ]
+    },
     "pmtiles": {
       "href": "./fields-2024.pmtiles",
       "type": "application/vnd.pmtiles",
@@ -503,8 +522,8 @@
       "roles": [
         "visual"
       ],
-      "file:size": 27571375794,
-      "file:checksum": "1220ca0158682f2c60fe52e67800bb570ca3a31278f264587f6d294766cd23cc381a"
+      "file:size": 27637867646,
+      "file:checksum": "1220635b34708fb87a0ca05d946c4b18ee64c334257df5b2c1edf63c9877be35febc"
     },
     "cells": {
       "href": "./cells_a5r7_2024.parquet",
@@ -514,8 +533,8 @@
       "roles": [
         "data"
       ],
-      "file:size": 1667658,
-      "file:checksum": "122086164b3b9da1fae178e6a91190dda6fe219b8348d62b374ad4b9e770bcda1512"
+      "file:size": 1667393,
+      "file:checksum": "1220dd4b28bfebc11083ea99b0b2ed3131f31f0e99190ffa61ab1027b35d974bafa1"
     },
     "styles/count": {
       "href": "./styles/count.json",
@@ -565,8 +584,8 @@
       "roles": [
         "thumbnail"
       ],
-      "file:size": 208064,
-      "file:checksum": "12200777d3fb6ffb38c783a920834239a7117f59e68675714f0b0c8cadd88a168694"
+      "file:size": 208020,
+      "file:checksum": "12208563c1002884438c71a6363b98b3b04d4a082123ed7656d30df1fa0caf7f713b"
     },
     "mirror": {
       "href": "./items.parquet",
@@ -577,8 +596,8 @@
         "collection-mirror",
         "metadata"
       ],
-      "file:size": 34164,
-      "file:checksum": "1220d7399a5a29ce6db2bbfa7a56f34cc2be154ba210aeeb3989334890a84413d1ce"
+      "file:size": 34427,
+      "file:checksum": "122006ec0558457880eb1a6e009dbcef430184ca2a7c20574401b74155b9a943ab87"
     }
   }
 }

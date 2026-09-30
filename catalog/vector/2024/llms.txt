@@ -1,6 +1,6 @@
 # FTW Global (beta) — field boundaries 2024
 
-> 120,455,491 predicted agricultural field parcels for 2024 as 54 per-UTM-zone cloud-native GeoParquet files. CC-BY-4.0.
+> 120,251,932 predicted agricultural field parcels for 2024 as 54 per-UTM-zone cloud-native GeoParquet files. CC-BY-4.0.
 
 Data: `https://data.source.coop/ftw/global-data-beta/vector/2024/utm{NN}.parquet`
 Collection: https://data.source.coop/ftw/global-data-beta/vector/2024/collection.json
