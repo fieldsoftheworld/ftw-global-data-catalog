@@ -41,7 +41,7 @@ Core/halo defaults are 8192/512 pixels. Core centroid ownership reduces window
 duplicates, but parcels wider than the halo may be truncated or duplicated;
 `touches_window_edge` identifies candidates and conversion joins seam parcels.
 Simplification uses 5 m in UTM, repairs invalid results and preserves attributes.
-An independent Rust implementation is proposed separately.
+The Rust implementation is provided by the `coarsen` PyPI package; this repo calls its Python API and keeps its own invalid-coverage fallback.
 
 Merge retains `in_utm_zone AND in_mgrs_square`, dropping parcels >5 km².
 `tiles.txt` lists expected tiles; `empty.txt` lists verified empty/excluded tiles.

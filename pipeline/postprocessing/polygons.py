@@ -1,5 +1,6 @@
 "Coverage simplification with GEOS validity repair."
 
+import coarsen
 import numpy as np
 import shapely
 
@@ -11,7 +12,7 @@ def simplify_coverage(geoms: np.ndarray, tolerance_m: float) -> np.ndarray:
     bad = ~shapely.is_empty(shapely.coverage_invalid_edges(geoms))
     out = np.array(geoms, dtype=object, copy=True)
     if (~bad).any():
-        out[~bad] = shapely.coverage_simplify(geoms[~bad], tolerance_m)
+        out[~bad] = coarsen.coverage_simplify(geoms[~bad], tolerance_m, threads=1)
     if bad.any():
         out[bad] = shapely.simplify(geoms[bad], min(tolerance_m, 1.2), preserve_topology=True)
 
