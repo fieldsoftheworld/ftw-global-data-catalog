@@ -17,8 +17,13 @@ set -euo pipefail
 : "${YEAR:?set YEAR via --export=ALL,YEAR=..}"
 cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}"
 export PATH="$HOME/ftw-us-tiles/venv/bin:/u/cholmes/micromamba/envs/ftw/bin:$PATH"
-export TMPDIR="$PWD/tmp-stage"   # /u spill — /tmp is tmpfs, counts against the cgroup
+# Per-year temp isolation: concurrent year jobs share this submit dir, and
+# both DuckDB spill and gpio's cwd-relative .tmp/ collide across jobs
+# (observed: three concurrent converts corrupted each other's temp storage).
+export TMPDIR="$PWD/tmp-stage-${YEAR}"   # /u spill — /tmp is tmpfs
 mkdir -p "$TMPDIR"
+CONVERT_DIR="$PWD/convert-${YEAR}"
+mkdir -p "$CONVERT_DIR"
 
 echo "== stage $YEAR per zone (resumable; no dedupe/cutoff needed — measured)"
 python3 stage_global.py --year "$YEAR"
@@ -28,8 +33,9 @@ echo "== merge $YEAR"
 # DuckDB COPY dropped the 'geo' key on compute nodes before).
 [ -f "global${YEAR}.parquet" ] || gpio extract "staged/${YEAR}/*.parquet" "global${YEAR}.parquet"
 echo "== convert $YEAR to GeoParquet 2.0 (native geo stats -> row-group pruning)"
-[ -f "global${YEAR}_gp2.parquet" ] || gpio convert geoparquet \
-    "global${YEAR}.parquet" "global${YEAR}_gp2.parquet" --geoparquet-version 2.0
+[ -f "global${YEAR}_gp2.parquet" ] || ( cd "$CONVERT_DIR" && gpio convert geoparquet \
+    "$SLURM_SUBMIT_DIR/global${YEAR}.parquet" \
+    "$SLURM_SUBMIT_DIR/global${YEAR}_gp2.parquet" --geoparquet-version 2.0 )
 
 python3 - "$YEAR" <<'EOF'
 import sys, duckdb
