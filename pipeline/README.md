@@ -97,3 +97,7 @@ Reference: the same 2025 build on tylertoo 6b9c3ff (pre plan-only, 17-column
 schema) took 37 m 44 s at 192 GiB MaxRSS for the coarse step alone and
 produced a 44.1 GB archive. The alpha run (1.58 B features) took ~7 h 50 m
 for its 115.5 GB archive with a 360 G coarse node.
+
+## Mosaic input preparation
+
+[Quarterly mosaic downloads](mosaics/README.md) assemble 16-band input tiles.
