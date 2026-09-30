@@ -580,7 +580,7 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         "  import duckdb",
         "  con = duckdb.connect()",
         '  con.execute("INSTALL httpfs; LOAD httpfs; '
-        "CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2');\")",
+        "CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2', URL_STYLE 'path');\")",
         f"  con.sql(\"SELECT zone, count(*) FROM read_parquet('{glob}', "
         "hive_partitioning=1) GROUP BY zone ORDER BY zone\").show()",
         "  ```",

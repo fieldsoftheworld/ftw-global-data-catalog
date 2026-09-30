@@ -7,7 +7,7 @@ Guidance for AI agents. Every claim here is quoted from the dataset's embedded m
   ```python
   import duckdb
   con = duckdb.connect()
-  con.execute("INSTALL httpfs; LOAD httpfs; CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2');")
+  con.execute("INSTALL httpfs; LOAD httpfs; CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2', URL_STYLE 'path');")
   con.sql("SELECT zone, count(*) FROM read_parquet('s3://us-west-2.opendata.source.coop/ftw/global-data-beta/vector/2020/zone=*/utm*.parquet', hive_partitioning=1) GROUP BY zone ORDER BY zone").show()
   ```
 - Schema: 9 columns (id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method); definitions live in `table:columns` on the collection and every item.

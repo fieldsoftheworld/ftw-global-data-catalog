@@ -82,3 +82,15 @@ install command. It takes no version floor and no pin. The rashid floor exists
 because that gate asserts four named rules. This gate asserts no stac-check
 rule. It needs the opposite property. A pin holds the exemption open after the
 upstream fix ships.
+
+### portolan check --live HEADs partition-glob asset hrefs literally
+
+The year collections carry a `data` asset whose href is the partition glob
+(`./zone=*/utm*.parquet`) beside `partition:glob`, as the partition
+extension defines. `portolan check --live` HEAD-requests that href
+literally, and a `*` URL returns no usable Content-Length, so PTL-LIV-002
+reports one error per collection. The catalog is correct — rashid conforms,
+and every partition member is HEAD-verified individually through its item's
+own data asset (tests/test_links.py). Tracked upstream:
+https://github.com/portolan-sdi/portolan-cli/issues/914;
+remove this section when the checker learns to expand or skip glob hrefs.
