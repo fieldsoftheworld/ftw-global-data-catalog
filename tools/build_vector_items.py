@@ -47,10 +47,10 @@ TILES_META = ROOT / "staging-data" / "checksums" / "tiles_meta.json"
 
 PUBLIC_BASE = "https://data.source.coop/ftw/global-data-beta"
 INDEX_URL = f"{PUBLIC_BASE}/index/vector.parquet"
-YEARS = (2024, 2025)
 
 PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
 WEBMAP_EXT = "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json"
+PARTITION_EXT = "https://portolan-sdi.github.io/stac-partition-extension/v1.0.0/schema.json"
 TABLE_EXT = "https://stac-extensions.github.io/table/v1.2.0/schema.json"
 PROJ_EXT = "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
 FILE_EXT = "https://stac-extensions.github.io/file/v2.1.0/schema.json"
@@ -135,13 +135,12 @@ def read_index(con) -> list[dict]:
     return [dict(zip(cols, r)) for r in rows]
 
 
-def fetch_year_meta(con, year: int) -> dict:
+def fetch_year_meta(con, year: int, url: str) -> dict:
     """The embedded vecorel collection metadata for one year's parquet.
 
-    Read from the first zone file's footer (constant across zones); carries
-    the collection id, determination:* processing notes, and schema links.
+    Read from a zone file's footer (constant across zones); carries the
+    collection id, determination:* processing notes, and schema links.
     """
-    url = f"{PUBLIC_BASE}/vector/{year}/utm01.parquet"
     (value,) = con.execute(f"""
         SELECT value::VARCHAR FROM parquet_kv_metadata('{url}')
         WHERE key::VARCHAR = 'collection'
@@ -259,7 +258,7 @@ def build_item(row: dict, meta: dict, checksums: dict) -> dict:
     stem = zone_stem(zone)
     title = f"UTM zone {zone} — {year} field boundaries"
     data_asset = {
-        "href": f"../{stem}.parquet",
+        "href": f"./{stem}.parquet",
         "type": "application/vnd.apache.parquet",
         "title": f"{title} (GeoParquet)",
         "roles": ["data"],
@@ -319,6 +318,9 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
     area = sum(r["area_km2"] for r in rows)
     bbox = [min(r["xmin"] for r in rows), min(r["ymin"] for r in rows),
             max(r["xmax"] for r in rows), max(r["ymax"] for r in rows)]
+    tiles_meta = (json.loads(TILES_META.read_text())
+                  if TILES_META.is_file() else {})
+    has_tiles = f"pmtiles_{year}" in tiles_meta
     links = [
         {"rel": "root", "href": "../../catalog.json",
          "type": "application/json",
@@ -338,29 +340,44 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
          "title": "Agent/LLM usage guide"},
         {"rel": "describedby", "href": FIBOA_README, "type": "text/html",
          "title": "fiboa specification (core parcel fields)"},
-        {"rel": "pmtiles", "href": f"./fields-{year}.pmtiles",
-         "type": "application/vnd.pmtiles",
-         "title": f"Fields {year} (cells z0–8 → fields z9–13)",
-         "pmtiles:layers": ["cells", "fields"]},
     ]
+    if has_tiles:
+        links.append({
+            "rel": "pmtiles", "href": f"./fields-{year}.pmtiles",
+            "type": "application/vnd.pmtiles",
+            "title": f"Fields {year} (cells z0–8 → fields z9–13)",
+            "pmtiles:layers": ["cells", "fields"]})
     for row in rows:
         stem = zone_stem(row["zone"])
         links.append({
-            "rel": "item", "href": f"./{stem}/{stem}.json",
+            "rel": "item",
+            "href": f"./zone={row['zone']:02d}/{stem}.json",
             "type": "application/geo+json",
             "title": f"UTM zone {row['zone']}",
         })
-    tiles_meta = json.loads(TILES_META.read_text()) if TILES_META.is_file() else {}
     specs = style_specs()
     assets: dict[str, dict] = {
-        "pmtiles": {
+        "data": {
+            "href": "./zone=*/utm*.parquet",
+            "type": "application/vnd.apache.parquet",
+            "title": f"All {year} field boundaries "
+                     "(GeoParquet glob, hive-partitioned by zone)",
+            "description": "One glob over every zone partition. Read it "
+                           "with hive partitioning on to get `zone` as a "
+                           "column; per-file sizes and checksums live on "
+                           "the items.",
+            "roles": ["data"],
+        },
+    }
+    if has_tiles:
+      assets["pmtiles"] = {
             "href": f"./fields-{year}.pmtiles",
             "type": "application/vnd.pmtiles",
             "title": f"Fields {year} — A5 r7 cells z0–8 → field polygons "
                      "z9–13 (PMTiles)",
             "roles": ["visual"],
-        },
-        "cells": {
+      }
+      assets["cells"] = {
             "href": f"./cells_a5r7_{year}.parquet",
             "type": "application/vnd.apache.parquet",
             "title": f"A5 r7 cell aggregates {year} (GeoParquet)",
@@ -368,14 +385,13 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
                            "pct_covered — the z0–8 exploration layer, "
                            "also useful for analysis.",
             "roles": ["data"],
-        },
-    }
+      }
     for kind, key in (("pmtiles", "pmtiles"), ("cells", "cells")):
         entry = tiles_meta.get(f"{kind}_{year}")
         if entry:
             assets[key]["file:size"] = entry["size"]
             assets[key]["file:checksum"] = entry["checksum"]
-    for name, spec in specs.items():
+    for name, spec in (specs.items() if has_tiles else ()):
         roles = ["style", "default"] if name == "coverage" else ["style"]
         assets[f"styles/{name}"] = {
             "href": f"./styles/{name}.json",
@@ -384,11 +400,14 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
                      + (" — default" if "default" in roles else ""),
             "roles": roles,
         }
-    assets["thumbnail"] = {
-        "href": "./thumbnail.png", "type": "image/png",
-        "title": f"Fields {year} rendered with the default (coverage) style",
-        "roles": ["thumbnail"],
-    }
+    if has_tiles or (ROOT / "catalog" / "vector" / str(year)
+                     / "thumbnail.png").is_file():
+        assets["thumbnail"] = {
+            "href": "./thumbnail.png", "type": "image/png",
+            "title": f"Fields {year} rendered with the default (coverage) "
+                     "style",
+            "roles": ["thumbnail"],
+        }
     assets["mirror"] = {
         "href": "./items.parquet",
         "type": "application/vnd.apache.parquet",
@@ -402,7 +421,7 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
         "type": "Collection",
         "stac_version": "1.1.0",
         "stac_extensions": [PORTOLAN_EXT, PROJ_EXT, TABLE_EXT, FILE_EXT,
-                            WEBMAP_EXT],
+                            WEBMAP_EXT, PARTITION_EXT],
         "id": meta["collection"],
         "title": f"FTW Global — Field Boundaries {year} (GeoParquet)",
         "description": (
@@ -427,7 +446,10 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
         },
         "summaries": {"proj:code": ["EPSG:4326"]},
         "table:columns": TABLE_COLUMNS,
-        "portolan:styles": [f"styles/{n}" for n in specs],
+        "partition:scheme": "hive",
+        "partition:keys": [{"name": "zone", "type": "string"}],
+        "portolan:styles": ([f"styles/{n}" for n in specs]
+                            if has_tiles else []),
         "links": links,
         "assets": assets,
     }
@@ -472,7 +494,7 @@ def build_vector_catalog(per_year: dict[int, dict], out: Path) -> dict:
 # ── documentation ────────────────────────────────────────────────────────────
 
 def _query_block(year: int) -> list[str]:
-    url = f"{PUBLIC_BASE}/vector/{year}/utm31.parquet"
+    url = f"{PUBLIC_BASE}/vector/{year}/zone=31/utm31.parquet"
     return [
         "```python",
         "import duckdb",
@@ -506,7 +528,8 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         f"[TGE Labs Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}).",
         "",
         "## Files", "",
-        f"One file per UTM zone at `vector/{year}/utm{{NN}}.parquet` "
+        f"One file per UTM zone at `vector/{year}/zone=NN/utm{{NN}}.parquet` "
+        "(hive-partitioned by `zone`) "
         f"(e.g. [utm{biggest['zone']:02d}]"
         f"({PUBLIC_BASE}/vector/{year}/{zone_stem(biggest['zone'])}.parquet) "
         f"is the largest, {biggest['n_parcels']:,} parcels). Zone numbers "
@@ -539,12 +562,26 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
 
 def year_agents(year: int, rows: list[dict], meta: dict) -> str:
     n = sum(r["n_parcels"] for r in rows)
+    glob = (f"s3://us-west-2.opendata.source.coop/ftw/global-data-beta/"
+            f"vector/{year}/zone=*/utm*.parquet")
     lines = [
         f"# AGENTS.md — FTW field boundaries {year}", "",
         "Guidance for AI agents. Every claim here is quoted from the "
         "dataset's embedded metadata or measured from the data.", "",
         f"- {n:,} parcels in {len(rows)} per-UTM-zone GeoParquet files at "
-        f"`{PUBLIC_BASE}/vector/{year}/utm{{NN}}.parquet` (anonymous read).",
+        f"`{PUBLIC_BASE}/vector/{year}/zone=NN/utm{{NN}}.parquet` "
+        "(anonymous read, hive-partitioned by `zone`).",
+        "- Whole-year queries glob the partitions over s3 with "
+        "anonymous access and `hive_partitioning=1` (http URLs cannot "
+        "glob):",
+        "  ```python",
+        "  import duckdb",
+        "  con = duckdb.connect()",
+        '  con.execute("INSTALL httpfs; LOAD httpfs; '
+        "CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2');\")",
+        f"  con.sql(\"SELECT zone, count(*) FROM read_parquet('{glob}', "
+        "hive_partitioning=1) GROUP BY zone ORDER BY zone\").show()",
+        "  ```",
         f"- Schema: {len(TABLE_COLUMNS)} columns ({_COLS_SHORT}); "
         "definitions live in `table:columns` on the collection and every "
         "item.",
@@ -606,8 +643,9 @@ def vector_agents(per_year: dict[int, list[dict]]) -> str:
             f"`{y}/collection.json`" for y in sorted(per_year)) + ".",
         "- Each collection documents its schema in `table:columns` and its "
         "own AGENTS.md; read those before querying.",
-        "- Data layout: `vector/{year}/utm{NN}.parquet`, one GeoParquet per "
-        "UTM zone, colocated with the item metadata.", "",
+        "- Data layout: `vector/{year}/zone=NN/utm{NN}.parquet` — hive-"
+        "partitioned by zone, each parquet colocated with its item "
+        "metadata; whole-year reads glob `zone=*/utm*.parquet`.", "",
     ])
 
 
@@ -673,23 +711,25 @@ def main() -> int:
     per_year: dict[int, list[dict]] = {}
     for row in index:
         per_year.setdefault(row["year"], []).append(row)
-    if sorted(per_year) != sorted(YEARS):
-        sys.exit(f"index years {sorted(per_year)} != expected {YEARS}")
+    print(f"index years: {sorted(per_year)}")
 
     missing = [r["href"] for r in index if r["href"] not in checksums]
     if args.checksums and missing:
         print(f"note: {len(missing)} file(s) have no checksum yet")
 
     for year, rows in sorted(per_year.items()):
-        meta = fetch_year_meta(con, year)
+        meta = fetch_year_meta(con, year, rows[0]["href"])
         year_dir = args.out / str(year)
         for row in rows:
             stem = zone_stem(row["zone"])
-            write_json(year_dir / stem / f"{stem}.json",
+            write_json(year_dir / f"zone={row['zone']:02d}" / f"{stem}.json",
                        build_item(row, meta, checksums))
-        for name, spec in style_specs().items():
-            write_json(year_dir / "styles" / f"{name}.json",
-                       build_style(year, name, spec))
+        tiles_meta = (json.loads(TILES_META.read_text())
+                      if TILES_META.is_file() else {})
+        if f"pmtiles_{year}" in tiles_meta:
+            for name, spec in style_specs().items():
+                write_json(year_dir / "styles" / f"{name}.json",
+                           build_style(year, name, spec))
         collection = build_collection(year, rows, meta)
         patch_local_assets(year_dir, collection)
         write_json(year_dir / "collection.json", collection)
