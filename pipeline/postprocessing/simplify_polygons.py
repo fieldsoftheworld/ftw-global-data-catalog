@@ -73,6 +73,12 @@ def process_tile(tk: str, year: int, tol: float, in_root: Path, out_root: Path) 
     n0 = int(shapely.get_num_coordinates(proj).sum())
     simp = simplify_coverage(proj, tol, label=tk)
     n1 = int(shapely.get_num_coordinates(simp).sum())
+    # A geometry that collapsed to nothing would put NaN into the covering columns
+    # and a 0 m2 parcel into the release; drop those rows rather than publish them.
+    keep = ~shapely.is_empty(simp)
+    if not keep.all():
+        print(f"  {tk}: dropped {int((~keep).sum())} parcel(s) that simplified to empty")
+        tbl, simp = tbl.filter(pa.array(keep)), simp[keep]
     back = shapely.transform(
         simp, lambda a: np.c_[fwd.transform(a[:, 0], a[:, 1], direction="INVERSE")]
     )
@@ -80,9 +86,22 @@ def process_tile(tk: str, year: int, tol: float, in_root: Path, out_root: Path) 
     cols = {k: tbl[k] for k in tbl.column_names}
     for j, k in enumerate(("xmin", "ymin", "xmax", "ymax")):
         cols[k] = pa.array(b[:, j])
+    # area_m2 and n_parts describe the geometry, so they must describe the geometry
+    # actually written. Only the bounds and the WKB used to be refreshed, so a row
+    # measured area_m2 = 1006.0 against a written geometry of 250.9 m2 -- and
+    # merge_polygons reads area_m2 for both its --max-km2 cap and its _summary.json
+    # totals, so the cap filtered on and the release reported numbers that described
+    # a geometry nobody published. ``simp`` is in UTM metres, so its area is m2.
+    cols["area_m2"] = pa.array(shapely.area(simp))
+    cols["n_parts"] = pa.array(shapely.get_num_geometries(simp), type=pa.int64())
     cols["geometry"] = pa.array(shapely.to_wkb(back))
+    # Carrying the source schema metadata forward is load-bearing, not tidiness:
+    # the GeoParquet `geo` footer is the only reason DuckDB reads the BLOB geometry
+    # column as GEOMETRY. Drop it and merge_polygons' ST_Hilbert(ST_Centroid(...))
+    # and fiboa_convert's ST_MakeValid both die with "Binder Error: No function
+    # matches 'ST_Centroid(BLOB)'". fiboa_convert.require_geo_metadata checks for it.
     write_atomic(pa.table(cols).replace_schema_metadata(tbl.schema.metadata), dst, fp)
-    return tk, tbl.num_rows, n0, n1, time.perf_counter() - t
+    return tk, len(simp), n0, n1, time.perf_counter() - t
 
 
 def main() -> None:

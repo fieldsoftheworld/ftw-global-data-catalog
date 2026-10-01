@@ -42,7 +42,30 @@ def simplify_coverage(geoms: np.ndarray, tolerance_m: float, label: str = "") ->
     inv = ~shapely.is_valid(out)
     if inv.any():
         out[inv] = _polygonal(shapely.make_valid(out[inv]), label)
+    _report_area_drift(geoms, out, label)
     return out
+
+
+#: Per-parcel relative area change worth reporting. Coverage simplification moves
+#: shared edges, which is zero-sum across the coverage, so a *large* change on a
+#: single parcel is a symptom, not the job. ``is_valid`` is not a sufficient
+#: post-check on its own: a valid-but-wrong result passes it silently.
+AREA_DRIFT_FRAC = 0.25
+
+
+def _report_area_drift(before: np.ndarray, after: np.ndarray, label: str) -> None:
+    a0, a1 = shapely.area(before), shapely.area(after)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        drift = np.abs(a1 - a0) / np.where(a0 > 0, a0, np.nan)
+    bad = np.nonzero(drift > AREA_DRIFT_FRAC)[0]
+    if len(bad):
+        worst = bad[np.argmax(drift[bad])]
+        print(
+            f"  {label or 'coverage'}: {len(bad)} parcel(s) changed area by more than "
+            f"{AREA_DRIFT_FRAC:.0%} (worst index {worst}: {a0[worst]:.0f} -> "
+            f"{a1[worst]:.0f} m2)",
+            flush=True,
+        )
 
 
 def _reject_missing(geoms: np.ndarray, label: str) -> None:

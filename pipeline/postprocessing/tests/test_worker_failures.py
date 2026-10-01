@@ -259,6 +259,54 @@ def test_simplify_rejects_truncated_and_unstamped_outputs(tmp_path):
     assert not sp.is_current(dst, src, 5.0)
 
 
+def test_simplify_refreshes_area_and_part_count(tmp_path):
+    """area_m2 and n_parts must describe the geometry actually written.
+
+    Only the bounds and the WKB used to be refreshed, so a measured row kept
+    area_m2 = 1006.0 against a written geometry of 250.9 m2 -- and merge reads
+    area_m2 for both its --max-km2 cap and its _summary.json totals.
+    """
+    import shapely
+    from pyproj import Transformer
+
+    import simplify_polygons as spm
+
+    rng = np.random.default_rng(1)
+    th = np.linspace(0, 2 * np.pi, 400, endpoint=False)
+    r = 0.00018 + rng.normal(0, 0.00004, 400)
+    g = shapely.make_valid(
+        shapely.Polygon([(3.0 + rr * np.cos(t), 51.0 + rr * np.sin(t) * 0.62) for t, rr in zip(th, r)])
+    )
+    src = tmp_path / "outlines/2025/31UFS.parquet"
+    src.parent.mkdir(parents=True)
+    pq.write_table(
+        pa.table(
+            {
+                "tile_key": ["31UFS"],
+                "area_m2": [1006.0],
+                "n_parts": pa.array([1], pa.int64()),
+                "xmin": [2.99],
+                "ymin": [50.99],
+                "xmax": [3.01],
+                "ymax": [51.01],
+                "geometry": [shapely.to_wkb(g)],
+            }
+        ),
+        src,
+    )
+    spm.process_tile("31UFS", 2025, 5.0, tmp_path / "outlines", tmp_path / "simplified")
+    out = pq.read_table(tmp_path / "simplified/2025/31UFS.parquet")
+    written = shapely.from_wkb(out["geometry"].to_numpy(zero_copy_only=False))[0]
+    fwd = Transformer.from_crs("EPSG:4326", "EPSG:32631", always_xy=True)
+    utm = shapely.transform(written, lambda a: np.c_[fwd.transform(a[:, 0], a[:, 1])])
+    assert out["area_m2"][0].as_py() == pytest.approx(utm.area, rel=1e-6)
+    assert out["area_m2"][0].as_py() != pytest.approx(1006.0, rel=1e-3)
+    assert out["n_parts"][0].as_py() == shapely.get_num_geometries(written)
+    # and the covering columns match the written geometry, with no NaN
+    assert out["xmin"][0].as_py() == pytest.approx(written.bounds[0])
+    assert not np.isnan([out[k][0].as_py() for k in ("xmin", "ymin", "xmax", "ymax")]).any()
+
+
 def test_simplify_empty_table_written_atomically(tmp_path):
     src, dst = tmp_path / "in/T.parquet", tmp_path / "out/T.parquet"
     _src(src, n=0)
