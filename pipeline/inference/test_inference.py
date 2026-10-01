@@ -3,7 +3,7 @@ import rasterio
 import torch
 from affine import Affine
 from predict import predict_tile, _patch_starts
-from run import write_score, current
+from run import write_score, current, fingerprint, output_tags
 from torch.utils._python_dispatch import TorchDispatchMode
 
 
@@ -80,3 +80,23 @@ def test_cog_contract(tmp_path):
         assert ds.tags(ns="IMAGE_STRUCTURE")["LAYOUT"] == "COG"
     assert current(dst, "fixture")
     assert not current(dst, "changed")
+
+
+def test_resume_and_tags_track_the_provider(tmp_path):
+    """A CPU-made COG must not satisfy the skip test for a CUDA run."""
+    src = tmp_path / "stack.tif"
+    src.write_bytes(b"stack")
+    cpu = fingerprint(src, "hash", 64, 0.25, 3000.0, "CPUExecutionProvider")
+    cuda = fingerprint(src, "hash", 64, 0.25, 3000.0, "CUDAExecutionProvider")
+    assert cpu != cuda
+    tags = output_tags({"year": "2025"}, "hash", cpu, 3000.0, 0.25, "CPUExecutionProvider")
+    dst = tmp_path / "score.tif"
+    tr = Affine(2.5, 0, 500000, 0, -2.5, 1000000)
+    write_score(dst, np.zeros((2, 64, 128), np.uint8), "EPSG:32631", tr, tags)
+    assert current(dst, cpu)
+    assert not current(dst, cuda)
+    with rasterio.open(dst) as ds:
+        written = ds.tags()
+    assert written["execution_provider"] == "CPUExecutionProvider"
+    assert written["model_sha256"] == "hash"
+    assert written["year"] == "2025"

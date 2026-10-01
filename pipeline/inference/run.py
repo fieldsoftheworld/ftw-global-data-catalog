@@ -14,6 +14,8 @@ import rasterio
 from affine import Affine
 from predict import predict_tile
 
+PROVIDERS = {"cuda": "CUDAExecutionProvider", "cpu": "CPUExecutionProvider"}
+
 
 def read_stack(path: Path):
     with rasterio.open(path) as ds:
@@ -31,9 +33,26 @@ def read_stack(path: Path):
         return ds.read().astype(np.float32), ds.transform, ds.crs, ds.tags()
 
 
-def fingerprint(src: Path, model_hash: str, batch: int, overlap: float, norm: float) -> str:
+def fingerprint(
+    src: Path, model_hash: str, batch: int, overlap: float, norm: float, provider: str
+) -> str:
     st = src.stat()
-    return json.dumps([st.st_size, st.st_mtime_ns, model_hash, batch, overlap, norm])
+    return json.dumps([st.st_size, st.st_mtime_ns, model_hash, batch, overlap, norm, provider])
+
+
+def output_tags(
+    src_tags: dict, model_hash: str, fp: str, norm: float, overlap: float, provider: str
+) -> dict:
+    """Source tags plus this run's provenance."""
+    return dict(
+        src_tags,
+        model_sha256=model_hash,
+        inference_fingerprint=fp,
+        execution_provider=provider,
+        input_bands="Q1,Q2,Q3,Q4 x B04,B03,B02,B08",
+        normalization=str(norm),
+        overlap=str(overlap),
+    )
 
 
 def current(dst: Path, fp: str) -> bool:
@@ -82,7 +101,7 @@ def main() -> None:
     ap.add_argument("--batch", type=int, default=64)
     ap.add_argument("--overlap", type=float, default=0.25)
     ap.add_argument("--norm", type=float, default=3000)
-    ap.add_argument("--device", choices=("cuda", "cpu"), default="cuda")
+    ap.add_argument("--device", choices=tuple(PROVIDERS), default="cuda")
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--num-shards", type=int, default=1)
     a = ap.parse_args()
@@ -97,7 +116,7 @@ def main() -> None:
         ap.error("no input tiles for this shard")
     with a.model.open("rb") as fh:
         model_hash = hashlib.file_digest(fh, "sha256").hexdigest()
-    provider = "CUDAExecutionProvider" if a.device == "cuda" else "CPUExecutionProvider"
+    provider = PROVIDERS[a.device]
     if provider not in ort.get_available_providers():
         ap.error(f"{provider} unavailable")
     session = ort.InferenceSession(str(a.model), providers=[provider])
@@ -111,7 +130,7 @@ def main() -> None:
     todo = []
     for src in paths:
         dst = a.output_dir / src.name
-        fp = fingerprint(src, model_hash, a.batch, a.overlap, a.norm)
+        fp = fingerprint(src, model_hash, a.batch, a.overlap, a.norm, provider)
         if not current(dst, fp):
             todo.append((src, dst, fp))
     cache = {}
@@ -130,16 +149,15 @@ def main() -> None:
                 dev=a.device,
                 obuf_cache=cache,
             )
-            if fingerprint(src, model_hash, a.batch, a.overlap, a.norm) != fp:
+            if fingerprint(src, model_hash, a.batch, a.overlap, a.norm, provider) != fp:
                 raise RuntimeError(f"input changed: {src}")
-            tags.update(
-                model_sha256=model_hash,
-                inference_fingerprint=fp,
-                input_bands="Q1,Q2,Q3,Q4 x B04,B03,B02,B08",
-                normalization=str(a.norm),
-                overlap=str(a.overlap),
+            write_score(
+                dst,
+                scores,
+                crs,
+                transform * Affine.scale(0.25),
+                output_tags(tags, model_hash, fp, a.norm, a.overlap, provider),
             )
-            write_score(dst, scores, crs, transform * Affine.scale(0.25), tags)
             print(f"{src.name}: {patches} patches -> {dst}", flush=True)
 
 
