@@ -38,9 +38,14 @@ Adjust batch for GPU capacity. CPU mode supports small verification tiles.
 No land-cover or nodata mask is applied during inference.
 
 ```sh
-uv pip install pytest
-.venv/bin/python -m pytest pipeline/inference/test_inference.py
+uv pip install pytest onnx          # onnx is test-only: torch.onnx.export needs it
+.venv/bin/python -m pytest -rs pipeline/inference/test_inference.py
 ```
 
-Tests cover patch edges, small tiles, normalized blending and the COG contract.
+Tests cover patch edges, small tiles, normalized blending, the COG contract,
+the band-order contract, resume/provenance, writer cleanup, and the model and
+device preflights — the last against real ONNX exports. The blending test
+traces tensor allocation and fails if an extra tile-sized buffer appears, which
+is the difference between fitting on a 24 GB card and not. Run with `-rs`: the
+few tests that cannot run without a GPU skip loudly rather than silently.
 CUDA throughput and real-checkpoint parity require a GPU and the released model.
