@@ -83,6 +83,32 @@ def test_v2_layout(tmp_path, monkeypatch):
     assert not tmp.exists() or not any(tmp.iterdir())
 
 
+def test_output_is_hive_partitioned_by_zone(tmp_path, monkeypatch):
+    """The published layout is ``vector/{year}/zone=NN/utm{NN}.parquet``.
+
+    ``catalog/vector/AGENTS.md`` documents it and every collection declares
+    ``"partition:glob": "./zone=*/utm*.parquet"``; a flat ``utm{NN}.parquet``
+    makes that glob resolve to nothing and every item data href 404.
+    """
+    _write_zone(tmp_path / "merged", 2, 2)
+    monkeypatch.setattr(fc, "IN_ROOT", tmp_path / "merged")
+    monkeypatch.setattr(fc, "TMP_ROOT", tmp_path / "duck")
+    out = tmp_path / "out"
+    dst = fc.convert(2025, "30", 1, "1GB", out)
+    assert dst == out / "2025" / "zone=30" / "utm30.parquet"
+    assert dst.is_file()
+    assert sorted(p.name for p in (out / "2025").iterdir()) == ["zone=30"]
+    # the catalog's own partition glob must find it
+    assert [p.relative_to(out / "2025") for p in (out / "2025").glob("zone=*/utm*.parquet")] == [
+        Path("zone=30/utm30.parquet")
+    ]
+    # and hive_partitioning recovers the zone column DuckDB readers rely on
+    assert duckdb.sql(
+        f"select distinct zone::VARCHAR from read_parquet('{out}/2025/zone=*/utm*.parquet', "
+        "hive_partitioning=1)"
+    ).fetchall() == [("30",)]
+
+
 def test_cross_tile_seam_join(tmp_path, monkeypatch):
     # A1 and B1 overlap across a tile join (a field cut at both rasters' edges) and merge;
     # A2 only shares an edge with A1 inside the same tile (real neighbours) and stays separate.

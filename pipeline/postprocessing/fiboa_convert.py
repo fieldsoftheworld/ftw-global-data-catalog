@@ -220,7 +220,9 @@ def query(src: Path, cid: str, year: int, bbox: list[float]) -> str:
 def convert(year: int, zone: str, threads: int, memory_limit: str, out_root: Path) -> Path:
     cid = f"ftw-s2-{year}"
     src = IN_ROOT / str(year) / f"zone={zone}" / "part-0.parquet"
-    dst = out_root / str(year) / f"utm{zone}.parquet"
+    # Hive layout: the published catalog documents vector/{year}/zone=NN/utm{NN}.parquet
+    # and every collection declares "partition:glob": "./zone=*/utm*.parquet".
+    dst = out_root / str(year) / f"zone={zone}" / f"utm{zone}.parquet"
     dst.parent.mkdir(parents=True, exist_ok=True)
     tmp_dir = TMP_ROOT / f"{year}-{zone}-{os.getpid()}"
     con = connect(threads, memory_limit, tmp_dir)
