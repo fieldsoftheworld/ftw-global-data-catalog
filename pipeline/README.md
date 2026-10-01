@@ -105,3 +105,7 @@ for its 115.5 GB archive with a 360 G coarse node.
 ## Model inference
 
 [Quarterly-mosaic inference](inference/README.md) produces probability COGs.
+
+## Polygon postprocessing
+
+[Parcel outline and release pipeline](postprocessing/README.md) uses the external fbp package.
