@@ -16,8 +16,14 @@ CROP, WATER = 5, 1
 #: sidecar probing an extension allow-list would otherwise be used for; deliberately
 #: no ``CPL_VSIL_CURL_ALLOWED_EXTENSIONS``, because QA source hrefs are not all
 #: ``*.tif`` — CDSE serves ``.../Nodes(B04.tif)/$value`` — and the allow-list makes
-#: GDAL refuse those before it issues a single request.
-VSICURL_OPTS = {"GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR"}
+#: GDAL refuse those before it issues a single request. GDAL does not retry HTTP by
+#: default, so one transient 5xx/429 from the DEM, land-cover or EODATA buckets
+#: failed the whole tile; retry 6 times, 5 s apart (exponential backoff in GDAL).
+VSICURL_OPTS = {
+    "GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR",
+    "GDAL_HTTP_MAX_RETRY": "6",
+    "GDAL_HTTP_RETRY_DELAY": "5",
+}
 
 
 def _dem_name(lat: int, lon: int) -> str:

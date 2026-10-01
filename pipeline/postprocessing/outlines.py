@@ -36,7 +36,7 @@ from rasterio.windows import Window
 from scipy import ndimage as ndi
 
 from context import aux_rasters
-from pool_utils import drain, exit_on_failures
+from pool_utils import drain, exit_on_failures, retry_io_failures
 
 PX_M2 = 6.25
 
@@ -79,6 +79,8 @@ def method_for(backend: str):
     return parse(SPEC + ("+q1" if backend == "fast" else ""))
 
 
+#: Wait before the one retry pass over tiles that failed on a remote read.
+IO_RETRY_WAIT_S = 60
 REPORT_EVERY = 50
 
 
@@ -632,6 +634,23 @@ def main() -> None:
             for p in paths
         }
         failures = drain(futs, report)
+        by_stem = {p.stem: p for p in paths}
+        failures = retry_io_failures(
+            failures,
+            lambda k: pool.submit(
+                process_tile,
+                by_stem[k],
+                a.year,
+                out_dir,
+                index,
+                a.core,
+                a.halo,
+                a.backend,
+                a.simplify_m,
+            ),
+            report,
+            IO_RETRY_WAIT_S,
+        )
     if profs:
         if a.profile_out:
             pq.write_table(pa.Table.from_pylist(profs), a.profile_out)
