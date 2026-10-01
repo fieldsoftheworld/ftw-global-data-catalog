@@ -2,7 +2,6 @@
 
 import argparse
 import json
-import math
 import os
 import resource
 import time
@@ -58,6 +57,52 @@ def method_for(backend: str):
 
 
 REPORT_EVERY = 50
+
+
+#: Half-width of a Sentinel-2 tile's overlap with its neighbours, metres: the 110 km
+#: raster carries a 100 km MGRS square centred in it.
+MGRS_SQUARE_M = 100_000.0
+MGRS_PAD_M = 5_000.0
+
+
+def lon_in_zone(zn: int, band: str, lon: float) -> bool:
+    """Is ``lon`` inside UTM zone ``zn`` on the grid the Sentinel-2 tiles use?
+
+    Band V (56-64N) is not on the nominal 6-degree pitch: 32V is widened to 3-12E
+    and 31V narrowed to 0-3E, the convention MGRS and the Sentinel-2 tiling grid
+    both follow. Testing 32V against the nominal 6-12E band rejects every parcel
+    between 3E and 6E -- Bergen 5.32, Stavanger 5.73, Jaeren 5.60 -- and because
+    no 31V tile covers 3-6E those parcels are lost outright rather than claimed by
+    a neighbour. Band V lies well inside this catalog's 65.82N extent.
+
+    Band X (72-84N) has its own, different exceptions (32X/34X/36X do not exist)
+    and begins above that extent, so it is rejected rather than guessed at.
+    """
+    if band == "X":
+        raise ValueError(f"zone {zn}{band}: band X UTM exceptions are not implemented")
+    if band == "V" and zn in (31, 32):
+        w, e = (0.0, 3.0) if zn == 31 else (3.0, 12.0)
+    else:
+        w, e = -180.0 + 6 * (zn - 1), -180.0 + 6 * zn
+    return w <= lon < e
+
+
+def mgrs_square(tr, height: int, width: int) -> tuple[float, float, float, float]:
+    """The tile's own 100 km square as (x0, y0, x1, y1), from the raster's bounds.
+
+    Rounding the nominal square off the origin -- ``floor((tr.c + 5000) / 1e5)``
+    -- is unstable at the exact boundary it always lands on: a sub-pixel origin
+    offset moves the claimed square by a WHOLE 100 km. Two live CDSE tiles have
+    such offsets (59GQQ_0_1 dy = -80 m, 60GTU_0_1 dy = -40 m), and measured, a
+    -80 m easting offset turns sq_x0 = 400000 into 300000, so the tile claims its
+    western neighbour's square and owns none of its own parcels. Deriving the
+    square from the raster's actual bounds removes the rounding step entirely.
+    """
+    x0 = tr.c + MGRS_PAD_M
+    y1 = tr.f - MGRS_PAD_M
+    x1 = tr.c + width * abs(tr.a) - MGRS_PAD_M
+    y0 = tr.f - height * abs(tr.e) + MGRS_PAD_M
+    return x0, y0, x1, y1
 
 
 def _windows(size: int, core: int, halo: int):
@@ -157,17 +202,24 @@ def _run_tile(
         if ds.count != 2 or ds.dtypes != ("uint8", "uint8"):
             raise ValueError("expected two uint8 probability bands")
         crs, tr, H, W = ds.crs, ds.transform, ds.height, ds.width
-    t = time.perf_counter()
     if not np.isclose(tr.a, 2.5) or not np.isclose(tr.e, -2.5) or tr.b != 0 or tr.d != 0:
         raise ValueError("expected north-up 2.5 m score grid")
+    # Validate the grid BEFORE aux_rasters: that call fetches a DEM and three
+    # land-cover years over the network, and utm_zone is None for any non-UTM CRS
+    # (4326, 3857, 54009 and 5041 all measured None), so int(zone[:-1]) used to
+    # raise TypeError only after all of that work had already been done.
+    zone = CRS(crs).utm_zone
+    if not zone:
+        raise ValueError(f"{tk}: score grid CRS {crs} is not UTM (no zone); cannot own parcels")
+    zn = int(zone[:-1])
+    band = tk[2]
+    if not band.isalpha():
+        raise ValueError(f"{tk}: tile key has no MGRS band letter at position 3")
+    sq_x0, sq_y0, sq_x1, sq_y1 = mgrs_square(tr, H, W)
+    t = time.perf_counter()
     aux = aux_rasters(tk, year, index, crs, tr * tr.scale(4), (H // 4, W // 4))
     prof["t_aux"] = time.perf_counter() - t
-    zone = CRS(crs).utm_zone
-    zn = int(zone[:-1])
     to_ll = Transformer.from_crs(crs, "EPSG:4326", always_xy=True)
-
-    sq_x0 = math.floor((tr.c + 5000) / 100000) * 100000
-    sq_y1 = math.ceil((tr.f - 5000) / 100000) * 100000
 
     rows, geoms = [], []
     pid = 0
@@ -276,10 +328,8 @@ def _run_tile(
                         "ext_h_px": s[0].stop - s[0].start,
                         "ext_w_px": s[1].stop - s[1].start,
                         "touches_window_edge": bool(touch[i]),
-                        "in_utm_zone": bool(-180 + 6 * (zn - 1) <= lon < -180 + 6 * zn),
-                        "in_mgrs_square": bool(
-                            sq_x0 <= ex < sq_x0 + 100000 and sq_y1 - 100000 < ey <= sq_y1
-                        ),
+                        "in_utm_zone": lon_in_zone(zn, band, lon),
+                        "in_mgrs_square": bool(sq_x0 <= ex < sq_x1 and sq_y0 < ey <= sq_y1),
                         **{k: float(v[i]) for k, v in attrs.items()},
                     }
                 )
