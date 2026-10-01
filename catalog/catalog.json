@@ -6,7 +6,7 @@
   ],
   "id": "ftw-global-data-beta",
   "title": "Fields of the World — Global Data (beta)",
-  "description": "Beta release of the Fields of the World (FTW) global field-boundary predictions: per-UTM-zone GeoParquet field polygons for 2024 and 2025, and 2.5 m field/boundary-probability Cloud-Optimized GeoTIFFs for 2017–2025, hosted on [Source Cooperative](https://source.coop/ftw/global-data-beta). Predictions derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/). This catalog is under construction; vector and raster collections land incrementally.",
+  "description": "Beta release of the Fields of the World (FTW) global field-boundary predictions: 383,570,287 predicted field polygons as per-UTM-zone GeoParquet for 2020, 2024 and 2025, and 67,197 two-band field/boundary-probability Cloud-Optimized GeoTIFFs at 2.5 m (26.0 TB) for 2017–2025, hosted on [Source Cooperative](https://source.coop/ftw/global-data-beta). Predictions derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/). One collection per year in each tree, so new years drop in incrementally. These are model predictions: a field here is a remote-sensing field unit, not a cadastral/legal parcel, and this is not a land-tenure product — see the catalog README for the limitations in full.",
   "git:repository": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
   "git:ref": "main",
   "git:provider": "github",
@@ -33,12 +33,6 @@
       "href": "./AGENTS.md",
       "type": "text/markdown",
       "title": "Catalog agent guide"
-    },
-    {
-      "rel": "llms",
-      "href": "./llms.txt",
-      "type": "text/markdown",
-      "title": "Agent/LLM usage guide"
     },
     {
       "rel": "child",

@@ -71,14 +71,14 @@ CLAUDE.md, README.md
 
 Portolan v0.2.0 schema URI on catalogs+collections; `file:size` + multihash `1220…` `file:checksum`
 on every asset; every catalog/collection dir carries README.md (`rel: describedby`), AGENTS.md
-(`rel: agents`), llms.txt, thumbnail.png; root carries `vcs`/`issues` links (absolute GitHub URLs)
+(`rel: agents`), thumbnail.png; root carries `vcs`/`issues` links (absolute GitHub URLs)
 + alpha's `git:*` fields; relative structural links, absolute `self` on published root.
 
 ## Phase 2 — Catalog skeleton (committed metadata)
 
 ```
 catalog/
-  catalog.json  README.md  AGENTS.md  llms.txt  thumbnail.png  .portolan/metadata.yaml
+  catalog.json  README.md  AGENTS.md  thumbnail.png  .portolan/metadata.yaml
   vector/
     catalog.json                    # children: 2024, 2025, fields-yearly
     2024/collection.json + 54 items (utm01…utm60) + items.parquet ref   # committed (small)
@@ -173,6 +173,30 @@ the folder keys. llms.txt is removed from the catalog (same ruling).
   https://data.source.coop/ftw/global-data-beta`
 - Rerun every AGENTS.md query against published data
 - Register later via `register-catalog` skill (ask user first)
+
+## Documentation decisions
+
+Applied from the Portolan best-practices specs
+([documentation](https://github.com/portolan-sdi/portolan-spec/blob/main/specs/best-practices/documentation.md),
+[philosophy](https://github.com/portolan-sdi/portolan-spec/blob/main/specs/best-practices/philosophy.md)):
+
+- **Two files, two audiences.** README.md for a person deciding whether to trust the data;
+  AGENTS.md for an agent that has already committed and needs the first query to work. No copying
+  between them. Every level cross-links its parent, its children and its sibling file.
+- **llms.txt dropped** (2026-10-01, user's call). It was a third surface duplicating the other two
+  and drifting from the hive layout; the `rel: llms` links went with it at the root and in the
+  vector tree. rashid 0.1.8 stays green without them. The raster tree still carries llms.txt —
+  removing those belongs to the agent that owns `tools/build_raster_items.py`. The llms.txt objects
+  already in the bucket are untouched: publishing never deletes.
+- **Lead with what a reader can do.** Each README opens with measured numbers, then a runnable
+  single-file query, then the whole-collection hive glob — the pattern a reader would not have
+  guessed. Every example is run before it is committed.
+- **Say what the data is not.** A `Limitations` section at the root and in the vector tree quotes
+  FTW's own framing (remote-sensing field unit, not a cadastral/legal parcel; not a land-tenure
+  product), names the model, and states that `score` is an uncalibrated model probability.
+- **CRS with consequences, not just an EPSG code.** The vector GeoParquet is EPSG:4326 in every
+  zone file — the UTM zone is a partition key, not a CRS — so `ST_Area` returns square degrees and
+  `metrics:area` is the column to read. COGs are per-tile UTM; PMTiles are Web Mercator.
 
 ## Execution checkpoints (will ask before acting)
 

@@ -159,12 +159,6 @@
       "title": "Collection agent guide"
     },
     {
-      "rel": "llms",
-      "href": "./llms.txt",
-      "type": "text/markdown",
-      "title": "Agent/LLM usage guide"
-    },
-    {
       "rel": "describedby",
       "href": "https://github.com/fiboa/specification",
       "type": "text/html",
