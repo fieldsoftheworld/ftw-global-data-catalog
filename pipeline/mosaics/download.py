@@ -5,6 +5,8 @@ import hashlib
 import json
 import os
 import tempfile
+import threading
+import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
@@ -19,20 +21,43 @@ from stac import search_items
 
 BANDS = ("B04", "B03", "B02", "B08")
 QUARTERS = ("Q1", "Q2", "Q3", "Q4")
+# One constant drives the download jobs, the band descriptions and the tag.
+BAND_KEYS = tuple(f"{q}_{b}" for q in QUARTERS for b in BANDS)
+EODATA_S3_ENDPOINT = "https://eodata.dataspace.copernicus.eu"
+
+_local = threading.local()
+
+
+def eodata_endpoint() -> str:
+    "The EODATA S3 endpoint this run reads through, and the index records."
+    return os.environ.get("EODATA_S3_ENDPOINT", EODATA_S3_ENDPOINT)
+
+
+def s3_client():
+    """One client per thread, each on its own session.
+
+    ``boto3``'s default session is documented as not thread-safe, and a client
+    per asset would also throw away every pooled connection.
+    """
+    client = getattr(_local, "s3", None)
+    if client is None:
+        client = boto3.Session().client(
+            "s3",
+            endpoint_url=eodata_endpoint(),
+            aws_access_key_id=os.environ["EODATA_S3_ACCESS_KEY"],
+            aws_secret_access_key=os.environ["EODATA_S3_SECRET_KEY"],
+            config=Config(
+                signature_version="s3v4",
+                s3={"addressing_style": "path"},
+                retries={"max_attempts": 10, "mode": "adaptive"},
+            ),
+        )
+        _local.s3 = client
+    return client
 
 
 def download_asset(asset, dst: Path) -> str:
-    client = boto3.client(
-        "s3",
-        endpoint_url=os.environ.get("EODATA_S3_ENDPOINT", "https://eodata.dataspace.copernicus.eu"),
-        aws_access_key_id=os.environ["EODATA_S3_ACCESS_KEY"],
-        aws_secret_access_key=os.environ["EODATA_S3_SECRET_KEY"],
-        config=Config(
-            signature_version="s3v4",
-            s3={"addressing_style": "path"},
-            retries={"max_attempts": 10, "mode": "adaptive"},
-        ),
-    )
+    client = s3_client()
     obj = client.get_object(Bucket=asset.s3_bucket, Key=asset.s3_key)
     checksum = hashlib.sha256()
     size = 0
@@ -47,10 +72,21 @@ def download_asset(asset, dst: Path) -> str:
 
 
 def stack_bands(paths: list[Path], dst: Path, tags: dict) -> None:
+    if len(paths) != len(BAND_KEYS):
+        raise ValueError(f"expected {len(BAND_KEYS)} band paths, got {len(paths)}")
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    tmp = dst.with_name(f"{dst.name}.tmp-{uuid.uuid4().hex}")
+    try:
+        _write_stack(paths, tmp, tags)
+        os.replace(tmp, dst)
+    except BaseException:  # no partial stack survives a failed run
+        tmp.unlink(missing_ok=True)
+        raise
+
+
+def _write_stack(paths: list[Path], tmp: Path, tags: dict) -> None:
     from contextlib import ExitStack
 
-    dst.parent.mkdir(parents=True, exist_ok=True)
-    tmp = dst.with_name(f"{dst.name}.tmp-{os.getpid()}")
     with ExitStack() as context:
         bands = [context.enter_context(rasterio.open(p)) for p in paths]
         first = bands[0]
@@ -84,10 +120,68 @@ def stack_bands(paths: list[Path], dst: Path, tags: dict) -> None:
                         col, row, min(512, first.width - col), min(512, first.height - row)
                     )
                     out.write(np.stack([b.read(1, window=win) for b in bands]), window=win)
-            for i, (q, band) in enumerate(((q, b) for q in QUARTERS for b in BANDS), 1):
-                out.set_band_description(i, f"{q}_{band}")
+            for i, key in enumerate(BAND_KEYS, 1):
+                out.set_band_description(i, key)
             out.update_tags(**tags)
-    os.replace(tmp, dst)
+
+
+def bbox_error(bbox: list[float], *, allow_antimeridian: bool) -> str | None:
+    "Return why ``bbox`` is unusable as a (W, S, E, N) geographic box, else None."
+    w, s, e, n = bbox
+    if not all(-180 <= v <= 180 for v in (w, e)):
+        return f"--bbox longitudes must be within [-180, 180], got W={w} E={e}"
+    if not all(-90 <= v <= 90 for v in (s, n)):
+        return f"--bbox latitudes must be within [-90, 90], got S={s} N={n}"
+    if s >= n:
+        return f"--bbox needs S < N, got S={s} N={n}"
+    if w == e:
+        return f"--bbox needs W < E, got a zero-width box at W=E={w}"
+    if w > e and not allow_antimeridian:
+        return (
+            f"--bbox needs W < E, got W={w} E={e}; pass --allow-antimeridian "
+            "to query a box that crosses the antimeridian"
+        )
+    return None
+
+
+def index_row(tile: str, item) -> dict:
+    """One polygon-QA index row for a mosaic item's B04 asset.
+
+    Two access forms in distinct columns, because they are not
+    interchangeable: ``b04_s3_href`` is the EODATA S3 object this pipeline
+    itself reads (keys in the environment, ``b04_s3_endpoint``, GDAL
+    ``/vsis3/<bucket>/<key>``) and is the one a reader should open;
+    ``b04_odata_href`` is the item's CDSE OData alternate, which needs an OIDC
+    bearer token and whose ``/$value`` path GDAL's extension check rejects, so
+    it is recorded for provenance only.
+    """
+    asset = item.assets["B04"]
+    if not asset.s3_bucket or not asset.s3_key:
+        raise ValueError(f"{item.item_id}: B04 asset has no S3 location for the polygon-QA index")
+    return {
+        "tile_key": tile,
+        "quarter": item.quarter,
+        "b04_s3_href": f"s3://{asset.s3_bucket}/{asset.s3_key}",
+        "b04_s3_endpoint": eodata_endpoint(),
+        "b04_odata_href": asset.https_href,
+    }
+
+
+def shard_index_path(path: Path, shard: int, num_shards: int) -> Path:
+    "Shard-scoped index path, so one shard's rows never replace another's."
+    if num_shards == 1:
+        return path
+    return path.with_suffix(f".shard-{shard}-of-{num_shards}{path.suffix}")
+
+
+def is_current(dst: Path, signature: str) -> bool:
+    "True when an existing stack is a complete stack of exactly these sources."
+    try:
+        with rasterio.open(dst) as ds:
+            return ds.count == len(BAND_KEYS) and ds.tags().get("source_items") == signature
+    except Exception as exc:  # noqa: BLE001 - an unusable stack is simply rebuilt
+        print(f"{dst}: unreadable ({exc}); rebuilding", flush=True)
+        return False
 
 
 def main() -> None:
@@ -101,9 +195,20 @@ def main() -> None:
     ap.add_argument("--tile-list", type=Path)
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--num-shards", type=int, default=1)
+    ap.add_argument(
+        "--allow-antimeridian",
+        action="store_true",
+        help="accept a --bbox whose W is east of its E (crosses 180)",
+    )
     a = ap.parse_args()
     if a.workers < 1 or a.num_shards < 1 or not 0 <= a.shard < a.num_shards:
         ap.error("invalid workers or shard")
+    problem = bbox_error(a.bbox, allow_antimeridian=a.allow_antimeridian)
+    if problem:
+        ap.error(problem)
+    index_output = (
+        shard_index_path(a.index_output, a.shard, a.num_shards) if a.index_output else None
+    )
     items = search_items(tuple(a.bbox), a.year, QUARTERS, bands=BANDS)
     by_tile = {}
     for item in items:
@@ -111,10 +216,16 @@ def main() -> None:
         if item.quarter in quarters:
             raise ValueError(f"duplicate quarter for {item.tile_key}")
         quarters[item.quarter] = item
-    selected = set(a.tile_list.read_text().split()) if a.tile_list else set(by_tile)
-    missing = selected - set(by_tile)
-    if missing:
-        raise ValueError(f"tiles absent from STAC query: {sorted(missing)}")
+    if a.tile_list:
+        # The intended tile set is the list, so absences are real findings.
+        selected = set(a.tile_list.read_text().split())
+        missing = selected - set(by_tile)
+        if missing:
+            raise ValueError(f"tiles absent from STAC query: {sorted(missing)}")
+    else:
+        # No intended set to compare against: every tile the query reports is
+        # selected, and search_items is what guarantees the pages are complete.
+        selected = set(by_tile)
     tiles = sorted(selected)[a.shard :: a.num_shards]
     if not tiles:
         ap.error("no tiles for this query/shard")
@@ -126,33 +237,18 @@ def main() -> None:
         if set(quarters) != set(QUARTERS):
             raise ValueError(f"{tile}: missing quarters {set(QUARTERS) - set(quarters)}")
         sources = [quarters[q] for q in QUARTERS]
-        for item in sources:
-            asset = item.assets["B04"]
-            if a.index_output and not asset.https_href:
-                raise ValueError(
-                    f"{item.item_id}: no HTTPS alternate for the polygon-QA index"
-                )
-            if a.index_output:
-                index_rows.append(
-                    {
-                        "tile_key": tile,
-                        "quarter": item.quarter,
-                        "b04_href": asset.https_href,
-                    }
-                )
+        if index_output:
+            index_rows.extend(index_row(tile, item) for item in sources)
         signature = json.dumps([i.item_id for i in sources])
         dst = a.output_dir / f"{tile}.tif"
-        if dst.exists():
-            with rasterio.open(dst) as ds:
-                if ds.count == 16 and ds.tags().get("source_items") == signature:
-                    print(f"{tile}: current", flush=True)
-                    continue
+        if dst.exists() and is_current(dst, signature):
+            print(f"{tile}: current", flush=True)
+            continue
         with tempfile.TemporaryDirectory(dir=a.scratch_dir, prefix=f"{tile}-") as scratch:
-            jobs = [
-                (quarters[q].assets[b], Path(scratch) / f"{q}_{b}.tif")
-                for q in QUARTERS
-                for b in BANDS
-            ]
+            jobs = []
+            for key in BAND_KEYS:
+                quarter, band = key.split("_")
+                jobs.append((quarters[quarter].assets[band], Path(scratch) / f"{key}.tif"))
             with ThreadPoolExecutor(a.workers) as pool:
                 sums = list(pool.map(lambda job: download_asset(*job), jobs))
             stack_bands(
@@ -163,16 +259,21 @@ def main() -> None:
                     "source_items": signature,
                     "source_sha256": json.dumps(sums),
                     "year": str(a.year),
-                    "input_bands": "Q1,Q2,Q3,Q4 x B04,B03,B02,B08",
+                    "input_bands": ",".join(BAND_KEYS),
                 },
             )
         print(f"{tile}: {dst}", flush=True)
 
-    if a.index_output:
-        a.index_output.parent.mkdir(parents=True, exist_ok=True)
-        tmp = a.index_output.with_name(f"{a.index_output.name}.tmp-{os.getpid()}")
-        pq.write_table(pa.Table.from_pylist(index_rows), tmp, compression="zstd")
-        os.replace(tmp, a.index_output)
+    if index_output:
+        index_output.parent.mkdir(parents=True, exist_ok=True)
+        tmp = index_output.with_name(f"{index_output.name}.tmp-{uuid.uuid4().hex}")
+        try:
+            pq.write_table(pa.Table.from_pylist(index_rows), tmp, compression="zstd")
+            os.replace(tmp, index_output)
+        except BaseException:
+            tmp.unlink(missing_ok=True)
+            raise
+        print(f"index: {index_output} ({len(index_rows)} rows)", flush=True)
 
 
 if __name__ == "__main__":
