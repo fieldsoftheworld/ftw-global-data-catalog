@@ -11,6 +11,7 @@ from rasterio.enums import Resampling
 from rasterio.errors import RasterioIOError
 from rasterio.transform import array_bounds
 from rasterio.warp import transform_bounds
+from rasterio.windows import Window
 from terrain import CROP, VSICURL_OPTS, WATER, _dem_name, _warp
 
 #: B04 nodata in the CDSE sentinel-2-global-mosaics product (int16). Verified against
@@ -82,6 +83,41 @@ def _vsis3(s3_href: str, endpoint: str) -> tuple[str, dict]:
     }
 
 
+#: 10 m source pixels per 40 m QA cell, per axis.
+QA_FACTOR = 4
+
+
+def nodata_cells(ds, h40: int, w40: int, stripe: int = 512) -> np.ndarray:
+    """Which 40 m cells contain ANY nodata source pixel, reduced at FULL resolution.
+
+    Never compare a resampled value to an exact sentinel. ``ds.read(1,
+    out_shape=...)`` at 4x decimation is served from the COG's overviews, which are
+    built by interpolation, so a cell straddling a swath edge comes back as some
+    blend that never equals -32768. Measured on a ragged-swath fixture with cubic
+    overviews, the value comparison missed 494 of 2,086 partially-nodata cells
+    (24%) -- and ``read_masks`` at a reduced ``out_shape`` is defeated the same way,
+    because GDAL derives the overview mask from the overview values. So the
+    reduction happens here, over full-resolution pixels, in row stripes aligned to
+    the 4x factor.
+
+    A cell counts as nodata for its quarter if ANY of its 16 source pixels is,
+    which is the conservative reading frac_nodata_1q/3q exist to give.
+    """
+    f = QA_FACTOR
+    if (ds.height, ds.width) != (h40 * f, w40 * f):
+        raise ValueError(
+            f"source mosaic is {ds.height}x{ds.width}, expected {h40 * f}x{w40 * f} "
+            "to reduce exactly onto the 40 m QA grid"
+        )
+    nodata = ds.nodata if ds.nodata is not None else NODATA
+    out = np.zeros((h40, w40), bool)
+    for r0 in range(0, h40, stripe):
+        r1 = min(h40, r0 + stripe)
+        band = ds.read(1, window=Window(0, r0 * f, w40 * f, (r1 - r0) * f))
+        out[r0:r1] = (band == nodata).reshape(r1 - r0, f, w40, f).any(axis=(1, 3))
+    return out
+
+
 def _require_credentials() -> None:
     if os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY"):
         return
@@ -113,7 +149,7 @@ def aux_rasters(tk: str, year: int, index: Path, crs, tr10, shape10) -> dict:
                         f"{tk} {r['quarter']}: {src} declares nodata {ds.nodata}, "
                         f"not the expected {NODATA}; the nodata-quarter count would be wrong"
                     )
-                nod += ds.read(1, out_shape=(h40, w40), resampling=Resampling.nearest) == NODATA
+                nod += nodata_cells(ds, h40, w40)
         except RasterioIOError as exc:
             # A bare GDAL message names neither the tile nor which of a tile's four
             # quarterly hrefs failed; mirror terrain._warp's guard and say.

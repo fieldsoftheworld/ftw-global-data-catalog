@@ -123,8 +123,10 @@ _EXT_REJECT = "not recognized as a supported dataset name"
 
 def test_vsicurl_opts_do_not_allow_list_extensions():
     assert "CPL_VSIL_CURL_ALLOWED_EXTENSIONS" not in tfa.VSICURL_OPTS
-    import outlines  # noqa: F401  (import-time env side effects)
+    import outlines
 
+    # importing outlines must not leave an allow-list behind in the environment
+    assert outlines.PX_M2 == 6.25
     assert "CPL_VSIL_CURL_ALLOWED_EXTENSIONS" not in os.environ
 
 
