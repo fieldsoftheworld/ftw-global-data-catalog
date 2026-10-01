@@ -97,22 +97,87 @@ def test_extension_allow_list_would_refuse_cdse_hrefs(monkeypatch):
     assert _EXT_REJECT in str(e.value)
 
 
+#: PR1's QA index row: the S3 object its downloader fetches, plus the endpoint the
+#: row was written against. b04_odata_href is provenance only and never opened.
+S3_HREF = "s3://eodata/Sentinel-2/MSI/MSI_L3__MCQ/2025/Q1/T31UFS/B04.tif"
+S3_ENDPOINT = "https://eodata.dataspace.copernicus.eu"
+
+
+def _index(tmp_path: Path, tile: str = "31UFS", **over) -> Path:
+    idx = tmp_path / "tile_index_2025.parquet"
+    cols = {
+        "tile_key": [tile] * 4,
+        "quarter": ["Q1", "Q2", "Q3", "Q4"],
+        "b04_s3_href": [S3_HREF] * 4,
+        "b04_s3_endpoint": [S3_ENDPOINT] * 4,
+    }
+    pq.write_table(pa.table({**cols, **over}), idx)
+    return idx
+
+
 def test_context_read_failure_names_tile_and_href(tmp_path, monkeypatch):
     import context
 
-    idx = tmp_path / "tile_index_2025.parquet"
-    pq.write_table(
-        pa.table(
-            {
-                "tile_key": ["31UFS"] * 4,
-                "quarter": ["Q1", "Q2", "Q3", "Q4"],
-                "b04_href": [CDSE_HREF.removeprefix("/vsicurl/")] * 4,
-            }
-        ),
-        idx,
+    monkeypatch.setenv("AWS_ACCESS_KEY_ID", "k")
+    monkeypatch.setenv("AWS_SECRET_ACCESS_KEY", "s")
+    monkeypatch.setattr(
+        context, "_vsis3", lambda h, e: ("/vsis3/eodata/nope.tif", {"AWS_S3_ENDPOINT": "x.invalid"})
     )
-    with pytest.raises(RasterioIOError, match=r"31UFS Q1: cannot read .*Nodes\(B04.tif\)"):
-        context.aux_rasters("31UFS", 2025, idx, "EPSG:32631", None, (4, 4))
+    with pytest.raises(RasterioIOError, match=r"31UFS Q1: cannot read /vsis3/eodata/nope.tif"):
+        context.aux_rasters("31UFS", 2025, _index(tmp_path), "EPSG:32631", None, (4, 4))
+
+
+def test_context_uses_the_rows_s3_href_and_endpoint():
+    import context
+
+    src, opts = context._vsis3(S3_HREF, S3_ENDPOINT)
+    assert src == "/vsis3/eodata/Sentinel-2/MSI/MSI_L3__MCQ/2025/Q1/T31UFS/B04.tif"
+    assert opts["AWS_S3_ENDPOINT"] == S3_ENDPOINT
+    assert opts["AWS_VIRTUAL_HOSTING"] == "FALSE"
+    assert "CPL_VSIL_CURL_ALLOWED_EXTENSIONS" not in opts
+
+
+def test_context_rejects_an_odata_href_and_a_missing_endpoint():
+    import context
+
+    with pytest.raises(ValueError, match="expected an s3:// href"):
+        context._vsis3("https://catalogue.dataspace.copernicus.eu/odata/v1/x/$value", S3_ENDPOINT)
+    with pytest.raises(ValueError, match="no b04_s3_endpoint"):
+        context._vsis3(S3_HREF, "")
+
+
+def test_missing_credentials_fail_with_a_message_naming_the_need(tmp_path, monkeypatch):
+    import context
+
+    for v in ("AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_NO_SIGN_REQUEST"):
+        monkeypatch.delenv(v, raising=False)
+    with pytest.raises(RasterioIOError, match="needs credentials"):
+        context.aux_rasters("31UFS", 2025, _index(tmp_path), "EPSG:32631", None, (4, 4))
+
+
+def test_antimeridian_dem_longitudes_are_not_empty():
+    """A dateline tile reports west > east, not an unwrapped span.
+
+    Measured for a zone-1 tile: w = 178.913, e = -178.779, so e - w = -357.69 is
+    not > 180 and the plain branch ran range(178, -178) -- EMPTY. No DEM tile was
+    fetched at all and every parcel got a NaN elevation.
+    """
+    import context
+
+    assert context.dem_lons(178.913, -178.779) == [178, 179, -180, -179]
+    assert context.dem_lons(4.2, 6.8) == [4, 5, 6]
+    assert context.dem_lons(-3.5, -1.2) == [-4, -3, -2]
+
+
+def test_land_cover_vintages_follow_the_product_year():
+    "year was accepted and ignored: the 2020 product read 2024 land cover."
+    import context
+
+    assert max(context.lulc_years(2020)) == 2020
+    assert max(context.lulc_years(2024)) == 2024
+    assert all(y <= 2020 for y in context.lulc_years(2020))
+    with pytest.raises(ValueError, match="no land-cover vintages defined for product year 2099"):
+        context.lulc_years(2099)
 
 
 def _src(path: Path, n: int = 3) -> None:

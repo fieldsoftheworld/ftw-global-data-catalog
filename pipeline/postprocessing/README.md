@@ -31,17 +31,30 @@ is released, the outline stage requires separately authorized package access.
 Install DuckDB's spatial extension once (`INSTALL spatial`) before running
 conversion offline. Score inputs are `{scores}/{year}/{tile}.tif`: two uint8
 bands (field/boundary), probabilities /255, north-up UTM at 2.5 m.
-QA context requires `index/tile_index_{year}*.parquet` with `tile_key`, `quarter`
-and `b04_href`: four source mosaic B04 URLs per tile. The mosaic downloader
-can emit this index with `--index-output`. EODATA URLs require their original
-access credentials; a public mirror index is also accepted. Terrain context reads
-public Copernicus DEM GLO-30 and IO annual land cover (2017/2020/2024).
+QA context requires `index/tile_index_{year}*.parquet` with `tile_key`, `quarter`,
+`b04_s3_href` and `b04_s3_endpoint`: four source mosaic B04 objects per tile. The
+mosaic downloader can emit this index with `--index-output`. `b04_s3_href` is an
+`s3://bucket/key` on CDSE EODATA, opened as `/vsis3/bucket/key` against the
+endpoint the row records, so set `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY`
+to the EODATA keys first. The index's `b04_odata_href` is OIDC-authenticated,
+cannot be opened by GDAL, and is carried for provenance only; these assets have
+no public unauthenticated https form, so there is no fallback.
+
+Terrain context reads public Copernicus DEM GLO-30 and IO annual land cover.
+The land-cover vintages follow the product year (`context.LULC_BY_YEAR`): the
+water mask uses the newest sampled vintage and `frac_crops_ever` is cropland in
+any sampled year, so a 2020 product is never scored against 2024 land cover. An
+unlisted year fails rather than silently borrowing another year's vintages.
 
 Core/halo defaults are 8192/512 pixels. Core centroid ownership reduces window
 duplicates, but parcels wider than the halo may be truncated or duplicated;
 `touches_window_edge` identifies candidates and conversion joins seam parcels.
-Simplification uses 5 m in UTM, repairs invalid results and preserves attributes.
-The Rust implementation is provided by the `coarsen` PyPI package; this repo calls its Python API and keeps its own invalid-coverage fallback.
+Ownership uses the tile raster's own bounds for its MGRS square and the MGRS
+longitude bands, including the 31V/32V exception the Sentinel-2 grid follows.
+Simplification uses 5 m in UTM over the **whole** coverage in one pass, so shared
+edges stay shared; results are repaired, never re-simplified per geometry, and
+attributes are preserved. The Rust implementation is provided by the `coarsen`
+PyPI package and this repo calls its Python API.
 
 Merge retains `in_utm_zone AND in_mgrs_square`, dropping parcels >5 km².
 `tiles.txt` lists expected tiles; `empty.txt` lists verified empty/excluded tiles.
