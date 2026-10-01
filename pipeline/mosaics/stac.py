@@ -1,5 +1,6 @@
 """Query quarterly Sentinel-2 mosaic assets from public CDSE STAC metadata."""
 
+import json
 import logging
 from dataclasses import dataclass
 
@@ -80,6 +81,35 @@ def search_items(
     return items
 
 
+def _next_request(
+    link: dict, url: str, body: dict[str, object] | None
+) -> tuple[str, str, dict[str, object] | None]:
+    """Resolve a STAC ``next`` link into the next (method, url, body).
+
+    Item Search pagination: ``href`` is the URL to call, ``method`` defaults to
+    GET, and a ``body`` replaces the previous one unless ``merge`` is true, in
+    which case it is merged into it. A GET carries its cursor in the href.
+    """
+    href = link.get("href") or url
+    method = str(link.get("method") or "GET").upper()
+    if method == "GET":
+        return method, href, None
+    link_body = link.get("body")
+    if link_body is None:
+        return method, href, body
+    if link.get("merge"):
+        return method, href, {**(body or {}), **link_body}
+    return method, href, dict(link_body)
+
+
+def _matched(payload: dict) -> int | None:
+    "Total hits the server reports, from OGC API Features or the context extension."
+    for value in (payload.get("numberMatched"), (payload.get("context") or {}).get("matched")):
+        if value is not None:
+            return int(value)
+    return None
+
+
 def _search_one_quarter(
     sess: requests.Session,
     bbox: tuple[float, float, float, float],
@@ -89,27 +119,44 @@ def _search_one_quarter(
     bands: tuple[str, ...],
     page_limit: int,
 ) -> list[MosaicItem]:
-    body: dict[str, object] = {
+    body: dict[str, object] | None = {
         "collections": [MOSAICS_COLLECTION],
         "bbox": list(bbox),
         "datetime": _item_datetime_range(year, quarter),
         "limit": page_limit,
     }
+    method, url = "POST", STAC_SEARCH_URL
     out: list[MosaicItem] = []
+    matched: int | None = None
+    seen: set[tuple[str, str, str]] = set()
     while True:
-        resp = sess.post(STAC_SEARCH_URL, json=body, timeout=60)
+        if method == "GET":
+            resp = sess.get(url, timeout=60)
+        else:
+            resp = sess.post(url, json=body, timeout=60)
         resp.raise_for_status()
         payload = resp.json()
+        if matched is None:
+            matched = _matched(payload)
         out.extend(_to_item(feat, year, quarter, bands) for feat in payload.get("features", []))
         next_link = next(
             (link for link in payload.get("links", []) if link.get("rel") == "next"), None
         )
         if not next_link:
             break
-
-        body = {**body, **next_link.get("body", {})}
-        if "token" not in body and "token" not in next_link.get("body", {}):
-            break
+        method, url, body = _next_request(next_link, url, body)
+        cursor = (method, url, json.dumps(body, sort_keys=True, default=str))
+        if cursor in seen:
+            raise RuntimeError(
+                f"STAC pagination is not advancing for {year} {quarter}: "
+                f"{method} {url} repeats after {len(out)} items"
+            )
+        seen.add(cursor)
+    if matched is not None and len(out) != matched:
+        raise RuntimeError(
+            f"STAC {year} {quarter}: paged {len(out)} items but the server reports "
+            f"{matched} matched — the result set is incomplete"
+        )
     logger.info("STAC %s %s: %d items in bbox", year, quarter, len(out))
     return out
 
