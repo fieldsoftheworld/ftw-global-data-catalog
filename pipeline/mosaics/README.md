@@ -33,7 +33,11 @@ Missing quarters, duplicate items, incomplete downloads and grid mismatches fail
 the run, as does an incomplete STAC result: paging stops only when the API
 offers no `next` link, and a page count short of the reported `numberMatched`
 (or a `next` cursor that does not advance) is an error, never a quiet partial
-run. Input checksums and STAC IDs accompany the stack. Writes replace
+run. Every returned item is checked against the query that produced it — the
+`<MGRS tile>_<col>_<row>` sub-tile key its id must end with (tiles group and
+reruns skip by that key), the year and quarter its own datetime states, and the
+presence of each requested band — and every one of those failures names the
+offending item id. Input checksums and STAC IDs accompany the stack. Writes replace
 atomically; completed stacks with the same source IDs skip on reruns. This is
 input preparation, not a mirror publisher or infrastructure provisioning tool.
 

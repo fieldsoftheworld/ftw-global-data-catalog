@@ -161,17 +161,21 @@ def test_shard_index_paths_are_disjoint():
     assert all(p.suffix == ".parquet" and p.parent == path.parent for p in sharded)
 
 
-def feature(i, quarter="Q1"):
+QUARTER_MID = {"Q1": "02-15", "Q2": "05-15", "Q3": "08-15", "Q4": "11-15"}
+
+
+def feature(i, quarter="Q1", item_id=None, year=2025, assets=stac.DEFAULT_BANDS):
     return {
-        "id": f"S2_10m_mosaic_{quarter}_31UFS_{i}_0",
+        "id": item_id or f"S2_10m_mosaic_{quarter}_31UFS_{i}_0",
         "bbox": [5, 51, 5.1, 51.1],
+        "properties": {"datetime": f"{year}-{QUARTER_MID[quarter]}T00:00:00Z"},
         "assets": {
             band: {
                 "href": f"s3://eodata/{band}_{i}.tif",
                 "file:size": 1,
                 "alternate": {"https": {"href": f"https://eodata/{band}_{i}.tif"}},
             }
-            for band in stac.DEFAULT_BANDS
+            for band in assets
         },
     }
 
@@ -301,6 +305,82 @@ def test_single_page_without_a_next_link_is_complete():
     sess = FakeSession([{"numberMatched": 1, "features": [feature(0)], "links": []}])
     items = stac.search_items((5, 51, 5.1, 51.1), 2025, ("Q1",), session=sess)
     assert len(items) == 1 and len(sess.calls) == 1
+
+
+def one_page(features):
+    return FakeSession([{"numberMatched": len(features), "features": features, "links": []}])
+
+
+def search(features, quarter="Q1", year=2025):
+    return stac.search_items(
+        (5, 51, 5.1, 51.1), year, (quarter,), session=one_page(features)
+    )
+
+
+def test_tile_key_is_parsed_from_a_known_id_shape():
+    items = search([feature(0)])
+    assert items[0].tile_key == "31UFS_0_0"
+
+
+@pytest.mark.parametrize(
+    "item_id",
+    [
+        "S2_10m_mosaic_Q1_weird",  # sub-tile key that is not MGRS-shaped
+        "S2_10m_mosaic_Q1",  # too few parts: used to fall back to the whole id
+        "S2_10m_mosaic_Q1_31UFS_0",  # missing the second sub-tile index
+        "S2_10m_mosaic_Q1_31ufs_0_0",  # lower-case band letters
+    ],
+)
+def test_unexpected_item_id_shape_is_named(item_id):
+    with pytest.raises(ValueError, match=re.escape(item_id)):
+        search([feature(0, item_id=item_id)])
+
+
+def test_item_from_another_quarter_is_rejected():
+    # Q1 was requested; the item's own datetime says Q3.
+    with pytest.raises(ValueError, match="Q1.*Q3|Q3.*Q1"):
+        search([feature(0, quarter="Q3", item_id="S2_10m_mosaic_Q3_31UFS_0_0")])
+
+
+def test_item_from_another_year_is_rejected():
+    with pytest.raises(ValueError, match="2024"):
+        search([feature(0, year=2024)])
+
+
+def test_item_datetime_range_is_accepted():
+    feat = feature(0)
+    feat["properties"] = {
+        "datetime": None,
+        "start_datetime": "2025-01-01T00:00:00Z",
+        "end_datetime": "2025-03-31T23:59:59Z",
+    }
+    assert len(search([feat])) == 1
+
+
+def test_item_range_straddling_a_boundary_is_usable_from_either_side():
+    feat = feature(0)
+    feat["properties"] = {
+        "datetime": None,
+        "start_datetime": "2025-03-01T00:00:00Z",
+        "end_datetime": "2025-04-30T23:59:59Z",
+    }
+    assert len(search([feat], quarter="Q1")) == 1
+    assert len(search([feat], quarter="Q2")) == 1
+    with pytest.raises(ValueError, match="Q4"):
+        search([feat], quarter="Q4")
+
+
+def test_item_without_any_datetime_is_named():
+    feat = feature(0)
+    feat["properties"] = {}
+    with pytest.raises(ValueError, match="S2_10m_mosaic_Q1_31UFS_0_0"):
+        search([feat])
+
+
+def test_missing_band_asset_names_the_item_and_the_band():
+    feat = feature(0, assets=("B02", "B03", "B04"))
+    with pytest.raises(ValueError, match="S2_10m_mosaic_Q1_31UFS_0_0.*B08"):
+        search([feat])
 
 
 def test_one_s3_client_per_thread(monkeypatch, tmp_path):

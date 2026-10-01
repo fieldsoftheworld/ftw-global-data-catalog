@@ -2,7 +2,9 @@
 
 import json
 import logging
+import re
 from dataclasses import dataclass
+from datetime import datetime
 
 import requests
 
@@ -11,6 +13,8 @@ logger = logging.getLogger(__name__)
 STAC_SEARCH_URL = "https://stac.dataspace.copernicus.eu/v1/search"
 MOSAICS_COLLECTION = "sentinel-2-global-mosaics"
 DEFAULT_BANDS = ("B02", "B03", "B04", "B08")
+# ``<MGRS tile>_<col>_<row>``, the trailing part of a mosaic item id.
+TILE_KEY_RE = re.compile(r"^\d{2}[A-Z]{3}_\d+_\d+$")
 
 
 QUARTER_START = {"Q1": "01-01", "Q2": "04-01", "Q3": "07-01", "Q4": "10-01"}
@@ -45,8 +49,54 @@ class MosaicItem:
     @property
     def tile_key(self) -> str:
         "MGRS sub-tile key (year/quarter-independent), e.g. ``31UFS_0_0``."
-        parts = self.item_id.split("_")
-        return "_".join(parts[4:]) if len(parts) > 4 else self.item_id
+        return parse_tile_key(self.item_id)
+
+
+def parse_tile_key(item_id: str) -> str:
+    """The MGRS sub-tile key an item id ends with, e.g. ``31UFS_0_0``.
+
+    The key is positional — everything after the first four underscore-
+    separated parts — so a different id shape would silently group tiles
+    together. Check it rather than guess: grouping by quarter and skipping
+    reruns both key off this value.
+    """
+    key = "_".join(item_id.split("_")[4:])
+    if not TILE_KEY_RE.match(key):
+        raise ValueError(
+            f"{item_id}: cannot read an MGRS sub-tile key from this item id "
+            f"(got {key!r}, expected something like '31UFS_0_0')"
+        )
+    return key
+
+
+def _quarter_of(item_id: str, stamp: str) -> tuple[int, str]:
+    "The (year, quarter) one RFC 3339 instant falls in."
+    try:
+        when = datetime.fromisoformat(str(stamp).replace("Z", "+00:00"))
+    except ValueError as exc:
+        raise ValueError(f"{item_id}: unreadable item datetime {stamp!r} ({exc})") from None
+    return when.year, f"Q{(when.month - 1) // 3 + 1}"
+
+
+def _check_quarter(item_id: str, props: dict, year: int, quarter: str) -> None:
+    """Fail when a returned item is not from the year/quarter that was queried.
+
+    ``year``/``quarter`` come from the caller's loop, so without this the
+    stack's quarter labels are whatever was asked for rather than what the
+    server returned. An item is accepted when any instant it states falls in
+    the requested quarter, which leaves a range that straddles a boundary
+    usable from either side.
+    """
+    stamps = [props.get(key) for key in ("datetime", "start_datetime", "end_datetime")]
+    stamps = [stamp for stamp in stamps if stamp]
+    if not stamps:
+        raise ValueError(f"{item_id}: item has no datetime to check its quarter against")
+    stated = [_quarter_of(item_id, stamp) for stamp in stamps]
+    if (year, quarter) not in stated:
+        raise ValueError(
+            f"{item_id}: queried {year} {quarter} but the item's own datetime is "
+            + ", ".join(f"{y} {q}" for y, q in stated)
+        )
 
 
 def _parse_s3(href: str) -> tuple[str, str]:
@@ -162,9 +212,14 @@ def _search_one_quarter(
 
 
 def _to_item(feat: dict, year: int, quarter: str, bands: tuple[str, ...]) -> MosaicItem:
+    item_id = feat["id"]
+    parse_tile_key(item_id)  # fail here, not when the tiles are grouped
+    _check_quarter(item_id, feat.get("properties") or {}, year, quarter)
     assets: dict[str, BandAsset] = {}
     for band in bands:
-        a = feat["assets"][band]
+        a = (feat.get("assets") or {}).get(band)
+        if a is None:
+            raise ValueError(f"{item_id}: item has no {band} asset")
         bucket, key = _parse_s3(a["href"])
         https = a.get("alternate", {}).get("https", {}).get("href", "")
         assets[band] = BandAsset(
@@ -176,7 +231,7 @@ def _to_item(feat: dict, year: int, quarter: str, bands: tuple[str, ...]) -> Mos
         )
     bb = feat["bbox"]
     return MosaicItem(
-        item_id=feat["id"],
+        item_id=item_id,
         year=year,
         quarter=quarter,
         bbox=(bb[0], bb[1], bb[2], bb[3]),
