@@ -187,6 +187,20 @@ def test_resume_skips_a_current_zone_and_redoes_a_changed_one(tmp_path):
     assert "current, skipped" not in _run(tmp_path, *args, "--force").stdout
 
 
+def test_a_fully_resumed_run_succeeds_and_keeps_its_totals(tmp_path):
+    "Skipping every zone is success, and must not zero the summary it resumed from."
+    _tile(tmp_path / "simplified/2025/31UFS.parquet", "31UFS", 3)
+    args = ["--no-aux", *_lists(tmp_path, "31UFS\n")]
+    assert _run(tmp_path, *args).returncode == 0
+    first = _summary(tmp_path)["total"]
+    r = _run(tmp_path, *args)
+    assert r.returncode == 0, r.stdout + r.stderr
+    assert "current, skipped" in r.stdout
+    s = _summary(tmp_path)
+    assert s["total"] == first
+    assert s["zones_skipped"] == 1
+
+
 def test_temp_file_is_pid_scoped_and_not_a_parquet_glob_match(tmp_path):
     "The corruption class main fixed in 7b889a1: a shared *.parquet temp in the tree."
     _tile(tmp_path / "simplified/2025/31UFS.parquet", "31UFS", 3)

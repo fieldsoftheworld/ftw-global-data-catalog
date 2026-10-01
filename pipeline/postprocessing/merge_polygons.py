@@ -1,6 +1,7 @@
 "Filter owned parcels and merge by UTM zone."
 
 import argparse
+import hashlib
 import json
 import os
 import shutil
@@ -110,11 +111,14 @@ def select_sql(files: list[Path], aux: list[Path]) -> str:
 
 
 def fingerprint(files: list[Path], aux: list[Path], keep: str) -> str:
-    "Identity of everything that decides a zone's contents."
-    parts = [
-        [p.name, p.stat().st_size, p.stat().st_mtime_ns] for p in sorted(files + aux)
-    ]
-    return json.dumps([keep, parts], sort_keys=True)
+    """Identity of everything that decides a zone's contents.
+
+    Hashed, not spelled out: a zone can hold a couple of hundred tiles and this
+    goes into the parquet footer.
+    """
+    parts = [[p.name, p.stat().st_size, p.stat().st_mtime_ns] for p in sorted(files + aux)]
+    body = json.dumps([keep, parts], sort_keys=True).encode()
+    return hashlib.sha256(body).hexdigest()
 
 
 def is_current(dst: Path, fp: str) -> bool:
@@ -211,7 +215,8 @@ def main() -> None:
     # used to leave DuckDB's temp files inside out/, where the catalog's own
     # zone=*/*.parquet globs would walk them.
     tmp_dir = a.tmp_dir / f"merge-{a.year}-{os.getpid()}"
-    if a.tmp_dir.resolve() == a.out_root.resolve() or a.out_root.resolve() in a.tmp_dir.resolve().parents:
+    root, spill = a.out_root.resolve(), a.tmp_dir.resolve()
+    if spill == root or root in spill.parents:
         raise SystemExit(f"--tmp-dir {a.tmp_dir} is inside --out-root {a.out_root}")
     tmp_dir.mkdir(parents=True, exist_ok=True)
     keep = f"in_utm_zone AND in_mgrs_square AND area_m2 <= {a.max_km2 * 1e6}"
@@ -233,6 +238,8 @@ def main() -> None:
         "tiles_present": len(have - empty),
         "zones": {},
     }
+    prev = out / "_summary.json"
+    prev_zones = json.loads(prev.read_text()).get("zones", {}) if prev.is_file() else {}
     t_all = time.perf_counter()
     con = duckdb.connect()
     try:
@@ -254,7 +261,9 @@ def main() -> None:
             fp = fingerprint(files, axf, keep)
             if not a.force and is_current(dst, fp):
                 print(f"zone {z}: current, skipped", flush=True)
-                summary["zones"][z] = {"skipped": True}
+                # Carry the previous run's counts forward, so a fully-resumed run
+                # still writes truthful totals instead of zeroing them.
+                summary["zones"][z] = {**prev_zones.get(z, {}), "skipped": True}
                 continue
             lst = ", ".join(f"'{p}'" for p in files)
             stats = con.sql(
@@ -314,19 +323,22 @@ def main() -> None:
         con.close()
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    counted = [v for v in summary["zones"].values() if "parcels_in" in v]
-    tot = {k: sum(v[k] for v in counted) for k in next(iter(counted), {})}
+    keys = ("parcels_in", "parcels_out", "km2_in", "km2_out")
+    counted = [v for v in summary["zones"].values() if all(k in v for k in keys)]
+    tot = {k: sum(v[k] for v in counted) for k in keys}
     summary["total"] = tot
+    summary["zones_skipped"] = sum(1 for v in summary["zones"].values() if v.get("skipped"))
     summary["seconds"] = time.perf_counter() - t_all
     # Written before the empty-result check: a rerun that retains nothing used to
     # abort with the PREVIOUS run's _summary.json still in place, so an incomplete
     # merge was byte-indistinguishable from a complete one.
-    (out / "_summary.json").write_text(json.dumps(summary, indent=1))
-    if not tot.get("parcels_out"):
+    prev.write_text(json.dumps(summary, indent=1))
+    if not tot["parcels_out"]:
         raise SystemExit("no retained parcels in any zone")
     print(
         f"total: {tot['parcels_in']:,} -> {tot['parcels_out']:,} parcels, "
-        f"{tot['km2_in']:,.0f} -> {tot['km2_out']:,.0f} km2, {summary['seconds'] / 60:.0f} min"
+        f"{tot['km2_in']:,.0f} -> {tot['km2_out']:,.0f} km2, "
+        f"{summary['zones_skipped']} zones skipped, {summary['seconds'] / 60:.0f} min"
     )
     if a.allow_missing and gaps:
         n = sum(len(v) for v in gaps.values())
