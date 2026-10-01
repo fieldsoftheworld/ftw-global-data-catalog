@@ -56,10 +56,28 @@ edges stay shared; results are repaired, never re-simplified per geometry, and
 attributes are preserved. The Rust implementation is provided by the `coarsen`
 PyPI package and this repo calls its Python API.
 
-Merge retains `in_utm_zone AND in_mgrs_square`, dropping parcels >5 km².
-`tiles.txt` lists expected tiles; `empty.txt` lists verified empty/excluded tiles.
-Missing inputs fail unless `--allow-missing` is explicit. Optional patch QA joins
-require `--aux-root`; use `--no-aux` when no auxiliary parcel table exists.
+Merge retains `in_utm_zone AND in_mgrs_square`, dropping parcels >5 km² by
+`area_m2`, which simplification refreshes so the cap and the summary totals
+describe the geometry actually written. `tiles.txt` lists expected tiles;
+`empty.txt` lists verified empty/excluded tiles. The two are disjoint, and an
+input tile in neither is refused. Missing inputs fail unless `--allow-missing` is
+explicit; with it, `_summary.json` records `allow_missing`, the missing list and
+the expected/present counts, and `fiboa_convert` stamps "INCOMPLETE" into
+`determination:details` so an incomplete release is identifiable.
+
+Optional patch QA joins require `--aux-root`; use `--no-aux` when no auxiliary
+parcel table exists. Each tile's aux file is matched exactly (`{aux}/{tile}.parquet`,
+never a zone prefix glob) and checked for uniqueness on `(tile_key, parcel_id)`
+before the join; a zone with no aux file joins NULL rather than failing, so every
+zone file in a year carries the same schema. The written row count is compared
+with the pre-join retained count, so a fan-out cannot reach the release.
+
+Zones resume on a `merge_fingerprint` covering the input files' identity and the
+filter, so regenerated inputs and changed flags are rewritten rather than skipped;
+`--force` rewrites regardless. A zone that retains nothing on a rerun has its
+partition removed, so no stale generation survives into `fiboa_convert`'s zone
+discovery. DuckDB spills to `--tmp-dir` (pid-scoped, outside `--out-root`), and
+the per-zone temp is `part-0.parquet.tmp-<pid>`, which no `*.parquet` glob matches.
 Empty outline tiles write readable empty Parquet files.
 
 Conversion repairs and joins seams, drops polygon parts below 900 m², calculates
