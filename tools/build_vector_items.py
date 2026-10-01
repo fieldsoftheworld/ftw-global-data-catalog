@@ -11,8 +11,11 @@ Emits, under ``catalog/vector/``:
   subdirectory (PORTO-CORE-015), with ``table:columns`` for all 20 columns,
   ``file:size``/``file:checksum`` on the data asset, and an ``alternate`` s3
   href (PORTO-CORE-024).
-- README.md / AGENTS.md / llms.txt for the subtree and each collection, with
-  measured numbers (counts and sizes come from the index, not prose memory).
+- README.md / AGENTS.md for the subtree and each collection, with measured
+  numbers (counts and sizes come from the index, not prose memory). The
+  README is for a person deciding whether to trust the data; the AGENTS.md is
+  for an agent that has already committed to it and needs the first query to
+  work. They share a subject, not a job — resist copying one into the other.
 
 Everything is derived from ``index/vector.parquet`` and the embedded parquet
 metadata (schema links, per-column descriptions, processing notes), so a
@@ -62,6 +65,13 @@ FIBOA_README = "https://github.com/fiboa/specification"
 MOSAICS_URL = "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/"
 FTW_URL = "https://fieldsofthe.world"
 DATA_BROWSER = "https://source.coop/ftw/global-data-beta"
+# The earlier, non-beta FTW global release. Its README is the source of the
+# limitation wording quoted below (verified 2026-10-01 against
+# https://data.source.coop/ftw/global-data/README.md).
+FTW_GLOBAL = "https://source.coop/ftw/global-data"
+MODEL = "unet_balanced_fp32.onnx"
+REPO = "https://github.com/fieldsoftheworld/ftw-global-data-catalog"
+S3_BASE = "s3://us-west-2.opendata.source.coop/ftw/global-data-beta"
 
 PROVIDERS = [
     {
@@ -336,8 +346,6 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
          "title": "Collection README"},
         {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
          "title": "Collection agent guide"},
-        {"rel": "llms", "href": "./llms.txt", "type": "text/markdown",
-         "title": "Agent/LLM usage guide"},
         {"rel": "describedby", "href": FIBOA_README, "type": "text/html",
          "title": "fiboa specification (core parcel fields)"},
     ]
@@ -486,8 +494,6 @@ def build_vector_catalog(per_year: dict[int, dict], out: Path) -> dict:
              "type": "text/markdown", "title": "Vector tree README"},
             {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
              "title": "Vector tree agent guide"},
-            {"rel": "llms", "href": "./llms.txt", "type": "text/markdown",
-             "title": "Agent/LLM usage guide"},
             *children,
         ],
     }
@@ -496,6 +502,7 @@ def build_vector_catalog(per_year: dict[int, dict], out: Path) -> dict:
 # ── documentation ────────────────────────────────────────────────────────────
 
 def _query_block(year: int) -> list[str]:
+    """One zone over https. The cheapest query that returns real numbers."""
     url = f"{PUBLIC_BASE}/vector/{year}/zone=31/utm31.parquet"
     return [
         "```python",
@@ -514,6 +521,126 @@ def _query_block(year: int) -> list[str]:
     ]
 
 
+def _glob_block(year: int) -> list[str]:
+    """Every zone of one year in one query, over the hive partitions.
+
+    Globbing needs the s3 endpoint — DuckDB cannot expand a wildcard in an
+    http URL — and Source Cooperative needs path-style addressing. Verified
+    against the live bucket: `count(*)` and the `zone` key come from file
+    metadata, so this returns in seconds.
+    """
+    glob = f"{S3_BASE}/vector/{year}/zone=*/utm*.parquet"
+    return [
+        "```python",
+        "import duckdb",
+        "con = duckdb.connect()",
+        'con.execute("INSTALL httpfs; LOAD httpfs;")',
+        "con.execute(\"\"\"",
+        "    CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2',",
+        "                   URL_STYLE 'path')",
+        "\"\"\")",
+        f'glob = "{glob}"',
+        "con.sql(f\"\"\"",
+        "    SELECT zone, count(*) AS parcels",
+        "    FROM read_parquet('{glob}', hive_partitioning=1)",
+        "    GROUP BY zone ORDER BY parcels DESC LIMIT 5",
+        "\"\"\").show()",
+        "```",
+        "",
+        "The glob needs the `s3://` endpoint — DuckDB cannot expand a "
+        "wildcard in an http URL — and Source Cooperative needs "
+        "`URL_STYLE 'path'`. The bucket is anonymous-read, so the secret "
+        "carries no credentials. `hive_partitioning=1` is what turns the "
+        "`zone=NN` directory into a `zone` column; it arrives as a string, "
+        "zero-padded, so compare it as `zone = '31'`. Swap the year in the "
+        "glob to read a different collection.",
+    ]
+
+
+def _crs_section(*, year_level: bool) -> list[str]:
+    """CRS with the consequences spelled out, not just the EPSG code."""
+    pmtiles = ("The PMTiles archive is" if year_level
+               else "Each year's PMTiles archive is")
+    return [
+        "## Coordinate system", "",
+        "Every zone file stores `geometry` as WGS 84 lon/lat "
+        "(**EPSG:4326**), not in its UTM zone — the zone is a partition key, "
+        "so a cross-zone or whole-year read needs no reprojection and the "
+        "`bbox` struct can be compared across zones directly. Because the "
+        "coordinates are degrees, `ST_Area` and `ST_Length` on `geometry` "
+        "return degree-based numbers that mean nothing on the ground: read "
+        "`metrics:area` (m²) and `metrics:perimeter` (m) instead, or "
+        "reproject to an equal-area CRS first.", "",
+        f"{pmtiles} Web Mercator (EPSG:3857), the tiling CRS, and its cell "
+        "aggregates were computed before that reprojection.", "",
+    ]
+
+
+def _limitations_section(*, year_level: bool) -> list[str]:
+    """What the data is not. FTW's own framing, quoted and attributed."""
+    made_ref = ("*How it was made* above and each collection's `description` "
+                "record" if year_level
+                else "each collection's README and `description` record")
+    return [
+        "## Limitations", "",
+        "These are **model predictions**, not a survey. In the FTW project's "
+        "own words, a field here is a *remote-sensing field unit* (a "
+        "connected component of predicted field-interior pixels), **not** a "
+        "cadastral/legal parcel, and "
+        f"[this is not a land-tenure product]({FTW_GLOBAL}); one legal "
+        "parcel may map to many polygons or to none. Parcel counts, areas "
+        "and perimeters are therefore predicted quantities that carry the "
+        "model's errors, not measurements of anything surveyed.", "",
+        f"- **Model provenance.** The FTW `{MODEL}` model, run on the "
+        "Sentinel-2 quarterly cloudless mosaics and vectorized by "
+        f"BoundaryVote instance post-processing; {made_ref} the exact "
+        "chain. The "
+        f"checkpoint and its model card are released by the "
+        f"[FTW project]({FTW_URL}) separately from this data.",
+        "- **`score` is a model probability, not a validated confidence.** "
+        "It is the mean field probability the model assigned to the pixels "
+        "inside the parcel, × 100 and rounded into a `uint8` (0–100). Use it "
+        "to rank and filter; no calibration against ground truth is "
+        "published for this beta, so a score of 80 is not an 80% chance "
+        "that the parcel is real.",
+        "- **Weaker outside the training distribution.** FTW describes the "
+        "confidence on its earlier global release as \"conservative outside "
+        "the FTW training distribution (e.g. smallholder systems): real "
+        f"fields there may receive low confidence\" ([FTW]({FTW_GLOBAL})). "
+        "Expect the same shape of error here, and prefer a continuous "
+        "`score` over a hard threshold in smallholder regions.",
+        "- **No land-cover masking.** Nothing upstream removed "
+        "non-agricultural ground, so water, scrub and built-up land can "
+        "appear as parcels; `score` is the filter the dataset gives you. "
+        "Parcels larger than 5 km² were dropped in post-processing.",
+        "- **Each year is an independent prediction.** `id` is unique within "
+        "a year's collection and carries no meaning across years, so "
+        "year-over-year comparison needs a spatial join, not an id join.",
+        "", "Found something wrong? Open an "
+        f"[issue]({REPO}/issues).", "",
+    ]
+
+
+def _contributing_section(generated: bool) -> list[str]:
+    """How this metadata is maintained. For the agent that wants to fix it."""
+    lines = [
+        "## Fixing this metadata", "",
+        f"`catalog/` in [the repository]({REPO}) **is** this catalog: it "
+        "syncs 1:1 to the bucket through `tools/publish.py`, so a merged "
+        "change lands here on the next publish. Publishing never deletes, "
+        "and no data bytes live in git — the repository carries only the "
+        "metadata that describes them.", "",
+    ]
+    if generated:
+        lines += [
+            "Every file in this directory is **generated** by "
+            "`tools/build_vector_items.py`. Edit that generator and re-run "
+            "it; an edit to the generated output is overwritten by the next "
+            "build.", "",
+        ]
+    return lines
+
+
 def year_readme(year: int, rows: list[dict], meta: dict) -> str:
     n = sum(r["n_parcels"] for r in rows)
     gib = sum(r["size_bytes"] for r in rows) / 2**30
@@ -523,25 +650,33 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         f"Predicted agricultural field boundaries for {year}: **{n:,} "
         f"parcels** in {len(rows)} per-UTM-zone GeoParquet files "
         f"({gib:,.1f} GiB). {_PROJECT}", "",
-        f"Browse it in the [data browser]({DATA_BROWSER}).", "",
+        f"Browse it in the [data browser]({DATA_BROWSER}); read "
+        "[AGENTS.md](./AGENTS.md) beside this file if you are an agent, and "
+        "[Limitations](#limitations) below before you draw conclusions from "
+        "the numbers.", "",
         "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
-        "## How it was made", "",
-        f"{meta['determination:details']} Source imagery: the "
-        f"[TGE Labs Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}).",
-        "",
-        "## Files", "",
-        f"One file per UTM zone at `vector/{year}/zone=NN/utm{{NN}}.parquet` "
-        "(hive-partitioned by `zone`) "
-        f"(e.g. [utm{biggest['zone']:02d}]"
-        f"({PUBLIC_BASE}/vector/{year}/{zone_stem(biggest['zone'])}.parquet) "
-        f"is the largest, {biggest['n_parcels']:,} parcels). Zone numbers "
-        "with no land coverage are absent.", "",
+        "## Query it", "",
+        "One zone, straight over https — no download, no credentials:", "",
+        *_query_block(year), "",
+        "## Whole year, every zone", "",
+        *_glob_block(year), "",
         "## Columns", "",
         f"The schema follows {_FIBOA} and {_VECOREL} "
         "(also machine-readable in each item's `table:columns`):", "",
         "| Column | Description |", "|---|---|",
         *[f"| `{c['name']}` | {c['description']} |" for c in TABLE_COLUMNS],
         "",
+        *_crs_section(year_level=True),
+        "## Files", "",
+        f"One file per UTM zone at `vector/{year}/zone=NN/utm{{NN}}.parquet` "
+        "(hive-partitioned by `zone`) "
+        f"(e.g. [utm{biggest['zone']:02d}]"
+        f"({PUBLIC_BASE}/vector/{year}/zone={biggest['zone']:02d}/"
+        f"{zone_stem(biggest['zone'])}.parquet) "
+        f"is the largest, {biggest['n_parcels']:,} parcels). Zone numbers "
+        "with no land coverage are absent. Each parquet sits beside its own "
+        "STAC item, and `items.parquet` mirrors every item's metadata for "
+        "bulk lookup.", "",
         "## Browse it", "",
         f"One [PMTiles archive]({PUBLIC_BASE}/vector/{year}/fields-{year}.pmtiles) "
         "renders the whole year with a zoom handover: A5 r7 cell "
@@ -553,26 +688,37 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         f"aggregates are also published as "
         f"[GeoParquet]({PUBLIC_BASE}/vector/{year}/cells_a5r7_{year}.parquet).",
         "",
-        "## Query it", "",
-        *_query_block(year), "",
-        "No land-cover masking was applied upstream: filter on `score` (the "
-        "model's field probability × 100) to trade precision against "
-        "recall.", "",
+        "## How it was made", "",
+        f"{meta['determination:details']} Source imagery: the "
+        f"[TGE Labs Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}).",
+        "",
+        *_limitations_section(year_level=True),
+        *_contributing_section(generated=True),
     ]
     return "\n".join(lines)
 
 
 def year_agents(year: int, rows: list[dict], meta: dict) -> str:
     n = sum(r["n_parcels"] for r in rows)
-    glob = (f"s3://us-west-2.opendata.source.coop/ftw/global-data-beta/"
-            f"vector/{year}/zone=*/utm*.parquet")
+    glob = f"{S3_BASE}/vector/{year}/zone=*/utm*.parquet"
     lines = [
         f"# AGENTS.md — FTW field boundaries {year}", "",
         "Guidance for AI agents. Every claim here is quoted from the "
         "dataset's embedded metadata or measured from the data.", "",
+        "Around this file: [collection.json](./collection.json) is the "
+        "normative metadata, [README.md](./README.md) carries the schema "
+        "table and the limitations in full, and "
+        "[../AGENTS.md](../AGENTS.md) covers the vector tree this year "
+        "sits in.", "",
+        "## Access", "",
         f"- {n:,} parcels in {len(rows)} per-UTM-zone GeoParquet files at "
         f"`{PUBLIC_BASE}/vector/{year}/zone=NN/utm{{NN}}.parquet` "
         "(anonymous read, hive-partitioned by `zone`).",
+        "- Read in place over https:// URLs — the files stream over HTTP "
+        "range requests, so there is no reason to download them. Use "
+        "https:// rather than s3:// for single files (s3:// hangs on some "
+        "networks); a browser-like User-Agent is needed for bucket "
+        "listings only, not for file reads.",
         "- Whole-year queries glob the partitions over s3 with "
         "anonymous access and `hive_partitioning=1` (http URLs cannot "
         "glob):",
@@ -584,81 +730,114 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         f"  con.sql(\"SELECT zone, count(*) FROM read_parquet('{glob}', "
         "hive_partitioning=1) GROUP BY zone ORDER BY zone\").show()",
         "  ```",
-        f"- Schema: {len(TABLE_COLUMNS)} columns ({_COLS_SHORT}); "
-        "definitions live in `table:columns` on the collection and every "
-        "item.",
-        "- Parcel ids are unique within a zone file; zones partition the "
-        "parcels cleanly (measured: zero shared ids or geometries in the "
-        "6°E utm31/utm32 boundary strip).",
-        "- `metrics:area` is m²; the upstream post-processing removed "
-        "parcels larger than 5 km².",
-        "- Query with DuckDB over https:// URLs (s3:// hangs on some "
-        "networks); a browser-like User-Agent is needed for bucket "
-        "listings only, not file reads.",
+        "- `zone` from the partition path is a **string**, zero-padded: "
+        "`WHERE zone = '31'`, not `zone = 31`.",
         "- The `items.parquet` collection mirror holds all item metadata "
         "for bulk spatial lookup of zones.", "",
-        "Runnable example:", "",
+        "## Schema and CRS", "",
+        f"- {len(TABLE_COLUMNS)} columns ({_COLS_SHORT}); definitions live "
+        "in `table:columns` on the collection and every item.",
+        "- `geometry` is WGS 84 lon/lat (EPSG:4326) in **every** zone file — "
+        "the UTM zone is a partition key, not a CRS, so cross-zone reads "
+        "need no reprojection. The consequence: `ST_Area`/`ST_Length` on "
+        "`geometry` return degree-based numbers, so read `metrics:area` "
+        "(m², already computed) and `metrics:perimeter` (m) instead, or "
+        "reproject to an equal-area CRS first.",
+        "- The PMTiles archive is Web Mercator (EPSG:3857); the GeoParquet "
+        "is not.",
+        "- Parcel ids are unique within a zone file; zones partition the "
+        "parcels cleanly (measured: zero shared ids or geometries in the "
+        "6°E utm31/utm32 boundary strip). Ids carry no meaning across "
+        "years — each year is an independent prediction, so year-over-year "
+        "work needs a spatial join.",
+        "- `metrics:area` is m²; the upstream post-processing removed "
+        "parcels larger than 5 km².", "",
+        "## What this data is not", "",
+        "- A parcel is a *remote-sensing field unit*, **not** a "
+        f"cadastral/legal parcel; [this is not a land-tenure product]"
+        f"({FTW_GLOBAL}). Do not answer ownership, tenure or "
+        "legal-boundary questions from it.",
+        "- `score` is the mean model field probability inside the parcel "
+        "(× 100, `uint8` 0–100) — a ranking for filtering, not a calibrated "
+        "probability that the parcel is real, and no calibration is "
+        "published for this beta.",
+        "- No land-cover masking was applied upstream, so water, scrub and "
+        "built-up ground can appear as parcels. Counts and areas are "
+        "predictions; say so when you report them.",
+        "- The full set of caveats, with sources, is in "
+        "[README.md](./README.md#limitations).", "",
+        "## Runnable example", "",
         *_query_block(year), "",
+        *_contributing_section(generated=True),
     ]
     return "\n".join(lines)
-
-
-def year_llms(year: int, rows: list[dict], meta: dict) -> str:
-    n = sum(r["n_parcels"] for r in rows)
-    return "\n".join([
-        f"# FTW Global (beta) — field boundaries {year}", "",
-        f"> {n:,} predicted agricultural field parcels for {year} as "
-        f"{len(rows)} per-UTM-zone cloud-native GeoParquet files. "
-        "CC-BY-4.0.", "",
-        f"Data: `{PUBLIC_BASE}/vector/{year}/utm{{NN}}.parquet`",
-        f"Collection: {PUBLIC_BASE}/vector/{year}/collection.json",
-        "", "Processing (from the dataset's embedded metadata):",
-        meta["determination:details"], "",
-        "See AGENTS.md beside this file for query guidance.", "",
-    ])
 
 
 def vector_readme(per_year: dict[int, list[dict]]) -> str:
     total = sum(r["n_parcels"] for rows in per_year.values() for r in rows)
     years = ", ".join(str(y) for y in sorted(per_year))
+    latest = max(per_year)
     return "\n".join([
         "# FTW Global (beta) — Vector field boundaries", "",
         f"Per-year collections of predicted agricultural field boundaries "
         f"({years}): **{total:,} parcels** total, as per-UTM-zone "
         f"cloud-native GeoParquet. {_PROJECT}", "",
-        f"Browse it in the [data browser]({DATA_BROWSER}).", "",
+        f"Browse it in the [data browser]({DATA_BROWSER}); "
+        "[AGENTS.md](./AGENTS.md) beside this file is the agent guide.", "",
         "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## Collections", "",
-        *[f"- [{y}](./{y}/collection.json) — "
-          f"{sum(r['n_parcels'] for r in per_year[y]):,} parcels"
+        "| Collection | Parcels | Files | Documentation |",
+        "|---|---|---|---|",
+        *[f"| [{y}](./{y}/collection.json) | "
+          f"{sum(r['n_parcels'] for r in per_year[y]):,} | "
+          f"{len(per_year[y])} UTM zones | "
+          f"[README](./{y}/README.md) · [AGENTS](./{y}/AGENTS.md) |"
           for y in sorted(per_year)], "",
-        "New years drop in incrementally alongside these.", "",
+        "Every collection carries the same 9-column fiboa/vecorel schema, "
+        "the same `zone=NN` hive layout and the same four map styles, so a "
+        "query written against one year runs against any of them. New years "
+        "drop in incrementally alongside these.", "",
+        f"## Query a whole collection ({latest})", "",
+        *_glob_block(latest), "",
+        *_crs_section(year_level=False),
+        *_limitations_section(year_level=False),
+        *_contributing_section(generated=True),
     ])
 
 
 def vector_agents(per_year: dict[int, list[dict]]) -> str:
+    years = sorted(per_year)
     return "\n".join([
         "# AGENTS.md — FTW vector tree", "",
         "Guidance for AI agents. Every claim here is quoted from a source "
         "or measured from the data.", "",
-        "- One collection per year: " + ", ".join(
-            f"`{y}/collection.json`" for y in sorted(per_year)) + ".",
-        "- Each collection documents its schema in `table:columns` and its "
-        "own AGENTS.md; read those before querying.",
+        "Around this file: [catalog.json](./catalog.json) is the normative "
+        "metadata, [README.md](./README.md) is the human landing page, and "
+        "[../AGENTS.md](../AGENTS.md) covers the whole catalog (vector and "
+        "raster).", "",
+        "## The tree", "",
+        "- One collection per year, each with its own agent guide: " + ", ".join(
+            f"[{y}](./{y}/AGENTS.md)" for y in years) + ".",
+        "- Every year shares one schema (9 columns, documented in "
+        "`table:columns` on each collection and item), one layout and one "
+        "set of styles, so a query written against one year runs against "
+        "any of them. Read the year's AGENTS.md for its measured numbers.",
         "- Data layout: `vector/{year}/zone=NN/utm{NN}.parquet` — hive-"
         "partitioned by zone, each parquet colocated with its item "
-        "metadata; whole-year reads glob `zone=*/utm*.parquet`.", "",
-    ])
-
-
-def vector_llms(per_year: dict[int, list[dict]]) -> str:
-    total = sum(r["n_parcels"] for rows in per_year.values() for r in rows)
-    return "\n".join([
-        "# FTW Global (beta) — vector tree", "",
-        f"> {total:,} predicted field parcels across "
-        f"{len(per_year)} years, per-UTM-zone GeoParquet. CC-BY-4.0.", "",
-        *[f"- {y}: {PUBLIC_BASE}/vector/{y}/collection.json"
-          for y in sorted(per_year)], "",
+        "metadata; whole-year reads glob `zone=*/utm*.parquet` over "
+        "`s3://` with `hive_partitioning=1` (http URLs cannot glob). The "
+        "`zone` key comes back as a zero-padded string.",
+        "- `geometry` is WGS 84 lon/lat (EPSG:4326) in every zone file, so "
+        "cross-zone and cross-year reads need no reprojection; the "
+        "consequence is that `ST_Area` on `geometry` returns square "
+        "degrees — use `metrics:area` (m²). PMTiles are Web Mercator "
+        "(EPSG:3857).",
+        "- Years are independent predictions: `id` is not stable across "
+        "them, so year-over-year comparison needs a spatial join.",
+        "- These are *remote-sensing field units*, **not** cadastral "
+        f"parcels; [this is not a land-tenure product]({FTW_GLOBAL}). "
+        "Each collection's README has the limitations in full.", "",
+        *_contributing_section(generated=True),
     ])
 
 
@@ -737,7 +916,6 @@ def main() -> int:
         write_json(year_dir / "collection.json", collection)
         (year_dir / "README.md").write_text(year_readme(year, rows, meta))
         (year_dir / "AGENTS.md").write_text(year_agents(year, rows, meta))
-        (year_dir / "llms.txt").write_text(year_llms(year, rows, meta))
         print(f"{year}: {len(rows)} items, "
               f"{sum(r['n_parcels'] for r in rows):,} parcels")
 
@@ -745,7 +923,6 @@ def main() -> int:
                build_vector_catalog(per_year, args.out))
     (args.out / "README.md").write_text(vector_readme(per_year))
     (args.out / "AGENTS.md").write_text(vector_agents(per_year))
-    (args.out / "llms.txt").write_text(vector_llms(per_year))
     print(f"OK -> {args.out}")
     return 0
 
