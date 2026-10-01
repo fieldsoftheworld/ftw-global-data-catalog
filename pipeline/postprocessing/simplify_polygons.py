@@ -67,7 +67,7 @@ def process_tile(tk: str, year: int, tol: float, in_root: Path, out_root: Path) 
     fwd = Transformer.from_crs("EPSG:4326", f"EPSG:{utm_epsg(tk)}", always_xy=True)
     proj = shapely.transform(g, lambda a: np.c_[fwd.transform(a[:, 0], a[:, 1])])
     n0 = int(shapely.get_num_coordinates(proj).sum())
-    simp = simplify_coverage(proj, tol)
+    simp = simplify_coverage(proj, tol, label=tk)
     n1 = int(shapely.get_num_coordinates(simp).sum())
     back = shapely.transform(
         simp, lambda a: np.c_[fwd.transform(a[:, 0], a[:, 1], direction="INVERSE")]

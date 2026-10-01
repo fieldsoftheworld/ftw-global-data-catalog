@@ -340,7 +340,7 @@ def _run_tile(
     t = time.perf_counter()
     out = out_dir / f"{tk}.parquet"
     if rows:
-        proj = simplify_coverage(np.array(geoms, dtype=object), simplify_m)
+        proj = simplify_coverage(np.array(geoms, dtype=object), simplify_m, label=tk)
         prof["t_simplify"] = time.perf_counter() - t
         t = time.perf_counter()
         g = shapely.transform(
