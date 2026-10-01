@@ -15,5 +15,6 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: '3.13'
-      - run: python -m pip install -r pipeline/mosaics/requirements.txt pytest
+      - run: python -m pip install -r pipeline/mosaics/requirements.txt pytest pyflakes
+      - run: pyflakes pipeline/mosaics/*.py
       - run: python -m pytest -q pipeline/mosaics/test_mosaics.py

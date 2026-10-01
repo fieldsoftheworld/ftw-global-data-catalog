@@ -30,7 +30,10 @@ STAC query does not return fail the run. Specify disjoint `--shard` /
 hold 16 source COGs; band stacking reads in windows to bound RAM.
 
 Missing quarters, duplicate items, incomplete downloads and grid mismatches fail
-the run. Input checksums and STAC IDs accompany the stack. Writes replace
+the run, as does an incomplete STAC result: paging stops only when the API
+offers no `next` link, and a page count short of the reported `numberMatched`
+(or a `next` cursor that does not advance) is an error, never a quiet partial
+run. Input checksums and STAC IDs accompany the stack. Writes replace
 atomically; completed stacks with the same source IDs skip on reruns. This is
 input preparation, not a mirror publisher or infrastructure provisioning tool.
 
@@ -50,8 +53,7 @@ tile and quarter:
 | `b04_s3_endpoint` | the endpoint the row was written against (`EODATA_S3_ENDPOINT` when set) |
 | `b04_odata_href` | the item's CDSE OData alternate, **provenance only** — it needs an OIDC bearer token and GDAL's extension check rejects its `/$value` path, so it is not an open path. Empty when the item has no alternate |
 
-Each shard
-holds only its own tiles, so with `--num-shards N` the path gains a
+Each shard holds only its own tiles, so with `--num-shards N` the path gains a
 `.shard-K-of-N` suffix: `--index-output index/tile_index_2025.parquet --shard 1
 --num-shards 4` writes `index/tile_index_2025.shard-1-of-4.parquet`. No shard
 can overwrite another's rows, and postprocessing merges the parts once every
@@ -67,5 +69,5 @@ PY
 ```
 
 A single-shard run (the default) writes the given path unchanged. Source URLs
-retain their original access requirements; a public mirror index can be supplied
-instead.
+retain their original access requirements, which is why both forms are kept in
+their own columns; point `EODATA_S3_ENDPOINT` at a mirror to index one instead.
