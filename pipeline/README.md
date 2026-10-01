@@ -101,3 +101,7 @@ for its 115.5 GB archive with a 360 G coarse node.
 ## Mosaic input preparation
 
 [Quarterly mosaic downloads](mosaics/README.md) assemble 16-band input tiles.
+
+## Model inference
+
+[Quarterly-mosaic inference](inference/README.md) produces probability COGs.
