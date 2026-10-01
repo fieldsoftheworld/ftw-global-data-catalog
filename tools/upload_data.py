@@ -69,7 +69,9 @@ def remote_data_index(
         return remote_index(uploads, config)
     bucket, prefix = split_s3_uri(config["write_prefix"])
     region = config.get("region", "us-west-2")
-    tops = {u.key.split("/", 1)[0] for u in uploads}
+    # Upload.key is the full object key; the top-level data prefix is the
+    # first segment after the write prefix (raster/, vector/, index/).
+    tops = {u.key[len(prefix) + 1:].split("/", 1)[0] for u in uploads}
     index: dict[str, tuple[int, str]] = {}
     s3 = boto3.client("s3", region_name=region)
     try:
@@ -79,8 +81,8 @@ def remote_data_index(
                 Bucket=bucket, Prefix=f"{prefix}/{top}/"
             ):
                 for obj in page.get("Contents", []):
-                    key = obj["Key"][len(prefix) + 1:]
-                    index[key] = (obj["Size"], obj["ETag"].strip('"'))
+                    # Full keys, prefix included — Upload.key is the full key.
+                    index[obj["Key"]] = (obj["Size"], obj["ETag"].strip('"'))
     except Exception as exc:  # noqa: BLE001 — same contract as remote_index
         print(f"note: could not list s3://{bucket}/{prefix} ({exc}); "
               "treating every file as changed")
