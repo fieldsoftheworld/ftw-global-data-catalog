@@ -6,6 +6,7 @@ from pathlib import Path
 import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
+import pytest
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
@@ -237,6 +238,22 @@ def test_bbox_describes_the_published_geometry(tmp_path, monkeypatch):
     assert abs(bx1 - (-2.999)) < 1e-9, "the dropped sub-900 m2 part must not widen the bbox"
 
 
+def test_duplicate_parcel_ids_are_refused_before_publication(tmp_path, monkeypatch):
+    """write_sorted's validate hook was never passed and n was only printed.
+
+    catalog/vector/{year}/AGENTS.md promises parcel ids are unique within a zone
+    file, so a duplicated (tile_key, parcel_id) must not reach the release.
+    """
+    boxes = [  # same key twice, far apart, so no seam join merges them
+        ("30TXM_0_0", 1, -3.0, 41.0, -3.0 + 0.001, 41.001, 0.6, False),
+        ("30TXM_0_0", 1, -2.5, 41.0, -2.5 + 0.001, 41.001, 0.8, False),
+    ]
+    with pytest.raises(SystemExit, match="duplicate parcel ids"):
+        _convert(tmp_path, monkeypatch, boxes)
+    # and nothing was published
+    assert not list((tmp_path / "out").rglob("*.parquet"))
+
+
 def test_output_is_hive_partitioned_by_zone(tmp_path, monkeypatch):
     """The published layout is ``vector/{year}/zone=NN/utm{NN}.parquet``.
 
@@ -304,8 +321,6 @@ def test_cross_tile_seam_join(tmp_path, monkeypatch):
 
 
 def test_zone_index_validation(tmp_path, monkeypatch):
-    import pytest
-
     monkeypatch.setattr(fc, "IN_ROOT", tmp_path / "merged")
     monkeypatch.setattr(sys, "argv", ["fiboa_convert.py", "--year", "2025", "--zone-index", "0"])
     with pytest.raises(SystemExit, match="no zone"):
