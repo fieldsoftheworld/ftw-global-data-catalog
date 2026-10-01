@@ -29,7 +29,7 @@ def predict_tile(sess, arr, *, batch=64, overlap=0.25, norm=3000.0, dev="cuda", 
         raise ValueError("input contains nonfinite values")
     if obuf_cache is None:
         obuf_cache = {}
-    tile_t = torch.from_numpy(arr).to(dev) / norm
+    tile_t = torch.from_numpy(arr).to(dev, copy=True).div_(norm)
     _, h, w = tile_t.shape
     tile_t = F.pad(tile_t, (0, max(0, NATIVE - w), 0, max(0, NATIVE - h)), mode="replicate")
     h, w = tile_t.shape[1:]
@@ -71,5 +71,7 @@ def predict_tile(sess, arr, *, batch=64, overlap=0.25, norm=3000.0, dev="cuda", 
             acc[:, oy : oy + PATCH, ox : ox + PATCH] += score * win
             wsum[oy : oy + PATCH, ox : ox + PATCH] += win
 
-    out = (acc / wsum).clamp_(0, 1).mul_(255).round_().to(torch.uint8).cpu().numpy()
+    acc.div_(wsum).clamp_(0, 1).mul_(255).round_()
+    del wsum, tile_t  # free the full-size float32 tensors before the uint8 copy
+    out = acc.to(torch.uint8).cpu().numpy()
     return out[:, : arr.shape[1] * UP, : arr.shape[2] * UP], len(starts)
