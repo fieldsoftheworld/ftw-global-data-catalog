@@ -1,6 +1,7 @@
 "Simplify per-tile GeoParquet in UTM and refresh bounds."
 
 import argparse
+import multiprocessing
 import os
 import time
 from concurrent.futures import ProcessPoolExecutor
@@ -15,6 +16,9 @@ from pyproj import Transformer
 from pool_utils import drain, exit_on_failures
 
 from polygons import simplify_coverage
+
+#: See ``outlines.MP_CONTEXT``.
+MP_CONTEXT = multiprocessing.get_context("spawn")
 
 IN = Path("outlines")
 OUT = Path("simplified")
@@ -115,7 +119,7 @@ def main() -> None:
         )
     ]
     print(f"{len(tiles)} tiles, shard {a.shard}/{a.num_shards}, tol {a.tolerance_m} m", flush=True)
-    with ProcessPoolExecutor(a.workers, max_tasks_per_child=1) as pool:
+    with ProcessPoolExecutor(a.workers, max_tasks_per_child=1, mp_context=MP_CONTEXT) as pool:
         futs = {
             pool.submit(process_tile, t, a.year, a.tolerance_m, a.in_root, a.out_root): t
             for t in tiles

@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import multiprocessing
 import os
 import resource
 import time
@@ -38,6 +39,15 @@ from context import aux_rasters
 from pool_utils import drain, exit_on_failures
 
 PX_M2 = 6.25
+
+#: ``max_tasks_per_child`` silently selects the **spawn** context (measured: a plain
+#: ProcessPoolExecutor gets ForkContext, one with max_tasks_per_child=1 gets
+#: SpawnContext), so the choice is made explicit here rather than inferred. Spawn is
+#: what we want: a fresh process per tile is the point of max_tasks_per_child=1, the
+#: workers start an RSS-sampling thread and forking a threaded parent is a known
+#: hazard, and a spawned child re-imports this module, which is where the
+#: single-thread BLAS/GDAL environment is set.
+MP_CONTEXT = multiprocessing.get_context("spawn")
 
 
 def score_labels(u8, method):
@@ -501,7 +511,7 @@ def main() -> None:
         elif done % REPORT_EVERY == 0:
             print(f"  {done}/{len(paths)} tiles done", flush=True)
 
-    with ProcessPoolExecutor(a.workers, max_tasks_per_child=1) as pool:
+    with ProcessPoolExecutor(a.workers, max_tasks_per_child=1, mp_context=MP_CONTEXT) as pool:
         futs = {
             pool.submit(
                 process_tile, p, a.year, out_dir, index, a.core, a.halo, a.backend, a.simplify_m
