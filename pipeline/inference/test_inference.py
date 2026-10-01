@@ -8,6 +8,7 @@ from run import (
     BAND_DESCRIPTIONS,
     INPUT_BANDS,
     current,
+    model_contract,
     fingerprint,
     output_tags,
     read_stack,
@@ -161,3 +162,80 @@ def test_band_order_refused_on_conflicting_claims(tmp_path):
     mislabelled = {"input_bands": "Q1,Q2,Q3,Q4 x B02,B03,B04,B08"}
     with pytest.raises(ValueError, match="input_bands tag"):
         read_stack(stack(tmp_path / "mislabelled.tif", tags=mislabelled))
+
+
+class FakeIO:
+    def __init__(self, name, shape, type="tensor(float)"):
+        self.name, self.shape, self.type = name, shape, type
+
+
+class FakeSession:
+    def __init__(self, inputs, outputs, providers=("CPUExecutionProvider",)):
+        self._inputs, self._outputs, self._providers = inputs, outputs, providers
+
+    def get_inputs(self):
+        return self._inputs
+
+    def get_outputs(self):
+        return self._outputs
+
+    def get_providers(self):
+        return list(self._providers)
+
+
+def signature(batch="batch", in_shape=(16, 512, 512), out_shape=(3, 512, 512)):
+    return FakeSession(
+        [FakeIO("input", [batch, *in_shape])], [FakeIO("logits", [batch, *out_shape])]
+    )
+
+
+def test_model_contract_accepts_dynamic_batch():
+    assert model_contract(signature()) is None
+
+
+def test_model_contract_rejects_fixed_batch():
+    """A fixed-batch export must fail preflight, not the first partial batch."""
+    assert "fixed batch" in (model_contract(signature(batch=8)) or "")
+    assert "fixed batch" in (model_contract(signature(batch=1)) or "")
+
+
+def test_model_contract_rejects_wrong_signature():
+    assert "logits" in (model_contract(signature(out_shape=(2, 512, 512))) or "")
+    assert "input" in (model_contract(signature(in_shape=(16, 256, 256))) or "")
+    assert model_contract(FakeSession([FakeIO("x", ["b", 16, 512, 512])], [])) is not None
+    bad_type = FakeSession(
+        [FakeIO("input", ["b", 16, 512, 512], "tensor(float16)")],
+        [FakeIO("logits", ["b", 3, 512, 512])],
+    )
+    assert model_contract(bad_type) is not None
+
+
+def onnx_model(path, *, dynamic):
+    """A 1x1 conv stand-in for the real U-Net, with or without a dynamic batch axis."""
+    torch.manual_seed(0)
+    axes = {"dynamic_axes": {"input": {0: "batch"}, "logits": {0: "batch"}}} if dynamic else {}
+    try:
+        torch.onnx.export(
+            torch.nn.Conv2d(16, 3, 1).eval(),
+            (torch.zeros(1, 16, 512, 512),),
+            str(path),
+            input_names=["input"],
+            output_names=["logits"],
+            dynamo=False,
+            **axes,
+        )
+    except Exception as exc:  # pragma: no cover - exporter availability
+        pytest.skip(f"torch.onnx.export unavailable: {exc}")
+    return path
+
+
+def test_model_contract_on_real_onnx_exports(tmp_path):
+    """ORT reports a dynamic batch axis as a name and a fixed one as an int."""
+    import onnxruntime as ort
+
+    def load(name, dynamic):
+        path = onnx_model(tmp_path / name, dynamic=dynamic)
+        return ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
+
+    assert model_contract(load("dynamic.onnx", True)) is None
+    assert "fixed batch" in (model_contract(load("fixed.onnx", False)) or "")

@@ -12,7 +12,7 @@ import torch  # noqa: F401 - preload its CUDA libraries before ONNX Runtime
 import onnxruntime as ort
 import rasterio
 from affine import Affine
-from predict import predict_tile
+from predict import PATCH, predict_tile
 
 PROVIDERS = {"cuda": "CUDAExecutionProvider", "cpu": "CPUExecutionProvider"}
 # The contract the mosaic pipeline writes (pipeline/mosaics/download.py): quarter-major.
@@ -77,6 +77,24 @@ def current(dst: Path, fp: str) -> bool:
         return False
 
 
+def model_contract(session) -> str | None:
+    """Error message if the session is not dynamic-batch [B,16,P,P] -> [B,3,P,P] FP32."""
+    inputs, outputs = session.get_inputs(), session.get_outputs()
+    if len(inputs) != 1 or inputs[0].name != "input" or inputs[0].type != "tensor(float)":
+        return "model must take a single FP32 'input'"
+    if not outputs or outputs[0].name != "logits" or outputs[0].type != "tensor(float)":
+        return "model must emit FP32 'logits'"
+    for io, channels in ((inputs[0], 16), (outputs[0], 3)):
+        if list(io.shape[1:]) != [channels, PATCH, PATCH]:
+            return f"expected {io.name} [B,{channels},{PATCH},{PATCH}], got {io.shape}"
+        if isinstance(io.shape[0], int):
+            return (
+                f"{io.name} has a fixed batch of {io.shape[0]}; re-export with a dynamic "
+                "batch axis (the last batch of a tile is almost never full)"
+            )
+    return None
+
+
 def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     tmp = dst.with_name(f"{dst.name}.tmp-{os.getpid()}")
@@ -132,13 +150,8 @@ def main() -> None:
     if provider not in ort.get_available_providers():
         ap.error(f"{provider} unavailable")
     session = ort.InferenceSession(str(a.model), providers=[provider])
-    inputs, outputs = session.get_inputs(), session.get_outputs()
-    if len(inputs) != 1 or inputs[0].name != "input" or inputs[0].type != "tensor(float)":
-        ap.error("model must take FP32 'input'")
-    if not outputs or outputs[0].name != "logits" or outputs[0].type != "tensor(float)":
-        ap.error("model must emit FP32 'logits'")
-    if inputs[0].shape[1:] != [16, 512, 512] or outputs[0].shape[1:] != [3, 512, 512]:
-        ap.error("expected dynamic-batch input [B,16,512,512] and logits [B,3,512,512]")
+    if problem := model_contract(session):
+        ap.error(problem)
     todo = []
     for src in paths:
         dst = a.output_dir / src.name
