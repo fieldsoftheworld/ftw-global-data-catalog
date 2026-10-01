@@ -239,3 +239,11 @@ def test_model_contract_on_real_onnx_exports(tmp_path):
 
     assert model_contract(load("dynamic.onnx", True)) is None
     assert "fixed batch" in (model_contract(load("fixed.onnx", False)) or "")
+
+
+def test_write_score_cleans_up_a_failed_write(tmp_path):
+    """A failed write must not leave a .tmp- sibling behind."""
+    tr = Affine(2.5, 0, 500000, 0, -2.5, 1000000)
+    with pytest.raises(ValueError):
+        write_score(tmp_path / "score.tif", np.zeros((3, 64, 128), np.uint8), "EPSG:32631", tr, {})
+    assert list(tmp_path.iterdir()) == []

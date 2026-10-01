@@ -98,29 +98,33 @@ def model_contract(session) -> str | None:
 def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     tmp = dst.with_name(f"{dst.name}.tmp-{os.getpid()}")
-    with rasterio.open(
-        tmp,
-        "w",
-        driver="COG",
-        height=scores.shape[1],
-        width=scores.shape[2],
-        count=2,
-        dtype="uint8",
-        crs=crs,
-        transform=transform,
-        compress="ZSTD",
-        level=9,
-        predictor=2,
-        blocksize=512,
-        BIGTIFF="IF_SAFER",
-        overview_resampling="average",
-    ) as ds:
-        ds.write(scores)
-        ds.scales = (1 / 255, 1 / 255)
-        ds.set_band_description(1, "field")
-        ds.set_band_description(2, "boundary")
-        ds.update_tags(**tags)
-    os.replace(tmp, dst)
+    try:
+        with rasterio.open(
+            tmp,
+            "w",
+            driver="COG",
+            height=scores.shape[1],
+            width=scores.shape[2],
+            count=2,
+            dtype="uint8",
+            crs=crs,
+            transform=transform,
+            compress="ZSTD",
+            level=9,
+            predictor=2,
+            blocksize=512,
+            BIGTIFF="IF_SAFER",
+            overview_resampling="average",
+        ) as ds:
+            ds.write(scores)
+            ds.scales = (1 / 255, 1 / 255)
+            ds.set_band_description(1, "field")
+            ds.set_band_description(2, "boundary")
+            ds.update_tags(**tags)
+        os.replace(tmp, dst)
+    except BaseException:
+        tmp.unlink(missing_ok=True)
+        raise
 
 
 def main() -> None:
