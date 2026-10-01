@@ -83,6 +83,160 @@ def test_v2_layout(tmp_path, monkeypatch):
     assert not tmp.exists() or not any(tmp.iterdir())
 
 
+BOX_COLS = "t(tile_key, parcel_id, xmin, ymin, xmax, ymax, pf_mean, touches_window_edge, geometry)"
+
+
+def _write_boxes(root: Path, boxes: list[tuple]) -> Path:
+    "boxes: (tile_key, parcel_id, x0, y0, x1, y1, pf_mean, touches_window_edge)"
+    src = root / "2025" / "zone=30" / "part-0.parquet"
+    src.parent.mkdir(parents=True)
+    values = ", ".join(
+        f"('{t}', {p}, {x0}::DOUBLE, {y0}::DOUBLE, {x1}::DOUBLE, {y1}::DOUBLE, {pf}::DOUBLE, "
+        f"{str(e).lower()}, ST_MakeEnvelope({x0}, {y0}, {x1}, {y1}))"
+        for t, p, x0, y0, x1, y1, pf, e in boxes
+    )
+    con = duckdb.connect()
+    con.sql("load spatial")
+    con.sql(f"COPY (SELECT * FROM (VALUES {values}) {BOX_COLS}) TO '{src}' (FORMAT parquet)")
+    con.close()
+    return src
+
+
+def _rows(dst: Path) -> list[tuple]:
+    con = duckdb.connect()
+    con.sql("load spatial")
+    out = con.sql(
+        f'select id, "metrics:area", bbox.xmin, bbox.ymin, bbox.xmax, bbox.ymax, '
+        f"ST_XMin(geometry), ST_YMin(geometry), ST_XMax(geometry), ST_YMax(geometry) "
+        f"from '{dst}' order by id"
+    ).fetchall()
+    con.close()
+    return out
+
+
+def _convert(tmp_path, monkeypatch, boxes) -> list[tuple]:
+    _write_boxes(tmp_path / "merged", boxes)
+    monkeypatch.setattr(fc, "IN_ROOT", tmp_path / "merged")
+    monkeypatch.setattr(fc, "TMP_ROOT", tmp_path / "duck")
+    return _rows(fc.convert(2025, "30", 1, "1GB", tmp_path / "out"))
+
+
+def _seam_pair(x0: float, y0: float, w: float, h: float, a: str, b: str) -> list[tuple]:
+    "One field cut by the a/b tile seam into two halves overlapping by w/2."
+    return [
+        (f"{a}_0_0", 1, x0, y0, x0 + w, y0 + h, 0.6, True),
+        (f"{b}_0_0", 1, x0 + w / 2, y0, x0 + 1.5 * w, y0 + h, 0.8, True),
+    ]
+
+
+def test_seam_adjacent_fields_are_not_merged(tmp_path, monkeypatch):
+    """Two distinct fields touching along a tile seam are neighbours, not duplicates.
+
+    The cross-tile branch accepted a bare 20 m shared edge with zero overlap, so
+    neighbours either side of a seam were fused with a blended score. Seams run
+    for tens of thousands of km.
+    """
+    w, h = 0.001, 0.0005
+    rows = _convert(
+        tmp_path,
+        monkeypatch,
+        [
+            ("30TXM_0_0", 1, -3.0 - w, 41.0, -3.0, 41.0 + h, 0.6, False),
+            ("30TYM_0_0", 1, -3.0, 41.0, -3.0 + w, 41.0 + h, 0.8, False),
+        ],
+    )
+    assert [r[0] for r in rows] == ["30TXM_0_0-1", "30TYM_0_0-1"]
+    assert rows[0][1] == rows[1][1], "each keeps its own area; neither is the union"
+
+
+def test_genuine_seam_duplicate_still_merges(tmp_path, monkeypatch):
+    "Control for the above: a real duplicate overlaps, and must still become one parcel."
+    rows = _convert(tmp_path, monkeypatch, _seam_pair(-3.0, 41.0, 0.001, 0.0005, "30TXM", "30TYM"))
+    assert [r[0] for r in rows] == ["30TXM_0_0-1"]
+    assert rows[0][1] > 6000, rows[0][1]  # the union of two ~4,668 m2 halves
+
+
+def test_minimum_area_applies_after_the_seam_union(tmp_path, monkeypatch):
+    """A field cut into two sub-900 m2 halves must publish its ~1,300 m2 union.
+
+    The 900 m2 minimum used to run inside repaired(), which builds ``cand``, so
+    both halves were deleted before ST_Union_Agg ever saw them and the field
+    vanished from the release entirely.
+    """
+    rows = _convert(tmp_path, monkeypatch, _seam_pair(-3.0, 41.0, 0.0003, 0.0003, "30TXM", "30TYM"))
+    assert [r[0] for r in rows] == ["30TXM_0_0-1"]
+    assert 1200 < rows[0][1] < 1400  # the union, which clears 900 m2
+    assert abs(rows[0][4] - (-3.0 + 1.5 * 0.0003)) < 1e-9  # spans both halves
+
+
+def test_minimum_area_still_drops_a_genuinely_tiny_parcel(tmp_path, monkeypatch):
+    "Control: the minimum must still apply -- to the final geometry."
+    rows = _convert(
+        tmp_path,
+        monkeypatch,
+        [("30TXM_0_0", 1, -3.0, 41.0, -3.0 + 0.0002, 41.0 + 0.0002, 0.6, False)],
+    )
+    assert rows == []
+
+
+def test_cross_equator_seam_join_fires(tmp_path, monkeypatch):
+    """Halves owned by a band-M and a band-N tile belong to one field.
+
+    Per-row hemisphere EPSG put them 10,000 km apart (northing 55.3 in 32630 vs
+    10,000,055.3 in 32730), so ST_Intersects never matched and both halves were
+    published as separate parcels.
+    """
+    boxes = _seam_pair(-3.0, 0.0, 0.002, 0.002, "30MXX", "30NXX")
+    rows = _convert(tmp_path, monkeypatch, boxes)
+    assert [r[0] for r in rows] == ["30MXX_0_0-1"], "equator halves must merge into one parcel"
+    # identical geometry with both tiles in band N (the control that always worked)
+    both_north = _convert(
+        tmp_path / "n", monkeypatch, _seam_pair(-3.0, 0.0, 0.002, 0.002, "30NWX", "30NXX")
+    )
+    assert abs(rows[0][1] - both_north[0][1]) < 1.0, "same field, same area either side"
+
+
+def test_max_area_cap_applies_after_the_seam_union(tmp_path, monkeypatch):
+    """merge's --max-km2 is a pre-union, pre-simplification pixel-area cap.
+
+    Two halves each under 5 km2 unioned to 6.4 km2 and were published while
+    determination:details claimed 'parcels > 5 km2 removed'.
+    """
+    boxes = _seam_pair(-3.0, 41.0, 0.0255, 0.0180, "30TXM", "30TYM")
+    rows = _convert(tmp_path, monkeypatch, boxes)
+    assert all(r[1] <= fc.MAX_PARCEL_M2 for r in rows), [r[1] for r in rows]
+    assert rows == [], "a 6.4 km2 union is over the 5 km2 cap and must not be published"
+
+
+def test_bbox_describes_the_published_geometry(tmp_path, monkeypatch):
+    """The bbox struct is the covering readers prune on; it must match geometry.
+
+    It used to be copied from the source row while ``g`` had been through
+    ST_MakeValid and per-part 900 m2 filtering, publishing a bbox ~4 km wider
+    than the geometry.
+    """
+    src = tmp_path / "merged" / "2025" / "zone=30" / "part-0.parquet"
+    src.parent.mkdir(parents=True)
+    con = duckdb.connect()
+    con.sql("load spatial")
+    con.sql(
+        f"""COPY (SELECT '30TXM_0_0' AS tile_key, 1::BIGINT AS parcel_id,
+          -3.0 AS xmin, 41.0 AS ymin, -2.95 AS xmax, 41.001 AS ymax,
+          0.6 AS pf_mean, false AS touches_window_edge,
+          ST_Collect([ST_MakeEnvelope(-3.0, 41.0, -2.999, 41.001),
+                      ST_MakeEnvelope(-2.9501, 41.0, -2.95, 41.00005)]) AS geometry)
+        TO '{src}' (FORMAT parquet)"""
+    )
+    con.close()
+    monkeypatch.setattr(fc, "IN_ROOT", tmp_path / "merged")
+    monkeypatch.setattr(fc, "TMP_ROOT", tmp_path / "duck")
+    rows = _rows(fc.convert(2025, "30", 1, "1GB", tmp_path / "out"))
+    assert len(rows) == 1
+    _, _, bx0, by0, bx1, by1, gx0, gy0, gx1, gy1 = rows[0]
+    assert (bx0, by0, bx1, by1) == (gx0, gy0, gx1, gy1)
+    assert abs(bx1 - (-2.999)) < 1e-9, "the dropped sub-900 m2 part must not widen the bbox"
+
+
 def test_output_is_hive_partitioned_by_zone(tmp_path, monkeypatch):
     """The published layout is ``vector/{year}/zone=NN/utm{NN}.parquet``.
 

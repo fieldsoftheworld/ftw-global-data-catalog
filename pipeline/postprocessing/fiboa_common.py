@@ -36,8 +36,18 @@ def connect(threads: int, memory_limit: str, tmp_dir: Path) -> duckdb.DuckDBPyCo
     return con
 
 
-def utm_of(geom: str) -> str:
-    return f"ST_Transform({geom}, 'EPSG:4326', 'EPSG:' || hemi || tile_key[1:2], true)"
+def zone_utm(geom: str) -> str:
+    """The zone's **north** UTM CRS, for every metric and every geometry comparison.
+
+    326NN and 327NN differ only by a 10,000,000 m false northing, so areas,
+    perimeters and intersections are identical in either (measured: 49196.90717479
+    vs 49196.90717492 m2 for the same equator-straddling box). A *per-row*
+    hemisphere EPSG, however, places the two halves of an equator-straddling field
+    10,000 km apart -- northing -221.06 in 32630 against 9,999,778.94 in 32730 --
+    so ST_Intersects can never match them and no cross-equator seam join fires.
+    One CRS per zone keeps the arithmetic identical and the comparison meaningful.
+    """
+    return f"ST_Transform({geom}, 'EPSG:4326', 'EPSG:326' || tile_key[1:2], true)"
 
 
 def hk_expr(bbox: list[float]) -> str:
@@ -48,34 +58,61 @@ def hk_expr(bbox: list[float]) -> str:
     return f"ST_Hilbert((xmin + xmax) / 2, (ymin + ymax) / 2, {curve})"
 
 
-def final_select(rows: str, cid: str, year: int, bbox: list[float]) -> str:
-    "Final columns + hk from rows (id, g, xmin..ymax, pf_mean, area, perim), unsorted."
+#: Minimum published parcel area and minimum kept part of a multipart parcel, m2.
+MIN_PARCEL_M2 = 900.0
+MIN_PART_M2 = 900.0
+
+
+def final_select(rows: str, cid: str, year: int, bbox: list[float], max_m2: float) -> str:
+    """Final columns + hk from rows (id, tile_key, g, pf_mean), unsorted.
+
+    Both size filters, both metrics and the bbox are derived from the SAME final
+    geometry, **after** the seam union. Filtering earlier deleted real fields: a
+    field cut by a tile seam into two sub-``MIN_PARCEL_M2`` halves never reached
+    ST_Union_Agg and vanished from the release, while a cap applied to merge's
+    pre-union pixel area let a 6.4 km2 union through a 5 km2 cap. A bbox copied
+    from the source row likewise disagreed with a geometry that ST_MakeValid and
+    the part filter had since changed.
+    """
     score = "CAST(LEAST(100, GREATEST(0, ROUND(pf_mean * 100))) AS UTINYINT)"
     det = (
         f"TIMESTAMPTZ '{year}-01-01 00:00:00+00' AS \"determination:datetime\", "
         f"'{DET_METHOD}' AS \"determination:method\""
     )
+    parts = (
+        f"SELECT id, tile_key, pf_mean, CASE WHEN ST_NumGeometries(g) > 1 THEN "
+        f"ST_Collect(list_transform(list_filter(ST_Dump(g), "
+        f"x -> ST_Area({zone_utm('x.geom')}) >= {MIN_PART_M2}), x -> x.geom)) "
+        f"ELSE g END AS g FROM ({rows})"
+    )
+    metric = (
+        f"SELECT id, pf_mean, g, {zone_utm('g')} AS gu FROM ({parts}) "
+        f"WHERE g IS NOT NULL AND NOT ST_IsEmpty(g)"
+    )
+    sized = (
+        f"SELECT id, pf_mean, g, ST_Area(gu) AS area, ST_Perimeter(gu) AS perim, "
+        f"ST_XMin(g) AS xmin, ST_YMin(g) AS ymin, ST_XMax(g) AS xmax, ST_YMax(g) AS ymax "
+        f"FROM ({metric}) WHERE ST_Area(gu) >= {MIN_PARCEL_M2} AND ST_Area(gu) <= {max_m2}"
+    )
     return (
         f"SELECT id, '{cid}' AS collection, ST_AsWKB(g) AS geometry, "
         f"struct_pack(xmin := xmin, ymin := ymin, xmax := xmax, ymax := ymax) AS bbox, "
         f'area::FLOAT AS "metrics:area", perim::FLOAT AS "metrics:perimeter", {score} AS score, '
-        f"{det}, {hk_expr(bbox)} AS hk FROM ({rows})"
+        f"{det}, {hk_expr(bbox)} AS hk FROM ({sized})"
     )
 
 
 def strip_rows_sql() -> str:
     "Parcels near tile joins after the seam union (needs the join_seams temp tables)."
-    cols = "id, g, xmin, ymin, xmax, ymax, pf_mean, area, perim"
     merged = (
-        "SELECT m.gid AS id, arg_min(c.tile_key, c.id) AS tile_key, arg_min(c.hemi, c.id) AS hemi, "
+        "SELECT m.gid AS id, arg_min(c.tile_key, c.id) AS tile_key, "
         "ST_CollectionExtract(ST_MakeValid(ST_Union_Agg(c.g)), 3) AS g, "
-        "SUM(c.pf_mean * c.area) / SUM(c.area) AS pf_mean "
+        "coalesce(SUM(c.pf_mean * c.area) / nullif(SUM(c.area), 0), avg(c.pf_mean)) AS pf_mean "
         "FROM cand c JOIN groups m ON c.id = m.id GROUP BY m.gid"
     )
     return (
-        f"SELECT {cols} FROM cand WHERE id NOT IN (SELECT id FROM groups) "
-        f"UNION ALL SELECT id, g, ST_XMin(g), ST_YMin(g), ST_XMax(g), ST_YMax(g), pf_mean, "
-        f"ST_Area({utm_of('g')}), ST_Perimeter({utm_of('g')}) FROM ({merged})"
+        "SELECT id, tile_key, g, pf_mean FROM cand WHERE id NOT IN (SELECT id FROM groups) "
+        f"UNION ALL SELECT id, tile_key, g, pf_mean FROM ({merged})"
     )
 
 
