@@ -1,4 +1,10 @@
-"""Run an FP32 ONNX model over stacked quarterly mosaic tiles."""
+"""Run an FP32 ONNX model over stacked quarterly mosaic tiles.
+
+Outputs land directly in the published per-item hierarchy:
+``{output-dir}/raster/{year}/{tile}/{tile}.tif``, so a finished year uploads
+with ``tools/upload_data.py`` without a relayout step (point ``--output-dir``
+at the repo's ``staging-data/``).
+"""
 
 import argparse
 import hashlib
@@ -153,7 +159,10 @@ def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> No
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--input-dir", type=Path, required=True)
-    ap.add_argument("--output-dir", type=Path, required=True)
+    ap.add_argument("--output-dir", type=Path, required=True,
+                    help="hierarchy root; scores land at "
+                         "{output-dir}/raster/{year}/{tile}/{tile}.tif")
+    ap.add_argument("--year", type=int, required=True)
     ap.add_argument("--model", type=Path, required=True)
     ap.add_argument("--batch", type=int, default=64)
     ap.add_argument("--overlap", type=float, default=0.25)
@@ -183,7 +192,7 @@ def main() -> None:
         ap.error(problem)
     todo = []
     for src in paths:
-        dst = a.output_dir / src.name
+        dst = a.output_dir / "raster" / str(a.year) / src.stem / src.name
         fp = fingerprint(src, model_hash, a.batch, a.overlap, a.norm, provider)
         if not current(dst, fp):
             todo.append((src, dst, fp))
@@ -192,6 +201,13 @@ def main() -> None:
         future = pool.submit(read_stack, todo[0][0]) if todo else None
         for i, (src, dst, fp) in enumerate(todo):
             arr, transform, crs, tags = future.result()
+            # Same fail-closed year guard as postprocessing's source_provenance:
+            # a tile filed under the wrong year poisons every downstream product.
+            if tags.get("year") not in (None, str(a.year)):
+                raise RuntimeError(
+                    f"{src.name}: input year tag {tags['year']!r} "
+                    f"!= --year {a.year}")
+            tags.setdefault("year", str(a.year))
             if i + 1 < len(todo):
                 future = pool.submit(read_stack, todo[i + 1][0])
             scores, patches = predict_tile(
