@@ -14,7 +14,10 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
+          # 3.13 is deliberately newer than root ci.yml's 3.12: the pipeline
+          # wheels were verified against cp313 (incl. rasterio's bundled GDAL).
           python-version: '3.13'
-      - run: python -m pip install -r pipeline/postprocessing/requirements.txt pytest
+      - run: python -m pip install -r pipeline/postprocessing/requirements.txt pytest pyflakes
+      - run: python -m pyflakes pipeline/postprocessing/*.py
       - run: python -c 'import duckdb; duckdb.sql("INSTALL spatial")'
       - run: python -m pytest -q pipeline/postprocessing/tests

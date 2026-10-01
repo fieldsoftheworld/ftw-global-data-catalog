@@ -5,7 +5,7 @@ pyproj>=3.7
 shapely>=2.1
 scipy
 duckdb>=1.5.4
-coarsen>=0.1.0
+coarsen>=0.1.0,<0.2.0
 # fbp (BoundaryVote instance post-processing) is NOT on PyPI and is NOT the
 # unrelated `fbp` 1.3.6 published there -- installing that one gives an import
 # that does not expose fbp.methods.parse. Install the private package from its own

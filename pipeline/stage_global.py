@@ -48,7 +48,7 @@ def main() -> None:
         config={"custom_user_agent": "Mozilla/5.0 (ftw-beta-pipeline)"}
     )
     con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
-    con.execute("SET TimeZone='UTC';")  # year markers are UTC midnights
+    con.execute("SET TimeZone='UTC';")  # determination:datetime is a constant year-start UTC instant
     con.execute("SET memory_limit='48GB'; SET preserve_insertion_order=false;"
                 "SET threads=16;")
     con.execute("SET http_retries=8; SET http_retry_wait_ms=2000;"
