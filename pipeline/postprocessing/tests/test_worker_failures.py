@@ -64,6 +64,55 @@ def test_warp_http_404_is_missing(monkeypatch):
     assert (out == 0).all()
 
 
+@pytest.mark.parametrize("code", [401, 403, 429, 500, 503])
+def test_warp_non_404_http_errors_raise(monkeypatch, code):
+    """Only a genuinely absent tile is missing coverage.
+
+    Classifying on English error text matched 'No such file or directory', which
+    GDAL uses for several unrelated refusals, so a 403 or a timeout could be
+    recorded as a hole in the DEM.
+    """
+
+    def fail(*a: object, **k: object) -> None:
+        raise RasterioIOError(f"HTTP response code: {code}")
+
+    monkeypatch.setattr(tfa.rasterio, "open", fail)
+    with pytest.raises(RasterioIOError, match=str(code)):
+        tfa._warp(["/vsicurl/x.tif"], (2, 2), "EPSG:4326", None, Resampling.nearest, np.uint8)
+
+
+def test_warp_timeout_raises(monkeypatch):
+    def slow(*a: object, **k: object) -> None:
+        raise RasterioIOError("CURL error: Operation timed out after 30000 milliseconds")
+
+    monkeypatch.setattr(tfa.rasterio, "open", slow)
+    with pytest.raises(RasterioIOError, match="timed out"):
+        tfa._warp(["/vsis3/b/k.tif"], (2, 2), "EPSG:4326", None, Resampling.nearest, np.float32)
+
+
+def test_warp_error_message_names_the_source(monkeypatch):
+    def fail(*a: object, **k: object) -> None:
+        raise RasterioIOError("HTTP response code: 403")
+
+    monkeypatch.setattr(tfa.rasterio, "open", fail)
+    with pytest.raises(RasterioIOError, match=r"/vsicurl/dem/N59E005.tif: "):
+        tfa._warp(
+            ["/vsicurl/dem/N59E005.tif"], (2, 2), "EPSG:4326", None, Resampling.nearest, np.uint8
+        )
+
+
+def test_absent_is_classified_on_status_not_on_prose():
+    assert tfa.is_absent("/vsicurl/x.tif", RasterioIOError("HTTP response code: 404"))
+    assert tfa.is_absent("/vsicurl/x.tif", RasterioIOError("HTTP response code: 410"))
+    assert not tfa.is_absent("/vsicurl/x.tif", RasterioIOError("HTTP response code: 403"))
+    # the allow-list rejection GDAL phrases as a filesystem miss must NOT read as absent
+    allow_list_reject = RasterioIOError(
+        "'/vsicurl/https://h/Nodes(B04.tif)/$value' does not exist in the file system, "
+        "and is not recognized as a supported dataset name."
+    )
+    assert not tfa.is_absent("/vsicurl/https://h/Nodes(B04.tif)/$value", allow_list_reject)
+
+
 #: PR1's CDSE source-mosaic href shape: the ``.tif`` is inside a Nodes() segment and
 #: the URL ends in ``/$value``, so an extension allow-list rejects it.
 CDSE_HREF = (

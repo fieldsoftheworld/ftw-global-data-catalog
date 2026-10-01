@@ -1,5 +1,8 @@
 """Reproject public DEM and land-cover context rasters."""
 
+import re
+from pathlib import Path
+
 import numpy as np
 import rasterio
 from rasterio.errors import RasterioIOError
@@ -24,11 +27,33 @@ def _dem_name(lat: int, lon: int) -> str:
     return f"/vsicurl/{DEM}/{stem}/{stem}.tif"
 
 
-_MISSING = ("HTTP response code: 404", "No such file or directory")
+#: HTTP statuses that mean "this DEM/land-cover tile does not exist". Everything
+#: else -- 401, 403, 429, any 5xx, a CURL timeout, a DNS failure -- is a transport
+#: or credentials problem and must not be recorded as missing coverage.
+ABSENT_HTTP = frozenset({404, 410})
+_HTTP_CODE = re.compile(r"HTTP response code:\s*(\d{3})")
+_REMOTE = ("/vsicurl/", "/vsis3/", "/vsigs/", "/vsiaz/", "http://", "https://")
+
+
+def is_absent(src: str, exc: Exception) -> bool:
+    """Does ``exc`` mean the tile genuinely is not there?
+
+    Classified on the HTTP status, or for a local path by asking the filesystem --
+    not by matching English error text. Substring-matching "No such file or
+    directory" is locale-dependent and, worse, indiscriminate: GDAL phrases several
+    unrelated refusals that way (an extension allow-list rejection among them), so
+    a 403 or a timeout could be silently recorded as a hole in the DEM.
+    """
+    m = _HTTP_CODE.search(str(exc))
+    if m:
+        return int(m.group(1)) in ABSENT_HTTP
+    if not src.startswith(_REMOTE):
+        return not Path(src).exists()
+    return False
 
 
 def _warp(srcs: list[str], shape, crs, transform, resampling, dtype) -> np.ndarray:
-    """Reproject sources onto one grid; a 404 or absent file is missing coverage (NaN/0), any other error raises."""
+    """Reproject sources onto one grid; an absent tile is missing coverage (NaN/0), any other error raises."""
     out = np.full(shape, np.nan if dtype == np.float32 else 0, dtype)
     for src in srcs:
         try:
@@ -43,6 +68,6 @@ def _warp(srcs: list[str], shape, crs, transform, resampling, dtype) -> np.ndarr
                     dst_nodata=np.nan if dtype == np.float32 else 0,
                 )
         except RasterioIOError as exc:
-            if not any(m in str(exc) for m in _MISSING):
-                raise
+            if not is_absent(src, exc):
+                raise RasterioIOError(f"{src}: {exc}") from exc
     return out

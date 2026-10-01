@@ -115,6 +115,22 @@ def mgrs_square(tr, height: int, width: int) -> tuple[float, float, float, float
     return x0, y0, x1, y1
 
 
+def slope_attrs(slope_px: np.ndarray, mean_of) -> tuple[np.ndarray, np.ndarray]:
+    """``slope_mean`` and ``frac_slope_gt30``, NaN together where the DEM is absent.
+
+    Where the DEM has no coverage, slope is UNKNOWN, not flat. ``np.nan_to_num``
+    turned missing DEM into slope 0.0 while ``elev_mean`` stayed NaN, so a coastal
+    parcel with no DEM at all reported a perfectly flat 0 degrees and passed every
+    "is this flat enough" QA filter. ``np.bincount`` propagates NaN, so simply not
+    filling makes ``slope_mean`` NaN exactly where ``elev_mean`` is; the steep
+    fraction is masked to match rather than counting an unknown as "not steep".
+    """
+    slope_mean = mean_of(slope_px)
+    with np.errstate(invalid="ignore"):
+        steep = mean_of((slope_px > 30).astype(np.float64))
+    return slope_mean, np.where(np.isnan(slope_mean), np.nan, steep)
+
+
 def _windows(size: int, core: int, halo: int):
     for c0 in range(0, size, core):
         c1 = min(size, c0 + core)
@@ -295,6 +311,7 @@ def _run_tile(
                 np.minimum(R // 12, aux["dem"].shape[0] - 1),
                 np.minimum(C // 12, aux["dem"].shape[1] - 1),
             )
+            slope_mean, steep = slope_attrs(aux["slope"][a30], mean_of)
             attrs = {
                 "pf_mean": mean_of(u8[0][m] / 255.0),
                 "pb_mean": mean_of(u8[1][m] / 255.0),
@@ -302,8 +319,8 @@ def _run_tile(
                 "frac_nodata_3q": mean_of(q16 >= 3),
                 "frac_water": mean_of(aux["water"][a30]),
                 "frac_crops_ever": mean_of(aux["crops"][a30]),
-                "slope_mean": mean_of(np.nan_to_num(aux["slope"][a30])),
-                "frac_slope_gt30": mean_of(np.nan_to_num(aux["slope"][a30]) > 30),
+                "slope_mean": slope_mean,
+                "frac_slope_gt30": steep,
                 "elev_mean": mean_of(aux["dem"][a30]),
             }
             del R, C, q16, a30, rr, cc, idx
