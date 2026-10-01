@@ -57,6 +57,9 @@ PUBLISHABLE_SUFFIXES = {
     ".pmtiles",
     ".tif",
     ".tiff",
+    # Phase 4 browse artifacts: per-item thumbnails and overview thumbnails.
+    ".png",
+    ".webp",
 }
 
 

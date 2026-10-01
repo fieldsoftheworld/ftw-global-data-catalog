@@ -131,10 +131,19 @@ Adapt `alpha:scripts/tiles/` (README there has measured timings). Beta is ~12× 
 
 ## Phase 4 — Raster (COG) catalog + thumbnails (on rails)
 
+**Layout ruling (2026-10-01, user-approved):** raster uses full per-item folders,
+vector-style — `raster/{year}/{tile}/` holds `{tile}.tif`, `{tile}.json` and
+`{tile}.thumb.png` (PORTO-CORE-071). The existing 67,197 flat COGs are
+server-side copied into the folders by `tools/move_raster_to_hierarchy.py`
+(old flat keys deleted only after the index/metadata flip, with separate
+approval), and the inference pipeline now emits this hierarchy directly, so
+new generations never need a relayout. `index/raster.parquet` hrefs flip to
+the folder keys. llms.txt is removed from the catalog (same ruling).
+
 1. `tools/build_raster_items.py` reads `index/raster.parquet` (all fields needed: href, size,
    bbox, epsg, field/boundary/cropland fracs) + a one-time COG-header pass for proj:transform/shape
    (or derive from index bbox+known 40032² grid). Emits per year: collection.json (committed),
-   ~7,466 items **straight to S3** at `raster/{year}/{tile}.json` next to each `.tif` (relative
+   ~7,466 items **straight to S3** at `raster/{year}/{tile}/{tile}.json` next to each `.tif` (relative
    asset hrefs), grouped browse subcatalogs if flat item-link count is unwieldy (alpha's
    zone/gzd tree in `build_features_items.py` is the model), and `items.parquet` collection-mirror.
    Items carry proj + file + render extensions; bands metadata (field, boundary, scale 1/255,
@@ -142,7 +151,7 @@ Adapt `alpha:scripts/tiles/` (README there has measured timings). Beta is ~12× 
    source items recorded in GDAL metadata.
 2. **Thumbnails**: extend `make_thumbnails.py` — per-item PNG from each COG's smallest overview
    (rasterio decimated read of the `field` band, colormap, nodata→alpha, composite over `#0b1414`),
-   uploaded next to the item (`raster/{year}/{tile}.png`, item asset role `thumbnail`). Run as an
+   uploaded next to the item (`raster/{year}/{tile}/{tile}.thumb.png`, item asset role `thumbnail`). Run as an
    sbatch array on rails (67k renders, embarrassingly parallel, data in-region). Collection
    thumbnails: low-zoom mosaic per year. Start with 2025, then batch 2017–2024.
 3. **Global overview COGs (per year)**: mosaic each year's 7,466 tiles at overview resolution
