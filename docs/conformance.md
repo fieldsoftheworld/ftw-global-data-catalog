@@ -47,6 +47,44 @@ Then add the rule id to ACCEPTED in tests/test_portolan_conformance.py. Both, or
 neither.
 -->
 
+## Policy: no `file:checksum` on the raster COG assets
+
+The raster items carry `file:size` (from `index/raster.parquet`) and no
+`file:checksum`. PORTO-CORE-029 wants one; rashid reports its absence as a
+**warning** (PTL-AST-003), not an error, so no `ACCEPTED` entry is needed and
+the gate stays honest.
+
+It is a deliberate policy, not an oversight. A multihash checksum means
+reading the bytes, and the raster tree is 67,197 COGs totalling ~26 TB. The
+index carries no checksum column (measured: 14 columns, none of them a
+digest), so filling the field would mean streaming 26 TB — nine times the
+whole vector tree — to add a field that no reader of this catalog has asked
+for. The vector tree, at 227 GiB in 108 files, was cheap enough to hash
+(`tools/hash_remote.py`) and does carry checksums. The rule this follows is
+the s2-stac-geoparquet one: checksums where they are cheap.
+
+`tools/build_raster_items.py items` reads a `--sidecar` for header facts and
+fills `file:checksum` the moment a digest is available for a tile, so the
+policy reverses by producing the digests, not by editing the generator.
+
+The same reasoning covers two collection-level assets: the per-year
+`overview.tif` (a multi-GB mosaic) carries `file:size` from its HEAD response
+and no checksum. The per-year `thumbnail.webp` is small, so the generator
+downloads it and carries both.
+
+## Policy: no `rel: item` links on the raster collections
+
+Each year collection has ~7,466 items. The items are generated straight to
+S3 and not committed (docs/plan.md Phase 4), so committing 7,466 item links
+per year — ~10 MB of JSON across the nine years, in git forever — would
+contradict that ruling to buy a flat list that PTL-CAT-001 already calls
+hard to browse at 54 entries. Enumeration goes through
+`index/raster.parquet` and each collection's `items.parquet`
+collection-mirror instead, and both collection AGENTS.md files say so. rashid
+reports nothing for this; a browse-subcatalog tree (docs/plan.md Phase 4.1)
+is the open option if browsing the items in the data browser becomes a
+requirement.
+
 ## Validator workarounds
 
 ### stac-check reports a dialect crash on every collection

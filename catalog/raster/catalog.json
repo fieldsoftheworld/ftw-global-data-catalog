@@ -32,12 +32,6 @@
       "title": "Raster tree agent guide"
     },
     {
-      "rel": "llms",
-      "href": "./llms.txt",
-      "type": "text/markdown",
-      "title": "Agent/LLM usage guide"
-    },
-    {
       "rel": "child",
       "href": "./2017/collection.json",
       "type": "application/json",
