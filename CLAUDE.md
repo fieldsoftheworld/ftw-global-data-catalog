@@ -19,8 +19,14 @@ exploration/search subagents; keep Opus (the default) for implementation and rev
   (stateless size+MD5 change detection), not `portolan push`.
 
 ## Layout
-- `catalog/` — the published catalog (STAC JSON, README.md, AGENTS.md, llms.txt,
-  thumbnails, styles). Dotfiles are not published, except `.portolan/metadata.yaml`.
+- `catalog/` — the published catalog (STAC JSON, README.md, AGENTS.md,
+  thumbnails, styles; llms.txt was removed by user ruling 2026-10-01).
+  Dotfiles are not published, except `.portolan/metadata.yaml`.
+- Bucket data layouts (both per-item folders, data beside metadata):
+  `vector/{year}/zone=NN/utm{NN}.parquet` and `raster/{year}/{tile}/{tile}.tif`
+  (+ `{tile}.json`, `{tile}.thumb.png`; per-year `overview.tif` at
+  `raster/{year}/`). The inference pipeline emits the raster hierarchy
+  directly — new generations never need a relayout.
 - `tools/` — `publish.py` (metadata, 1:1), `upload_data.py` (staged data, suffix
   allow-list, never deletes), `make_thumbnails.py` (COG thumbnail core).
 - `pipeline/` — the rails Slurm PMTiles pipeline (alpha port; Phase 3 adapts it — see
