@@ -98,6 +98,12 @@ schema) took 37 m 44 s at 192 GiB MaxRSS for the coarse step alone and
 produced a 44.1 GB archive. The alpha run (1.58 B features) took ~7 h 50 m
 for its 115.5 GB archive with a 360 G coarse node.
 
+<<<<<<< HEAD
 ## Polygon postprocessing
 
 [Parcel outline and release pipeline](postprocessing/README.md) uses the external fbp package.
+=======
+## Mosaic input preparation
+
+[Quarterly mosaic downloads](mosaics/README.md) assemble 16-band input tiles.
+>>>>>>> origin/main

@@ -1,0 +1,5 @@
+boto3
+numpy
+rasterio>=1.4
+requests
+pyarrow

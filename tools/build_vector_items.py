@@ -50,7 +50,7 @@ INDEX_URL = f"{PUBLIC_BASE}/index/vector.parquet"
 
 PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
 WEBMAP_EXT = "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json"
-PARTITION_EXT = "https://portolan-sdi.github.io/stac-partition-extension/v1.0.0/schema.json"
+PARTITION_EXT = "https://schemas.portolan-sdi.org/incubating/partition/v1.0.0/schema.json"
 TABLE_EXT = "https://stac-extensions.github.io/table/v1.2.0/schema.json"
 PROJ_EXT = "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
 FILE_EXT = "https://stac-extensions.github.io/file/v2.1.0/schema.json"
@@ -448,6 +448,8 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
         "table:columns": TABLE_COLUMNS,
         "partition:scheme": "hive",
         "partition:keys": [{"name": "zone", "type": "string"}],
+        "partition:glob": "./zone=*/utm*.parquet",
+        "partition:file_count": len(rows),
         "portolan:styles": ([f"styles/{n}" for n in specs]
                             if has_tiles else []),
         "links": links,
@@ -578,7 +580,7 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         "  import duckdb",
         "  con = duckdb.connect()",
         '  con.execute("INSTALL httpfs; LOAD httpfs; '
-        "CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2');\")",
+        "CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2', URL_STYLE 'path');\")",
         f"  con.sql(\"SELECT zone, count(*) FROM read_parquet('{glob}', "
         "hive_partitioning=1) GROUP BY zone ORDER BY zone\").show()",
         "  ```",
@@ -670,7 +672,7 @@ def patch_local_assets(year_dir: Path, collection: dict) -> None:
     """
     for key, asset in collection["assets"].items():
         href = asset["href"]
-        if "://" in href:
+        if "://" in href or "*" in href:
             continue
         local = (year_dir / href).resolve()
         if not local.is_file():

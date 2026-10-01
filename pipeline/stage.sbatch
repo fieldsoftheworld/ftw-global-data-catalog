@@ -28,14 +28,12 @@ mkdir -p "$CONVERT_DIR"
 echo "== stage $YEAR per zone (resumable; no dedupe/cutoff needed — measured)"
 python3 stage_global.py --year "$YEAR"
 
-echo "== merge $YEAR"
-# gpio extract keeps GeoParquet metadata intact across the merge (a plain
-# DuckDB COPY dropped the 'geo' key on compute nodes before).
-[ -f "global${YEAR}.parquet" ] || gpio extract "staged/${YEAR}/*.parquet" "global${YEAR}.parquet"
-echo "== convert $YEAR to GeoParquet 2.0 (native geo stats -> row-group pruning)"
-[ -f "global${YEAR}_gp2.parquet" ] || ( cd "$CONVERT_DIR" && gpio convert geoparquet \
-    "$SLURM_SUBMIT_DIR/global${YEAR}.parquet" \
-    "$SLURM_SUBMIT_DIR/global${YEAR}_gp2.parquet" --geoparquet-version 2.0 )
+echo "== merge $YEAR straight to GeoParquet 2.0 (one pass, native geo stats)"
+# gpio >= 1.6.0: extract merges the glob AND writes 2.0 with native
+# row-group stats in one memory-bounded pass (#1154 funnel) — the separate
+# whole-file convert this script used to run is gone (gpio#1151 discussion).
+[ -f "global${YEAR}_gp2.parquet" ] || gpio extract "staged/${YEAR}/*.parquet" \
+    "global${YEAR}_gp2.parquet" --geoparquet-version 2.0
 
 python3 - "$YEAR" <<'EOF'
 import sys, duckdb

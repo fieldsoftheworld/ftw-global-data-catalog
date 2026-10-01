@@ -39,6 +39,12 @@
     },
     {
       "rel": "child",
+      "href": "./2020/collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field Boundaries 2020 (GeoParquet)"
+    },
+    {
+      "rel": "child",
       "href": "./2024/collection.json",
       "type": "application/json",
       "title": "FTW Global — Field Boundaries 2024 (GeoParquet)"

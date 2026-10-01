@@ -36,6 +36,7 @@ PUBLIC_BASE = config["public_base"].rstrip("/")
 
 errors: list[str] = []
 skipped = 0
+globs = 0
 
 CI_LIGHT = os.environ.get("CI_LIGHT") == "1"
 # The exemption reads the suffix and nothing else. A directory rule or a path
@@ -135,6 +136,11 @@ for path in documents:
         if (path.parent / href).resolve().exists():
             checked += 1
             continue
+        if "*" in href:
+            # A partition glob names a family, not an object; every member
+            # is HEAD-checked through its item's own data asset.
+            globs += 1
+            continue
         if is_data(href):
             if CI_LIGHT:
                 skipped += 1
@@ -170,4 +176,5 @@ if errors:
     print("\n".join(f"error  {e}" for e in errors))
     raise SystemExit(1)
 
-print(f"OK: {checked} href(s) across {len(documents)} object(s)")
+note = f", {globs} glob(s) delegated to item checks" if globs else ""
+print(f"OK: {checked} href(s) across {len(documents)} object(s){note}")
