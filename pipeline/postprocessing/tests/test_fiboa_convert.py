@@ -261,6 +261,9 @@ def test_output_is_hive_partitioned_by_zone(tmp_path, monkeypatch):
         f"select distinct zone::VARCHAR from read_parquet('{out}/2025/zone=*/utm*.parquet', "
         "hive_partitioning=1)"
     ).fetchall() == [("30",)]
+    # tools/rebuild_index.py rejects any href without /zone= ("some hrefs did not
+    # rewrite"), so a flat layout also breaks the repo's own index rebuild
+    assert "/zone=" in dst.relative_to(out).as_posix()
 
 
 def test_cross_tile_seam_join(tmp_path, monkeypatch):

@@ -101,7 +101,3 @@ for its 115.5 GB archive with a 360 G coarse node.
 ## Polygon postprocessing
 
 [Parcel outline and release pipeline](postprocessing/README.md) uses the external fbp package.
-
-## Polygon postprocessing
-
-[Parcel outline and release pipeline](postprocessing/README.md) uses the external fbp package.

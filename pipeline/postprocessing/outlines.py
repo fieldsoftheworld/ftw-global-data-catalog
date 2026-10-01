@@ -60,8 +60,21 @@ SPEC = "nbg-pb-h0.01-t0.3+R35+F10+G2+A900"
 
 
 def method_for(backend: str):
-    "``parse(SPEC)`` on the chosen backend: ``fast`` appends ``+q1``, ``exact`` is skimage."
-    from fbp.methods import parse
+    """``parse(SPEC)`` on the chosen backend: ``fast`` appends ``+q1``, ``exact`` is skimage.
+
+    ``fbp`` is not in requirements.txt and cannot be: it is not on PyPI, and the
+    unrelated ``fbp`` 1.3.6 that IS on PyPI does not expose ``fbp.methods``. One
+    clear failure here beats 10k identical ImportError tracebacks from the workers.
+    """
+    try:
+        from fbp.methods import parse
+    except ImportError as exc:
+        raise SystemExit(
+            "the private fbp package is required for the outline stage and is not "
+            f"importable ({exc}). It is NOT the unrelated 'fbp' on PyPI; install it "
+            "from its own source. simplify_polygons, merge_polygons and "
+            "fiboa_convert do not need it."
+        ) from exc
 
     return parse(SPEC + ("+q1" if backend == "fast" else ""))
 
@@ -177,6 +190,119 @@ def _probe(prof: dict, stage: str) -> None:
         s.stage = stage
 
 
+FP_KEY = b"outline_fingerprint"
+PROVENANCE_KEY = b"outline_provenance"
+
+#: The per-tile schema, declared once and used for the empty and non-empty cases
+#: alike. ``pa.Table.from_pylist(rows)`` inferred it from the rows, so the column
+#: ORDER followed insertion and a column that happened to be all-NULL in one tile
+#: (slope_mean on a tile with no DEM, say) came out a different type there --
+#: tiles written by different workers then disagreed, and a whole-year read of
+#: them fails or silently casts.
+SCHEMA = pa.schema(
+    [
+        pa.field("tile_key", pa.string()),
+        pa.field("year", pa.int64()),
+        pa.field("parcel_id", pa.int64()),
+        pa.field("area_m2", pa.float64()),
+        pa.field("n_parts", pa.int64()),
+        pa.field("ext_h_px", pa.int64()),
+        pa.field("ext_w_px", pa.int64()),
+        pa.field("touches_window_edge", pa.bool_()),
+        pa.field("in_utm_zone", pa.bool_()),
+        pa.field("in_mgrs_square", pa.bool_()),
+        *(
+            pa.field(k, pa.float64())
+            for k in (
+                "pf_mean",
+                "pb_mean",
+                "frac_nodata_1q",
+                "frac_nodata_3q",
+                "frac_water",
+                "frac_crops_ever",
+                "slope_mean",
+                "frac_slope_gt30",
+                "elev_mean",
+                "xmin",
+                "ymin",
+                "xmax",
+                "ymax",
+            )
+        ),
+        pa.field("geometry", pa.binary()),
+    ]
+)
+
+#: The GeoParquet footer DuckDB needs to read ``geometry`` as GEOMETRY downstream.
+GEO_META = json.dumps(
+    {
+        "version": "1.1.0",
+        "primary_column": "geometry",
+        "columns": {
+            "geometry": {
+                "encoding": "WKB",
+                "geometry_types": ["Polygon", "MultiPolygon"],
+                "crs": json.loads(CRS("EPSG:4326").to_json()),
+            }
+        },
+    }
+).encode()
+
+
+def fingerprint(src: Path, year: int, core: int, halo: int, backend: str, simplify_m: float) -> str:
+    """Identity of the source COG plus every flag that changes the output.
+
+    Resume used to test only that the output file exists, so a regenerated score
+    COG or a changed --core/--halo/--backend/--simplify-m silently published the
+    previous run's parcels. Built like the siblings: PR2's run.py
+    inference_fingerprint (size, mtime, model hash, flags) and
+    simplify_polygons.simplify_fingerprint (tol, size, mtime). The COG's own
+    inference_fingerprint tag is preferred when PR2 stamped one, because it
+    identifies the model and inputs as well as the bytes.
+    """
+    st = src.stat()
+    ident: object = [st.st_size, st.st_mtime_ns]
+    try:
+        with rasterio.open(src) as ds:
+            tag = ds.tags().get("inference_fingerprint")
+        if tag:
+            ident = tag
+    except rasterio.errors.RasterioIOError:
+        pass
+    return json.dumps([ident, year, core, halo, backend, simplify_m], sort_keys=True)
+
+
+def is_current(dst: Path, fp: str) -> bool:
+    "True when dst is a readable parquet stamped with exactly this fingerprint."
+    if not dst.is_file():
+        return False
+    try:
+        md = pq.ParquetFile(dst).schema_arrow.metadata or {}
+    except (OSError, pa.ArrowException):
+        return False
+    return md.get(FP_KEY, b"").decode() == fp
+
+
+def source_provenance(src: Path, year: int) -> dict:
+    """The score COG's own tags, so a release can name the model it came from.
+
+    Without this the provenance chain dies here: no published field carried
+    model_sha256 or the input bands, so releases built from different checkpoints
+    were byte-indistinguishable. Also cross-checks the COG's ``year`` tag against
+    --year, since mixing years is silent otherwise.
+    """
+    try:
+        with rasterio.open(src) as ds:
+            tags = ds.tags()
+    except rasterio.errors.RasterioIOError:
+        return {}
+    stamped = tags.get("year")
+    if stamped and int(stamped) != year:
+        raise ValueError(f"{src.name}: score COG is year {stamped}, run asked for {year}")
+    keep = ("model_sha256", "inference_fingerprint", "input_bands", "normalization", "overlap")
+    return {k: tags[k] for k in keep if k in tags}
+
+
 def process_tile(
     path: Path,
     year: int,
@@ -208,6 +334,8 @@ def _run_tile(
 ) -> dict:
     from polygons import simplify_coverage
 
+    fp = fingerprint(Path(path), year, core, halo, backend, simplify_m)
+    prov = source_provenance(Path(path), year)
     method = method_for(backend)
     prof = {
         "tile_key": tk,
@@ -366,6 +494,7 @@ def _run_tile(
 
     t = time.perf_counter()
     out = out_dir / f"{tk}.parquet"
+    meta = {FP_KEY: fp.encode(), PROVENANCE_KEY: json.dumps(prov).encode(), b"geo": GEO_META}
     if rows:
         proj = simplify_coverage(np.array(geoms, dtype=object), simplify_m, label=tk)
         prof["t_simplify"] = time.perf_counter() - t
@@ -375,73 +504,20 @@ def _run_tile(
             lambda xy: np.column_stack(to_ll.transform(xy[:, 0], xy[:, 1])),
         )
         b = shapely.bounds(g)
-        tbl = pa.Table.from_pylist(rows)
+        cols = {name: [r[name] for r in rows] for name in SCHEMA.names if name in rows[0]}
         for j, k in enumerate(("xmin", "ymin", "xmax", "ymax")):
-            tbl = tbl.append_column(k, pa.array(b[:, j]))
-        tbl = tbl.append_column("geometry", pa.array(shapely.to_wkb(g)))
-        meta = {
-            b"geo": (
-                b'{"version":"1.1.0","primary_column":"geometry","columns":{"geometry":'
-                b'{"encoding":"WKB","geometry_types":["Polygon","MultiPolygon"],'
-                b'"crs":' + CRS("EPSG:4326").to_json().encode() + b"}}}"
-            )
-        }
-        tbl = tbl.replace_schema_metadata({**(tbl.schema.metadata or {}), **meta})
-        tmp = out.with_name(out.name + f".tmp-{os.getpid()}")
+            cols[k] = b[:, j]
+        cols["geometry"] = shapely.to_wkb(g)
+        tbl = pa.table(cols, schema=SCHEMA)
+    else:
+        tbl = pa.Table.from_pylist([], schema=SCHEMA)
+    tbl = tbl.replace_schema_metadata(meta)
+    tmp = out.with_name(out.name + f".tmp-{os.getpid()}")
+    try:
         pq.write_table(tbl, tmp, compression="zstd")
         os.replace(tmp, out)
-    else:
-        schema = pa.schema(
-            [
-                pa.field(k, typ)
-                for k, typ in {
-                    "tile_key": pa.string(),
-                    "year": pa.int64(),
-                    "parcel_id": pa.int64(),
-                    "area_m2": pa.float64(),
-                    "n_parts": pa.int64(),
-                    "ext_h_px": pa.int64(),
-                    "ext_w_px": pa.int64(),
-                    "touches_window_edge": pa.bool_(),
-                    "in_utm_zone": pa.bool_(),
-                    "in_mgrs_square": pa.bool_(),
-                    **{
-                        k: pa.float64()
-                        for k in [
-                            "pf_mean",
-                            "pb_mean",
-                            "frac_nodata_1q",
-                            "frac_nodata_3q",
-                            "frac_water",
-                            "frac_crops_ever",
-                            "slope_mean",
-                            "frac_slope_gt30",
-                            "elev_mean",
-                            "xmin",
-                            "ymin",
-                            "xmax",
-                            "ymax",
-                        ]
-                    },
-                    "geometry": pa.binary(),
-                }.items()
-            ]
-        )
-        tmp = out.with_name(out.name + f".tmp-{os.getpid()}")
-        geo = {
-            "version": "1.1.0",
-            "primary_column": "geometry",
-            "columns": {
-                "geometry": {
-                    "encoding": "WKB",
-                    "geometry_types": ["Polygon", "MultiPolygon"],
-                    "crs": json.loads(CRS("EPSG:4326").to_json()),
-                }
-            },
-        }
-        schema = schema.with_metadata({b"geo": json.dumps(geo).encode()})
-        pq.write_table(pa.Table.from_pylist([], schema=schema), tmp, compression="zstd")
-        os.replace(tmp, out)
+    finally:
+        tmp.unlink(missing_ok=True)
     prof["t_write"] = time.perf_counter() - t
     prof["t_total"] = time.perf_counter() - t_all
     prof["parcels"] = len(rows)
@@ -473,6 +549,7 @@ def main() -> None:
         help="coverage-simplify tolerance, metres (default off; use simplify_polygons.py)",
     )
     ap.add_argument("--workers", type=int, default=1)
+    ap.add_argument("--force", action="store_true", help="rerun tiles that are already current")
     ap.add_argument("--shard", type=int, default=int(os.environ.get("SLURM_ARRAY_TASK_ID", 0)))
     ap.add_argument(
         "--num-shards", type=int, default=int(os.environ.get("SLURM_ARRAY_TASK_COUNT", 1))
@@ -482,8 +559,14 @@ def main() -> None:
     a = ap.parse_args()
 
     src = a.scores / str(a.year)
-    names = a.tiles or (a.tile_list.read_text().split() if a.tile_list else None)
-    paths = [src / f"{n}.tif" for n in names] if names else sorted(src.glob("*.tif"))
+    # `names or glob` would glob every tile in the year when --tile-list names an
+    # EMPTY file, because an empty list is falsy -- the opposite of what the caller
+    # asked for, and the "no input scores" guard below cannot fire either.
+    # simplify_polygons globs only when no list was given at all; match that.
+    names = a.tiles if a.tiles is not None else None
+    if names is None and a.tile_list is not None:
+        names = a.tile_list.read_text().split()
+    paths = sorted(src.glob("*.tif")) if names is None else [src / f"{n}.tif" for n in names]
     if (
         a.core <= 0
         or a.halo < 0
@@ -499,7 +582,20 @@ def main() -> None:
         ap.error("score and outline directories must differ")
     out_dir = a.out_root / str(a.year)
     out_dir.mkdir(parents=True, exist_ok=True)
-    paths = [p for p in paths if not (out_dir / f"{p.stem}.parquet").exists()]
+    # Resume on the fingerprint, not on mere existence: a regenerated score COG or a
+    # changed --core/--halo/--backend/--simplify-m used to be skipped silently.
+    if not a.force:
+        n0 = len(paths)
+        paths = [
+            p
+            for p in paths
+            if not is_current(
+                out_dir / f"{p.stem}.parquet",
+                fingerprint(p, a.year, a.core, a.halo, a.backend, a.simplify_m),
+            )
+        ]
+        if n0 != len(paths):
+            print(f"{n0 - len(paths)} tiles already current, skipped", flush=True)
 
     index = sorted(a.index_dir.glob(f"tile_index_{a.year}*.parquet"))
     if paths and not index:
