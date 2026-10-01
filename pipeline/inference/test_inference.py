@@ -7,9 +7,11 @@ from predict import predict_tile, _patch_starts
 from run import (
     BAND_DESCRIPTIONS,
     INPUT_BANDS,
+    active_provider,
     current,
-    model_contract,
+    device_available,
     fingerprint,
+    model_contract,
     output_tags,
     read_stack,
     write_score,
@@ -247,3 +249,31 @@ def test_write_score_cleans_up_a_failed_write(tmp_path):
     with pytest.raises(ValueError):
         write_score(tmp_path / "score.tif", np.zeros((3, 64, 128), np.uint8), "EPSG:32631", tr, {})
     assert list(tmp_path.iterdir()) == []
+
+
+def test_device_preflight_rejects_cuda_without_a_device(monkeypatch):
+    """onnxruntime-gpu lists CUDAExecutionProvider on any Linux host, GPU or not."""
+    import run
+
+    monkeypatch.setattr(
+        run.ort,
+        "get_available_providers",
+        lambda: ["CUDAExecutionProvider", "CPUExecutionProvider"],
+    )
+    assert device_available("cpu") is None
+    if torch.cuda.is_available():
+        pytest.skip("this host has CUDA, so the missing-device path cannot be exercised")
+    assert "torch sees no CUDA device" in (device_available("cuda") or "")
+
+
+def test_device_preflight_rejects_a_provider_the_build_lacks(monkeypatch):
+    import run
+
+    monkeypatch.setattr(run.ort, "get_available_providers", lambda: ["CPUExecutionProvider"])
+    assert "onnxruntime build" in (device_available("cuda") or "")
+    assert device_available("cpu") is None
+
+
+def test_active_provider_catches_a_silent_cpu_fallback():
+    assert active_provider(signature(), "CPUExecutionProvider") is None
+    assert "did not initialize" in (active_provider(signature(), "CUDAExecutionProvider") or "")

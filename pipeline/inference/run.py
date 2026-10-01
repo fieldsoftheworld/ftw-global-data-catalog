@@ -8,7 +8,7 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
-import torch  # noqa: F401 - preload its CUDA libraries before ONNX Runtime
+import torch  # imported before ONNX Runtime so its CUDA libraries load first
 import onnxruntime as ort
 import rasterio
 from affine import Affine
@@ -75,6 +75,29 @@ def current(dst: Path, fp: str) -> bool:
             return ds.count == 2 and ds.tags().get("inference_fingerprint") == fp
     except rasterio.errors.RasterioIOError:
         return False
+
+
+def device_available(device: str) -> str | None:
+    """Error message if `device` is not actually usable on this host.
+
+    `ort.get_available_providers()` lists what the wheel was compiled with, not what
+    the machine can run: onnxruntime-gpu advertises CUDA on any Linux host, driver or
+    not. Only torch can answer whether a device is really there, and predict_tile's
+    `.to("cuda")` is what would otherwise discover it, one full tile read too late.
+    """
+    provider = PROVIDERS[device]
+    if provider not in ort.get_available_providers():
+        return f"{provider} is missing from this onnxruntime build"
+    if device == "cuda" and not torch.cuda.is_available():
+        return "--device cuda, but torch sees no CUDA device (check the driver and the GPU)"
+    return None
+
+
+def active_provider(session, provider: str) -> str | None:
+    """Error message if ONNX Runtime quietly fell back off `provider` loading the model."""
+    if provider not in session.get_providers():
+        return f"{provider} did not initialize; the session runs on {session.get_providers()}"
+    return None
 
 
 def model_contract(session) -> str | None:
@@ -151,9 +174,11 @@ def main() -> None:
     with a.model.open("rb") as fh:
         model_hash = hashlib.file_digest(fh, "sha256").hexdigest()
     provider = PROVIDERS[a.device]
-    if provider not in ort.get_available_providers():
-        ap.error(f"{provider} unavailable")
+    if problem := device_available(a.device):
+        ap.error(problem)
     session = ort.InferenceSession(str(a.model), providers=[provider])
+    if problem := active_provider(session, provider):
+        ap.error(problem)
     if problem := model_contract(session):
         ap.error(problem)
     todo = []

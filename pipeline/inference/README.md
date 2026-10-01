@@ -24,6 +24,13 @@ The model SHA-256 and source raster tags accompany every output. Resume compares
 input size/mtime, model hash and inference settings. Outputs replace atomically.
 Use disjoint `--shard` / `--num-shards` assignments for multiple workers.
 
+`--device cuda` (the default) is refused up front when torch sees no CUDA
+device, or when ONNX Runtime falls back to CPU while loading the model: the
+onnxruntime-gpu wheel advertises `CUDAExecutionProvider` on any Linux host,
+driver or not. The provider is part of the resume fingerprint and of every
+output's tags, so switching devices recomputes rather than silently
+accepting the other device's COGs.
+
 The production path binds CUDA buffers directly to ONNX Runtime and prefetches
 one input tile. Full-resolution accumulators plus two prefetched input stacks
 require substantial GPU/host RAM (a 10,008² input produces 40,032² scores).
