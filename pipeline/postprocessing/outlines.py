@@ -20,7 +20,10 @@ for _v in (
 ):
     os.environ.setdefault(_v, "1")
 os.environ.setdefault("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
-os.environ.setdefault("CPL_VSIL_CURL_ALLOWED_EXTENSIONS", ".tif")
+# No CPL_VSIL_CURL_ALLOWED_EXTENSIONS here: remote QA hrefs are not all ``*.tif``
+# (CDSE serves ``.../Nodes(B04.tif)/$value``) and an extension allow-list makes GDAL
+# refuse them before any request. Remote reads carry their own options; see
+# terrain.VSICURL_OPTS.
 
 import numpy as np
 import pyarrow as pa

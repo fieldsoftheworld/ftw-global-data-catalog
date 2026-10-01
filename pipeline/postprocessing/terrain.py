@@ -8,6 +8,14 @@ from rasterio.warp import reproject
 DEM = "https://copernicus-dem-30m.s3.amazonaws.com"
 CROP, WATER = 5, 1
 
+#: GDAL options for every ``/vsicurl`` read in this package, applied per-open rather
+#: than as an import-time ``os.environ`` side effect. ``EMPTY_DIR`` suppresses the
+#: sidecar probing an extension allow-list would otherwise be used for; deliberately
+#: no ``CPL_VSIL_CURL_ALLOWED_EXTENSIONS``, because QA source hrefs are not all
+#: ``*.tif`` — CDSE serves ``.../Nodes(B04.tif)/$value`` — and the allow-list makes
+#: GDAL refuse those before it issues a single request.
+VSICURL_OPTS = {"GDAL_DISABLE_READDIR_ON_OPEN": "EMPTY_DIR"}
+
 
 def _dem_name(lat: int, lon: int) -> str:
     ns = f"N{lat:02d}" if lat >= 0 else f"S{-lat:02d}"
@@ -24,7 +32,7 @@ def _warp(srcs: list[str], shape, crs, transform, resampling, dtype) -> np.ndarr
     out = np.full(shape, np.nan if dtype == np.float32 else 0, dtype)
     for src in srcs:
         try:
-            with rasterio.open(src) as ds:
+            with rasterio.Env(**VSICURL_OPTS), rasterio.open(src) as ds:
                 reproject(
                     rasterio.band(ds, 1),
                     out,

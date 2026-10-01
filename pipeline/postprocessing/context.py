@@ -7,9 +7,10 @@ import numpy as np
 import pyarrow.parquet as pq
 import rasterio
 from rasterio.enums import Resampling
+from rasterio.errors import RasterioIOError
 from rasterio.transform import array_bounds
 from rasterio.warp import transform_bounds
-from terrain import CROP, WATER, _dem_name, _warp
+from terrain import CROP, VSICURL_OPTS, WATER, _dem_name, _warp
 
 NODATA = -32768
 
@@ -25,8 +26,14 @@ def aux_rasters(tk: str, year: int, index: Path, crs, tr10, shape10) -> dict:
     nod = np.zeros((h40, w40), np.uint8)
     for r in t:
         href = r["b04_href"]
-        with rasterio.open("/vsicurl/" + href if href.startswith("http") else href) as ds:
-            nod += ds.read(1, out_shape=(h40, w40), resampling=Resampling.nearest) == NODATA
+        src = "/vsicurl/" + href if href.startswith("http") else href
+        try:
+            with rasterio.Env(**VSICURL_OPTS), rasterio.open(src) as ds:
+                nod += ds.read(1, out_shape=(h40, w40), resampling=Resampling.nearest) == NODATA
+        except RasterioIOError as exc:
+            # A bare GDAL message names neither the tile nor the href, and one tile
+            # has four of them; mirror terrain._warp's guard and say which failed.
+            raise RasterioIOError(f"{tk} {r['quarter']}: cannot read {src}: {exc}") from exc
     h30, w30 = math.ceil(shape10[0] / 3), math.ceil(shape10[1] / 3)
     tr30 = tr10 * tr10.scale(3)
     w_, s_, e_, n_ = transform_bounds(crs, "EPSG:4326", *array_bounds(*shape10, tr10))
