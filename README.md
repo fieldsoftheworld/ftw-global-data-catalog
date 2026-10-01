@@ -40,3 +40,11 @@ object from the bucket. Data files are staged under `staging-data/`
 Found a problem in the metadata? Open an
 [issue](https://github.com/fieldsoftheworld/ftw-global-data-catalog/issues)
 or a pull request — CI validates every change.
+
+## License
+
+The code in this repository is licensed under [Apache-2.0](LICENSE); see
+[NOTICE](NOTICE) for third-party attributions. The published catalog
+metadata under `catalog/` and the data it describes are licensed under
+[CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/), as declared on
+every collection.
