@@ -7,14 +7,17 @@ The existing PMTiles pipeline consumes the released zone files.
 ```sh
 uv venv
 uv pip install -r pipeline/postprocessing/requirements.txt
-# Install the forthcoming fbp package separately; it is not on PyPI yet.
+# Install the private fbp package separately. It is NOT on PyPI, and it is NOT
+# the unrelated `fbp` 1.3.6 published there, which does not expose fbp.methods.
 ```
 
 `outlines.py` calls `fbp.methods.parse`; no BoundaryVote implementation is
 vendored. The private package must expose the production method
 `nbg-pb-h0.01-t0.3+R35+F10+G2+A900`. The default `exact` backend uses this ID;
 `--backend fast` adds `+q1` and requires that variant in fbp. Until the package
-is released, the outline stage requires separately authorized package access.
+is released, the outline stage requires separately authorized package access —
+it fails with one message naming that need rather than once per tile. Only
+`outlines.py` needs fbp; the other three stages run without it.
 
 ```sh
 .venv/bin/python pipeline/postprocessing/outlines.py --year 2025 \
@@ -22,7 +25,7 @@ is released, the outline stage requires separately authorized package access.
 .venv/bin/python pipeline/postprocessing/simplify_polygons.py --year 2025 \
   --in-root outlines --out-root simplified --workers 1
 .venv/bin/python pipeline/postprocessing/merge_polygons.py --year 2025 \
-  --in-root simplified --out-root merged --no-aux \
+  --in-root simplified --out-root merged --no-aux --tmp-dir scratch/duckdb \
   --keep-list tiles.txt --empty-list empty.txt
 .venv/bin/python pipeline/postprocessing/fiboa_convert.py --year 2025 \
   --in-root merged --out-root fiboa --tmp-dir scratch/duckdb --zone 15
@@ -80,10 +83,26 @@ discovery. DuckDB spills to `--tmp-dir` (pid-scoped, outside `--out-root`), and
 the per-zone temp is `part-0.parquet.tmp-<pid>`, which no `*.parquet` glob matches.
 Empty outline tiles write readable empty Parquet files.
 
-Conversion repairs and joins seams, drops polygon parts below 900 m², calculates
-area/perimeter in UTM, sorts by Hilbert index, and writes fiboa v0.3.0 metadata.
-It releases the documented nine-column schema. QA fields remain in intermediate
-files. These geometric operations do not guarantee defect-free coverage.
+Conversion repairs geometry, joins seams, then — on the unioned geometry — drops
+parts and parcels below 900 m², re-applies merge's km² cap, computes
+area/perimeter, and derives the bbox covering. The order matters: filtering before
+the union deleted fields cut by a seam into two sub-minimum halves, and a cap
+applied to merge's pre-union pixel area let a union over the cap through. Two
+pieces merge only when they genuinely overlap; a shared edge is adjacency, not
+duplication. All metric work uses the zone's north UTM CRS so an
+equator-straddling field's halves are comparable — a per-row hemisphere EPSG put
+them 10,000 km apart.
+
+Output is `{out}/{year}/zone={NN}/utm{NN}.parquet`, the hive layout
+`catalog/vector/AGENTS.md` documents and every collection's
+`"partition:glob": "./zone=*/utm*.parquet"` and `tools/rebuild_index.py` require.
+The staged file is validated before publication: more rows out than in, or any
+duplicate parcel id, aborts rather than publishing. Rows are sorted by Hilbert
+index and the file carries fiboa v0.3.0 metadata whose `determination:details`
+reports the real spec, tolerance and cap read from merge's `_summary.json`, and
+says INCOMPLETE when the merge ran with `--allow-missing`. It releases the
+documented nine-column schema; QA fields remain in intermediate files. These
+geometric operations do not guarantee defect-free coverage.
 
 ```sh
 uv pip install pytest
