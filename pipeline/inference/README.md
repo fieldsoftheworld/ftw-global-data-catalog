@@ -1,7 +1,12 @@
 # Quarterly-mosaic inference
 
 FP32 ONNX inference on 16-band, north-up 10 m UTM stacks. Band order:
-Q1–Q4, each B04/B03/B02/B08 (red, green, blue, NIR). Divide by 3000;
+Q1–Q4, each B04/B03/B02/B08 (red, green, blue, NIR). Every input must
+carry that order: either `Q1_B04`…`Q4_B08` band descriptions or an
+`input_bands=Q1,Q2,Q3,Q4 x B04,B03,B02,B08` tag, both of which the
+quarterly-mosaic download pipeline writes. A stack claiming neither
+is refused rather than assumed — the tag is the durable half,
+since GDAL does not always preserve band descriptions. Divide by 3000;
 bilinear upsample ×4; 512 px patches, 25% overlap, positive Hann blending.
 The model emits background/field/boundary logits; outputs retain field and
 boundary probabilities as uint8 (scale 1/255) at 2.5 m in a COG.

@@ -1,9 +1,18 @@
 import numpy as np
+import pytest
 import rasterio
 import torch
 from affine import Affine
 from predict import predict_tile, _patch_starts
-from run import write_score, current, fingerprint, output_tags
+from run import (
+    BAND_DESCRIPTIONS,
+    INPUT_BANDS,
+    current,
+    fingerprint,
+    output_tags,
+    read_stack,
+    write_score,
+)
 from torch.utils._python_dispatch import TorchDispatchMode
 
 
@@ -100,3 +109,55 @@ def test_resume_and_tags_track_the_provider(tmp_path):
     assert written["execution_provider"] == "CPUExecutionProvider"
     assert written["model_sha256"] == "hash"
     assert written["year"] == "2025"
+
+
+def stack(path, *, descriptions=BAND_DESCRIPTIONS, tags=None):
+    """A minimal 16-band 10 m north-up stack, optionally described and/or tagged."""
+    tr = Affine(10, 0, 500000, 0, -10, 1000000)
+    with rasterio.open(
+        path, "w", driver="GTiff", height=8, width=8, count=16,
+        dtype="uint16", crs="EPSG:32631", transform=tr,
+    ) as ds:
+        ds.write(np.ones((16, 8, 8), np.uint16))
+        for i, name in enumerate(descriptions or (), 1):
+            ds.set_band_description(i, name)
+        if tags:
+            ds.update_tags(**tags)
+    return path
+
+
+def test_input_bands_matches_the_mosaic_pipeline():
+    """One spelling, shared with pipeline/mosaics/download.py."""
+    assert INPUT_BANDS == "Q1,Q2,Q3,Q4 x B04,B03,B02,B08"
+    assert BAND_DESCRIPTIONS[:5] == ("Q1_B04", "Q1_B03", "Q1_B02", "Q1_B08", "Q2_B04")
+    assert len(BAND_DESCRIPTIONS) == 16
+
+
+def test_band_order_accepted_by_descriptions(tmp_path):
+    arr, transform, crs, tags = read_stack(stack(tmp_path / "described.tif"))
+    assert arr.shape == (16, 8, 8) and arr.dtype == np.float32
+    assert transform.a == 10 and crs is not None
+    assert "input_bands" not in tags
+    out = output_tags(tags, "h", "fp", 3000.0, 0.25, "CPUExecutionProvider")
+    assert out["input_bands"] == INPUT_BANDS
+
+
+def test_band_order_accepted_by_tag(tmp_path):
+    src = stack(tmp_path / "tagged.tif", descriptions=None, tags={"input_bands": INPUT_BANDS})
+    _, _, _, tags = read_stack(src)
+    assert tags["input_bands"] == INPUT_BANDS
+
+
+def test_band_order_refused_when_unconfirmed(tmp_path):
+    """Blank descriptions and no tag must not be treated as the right order."""
+    with pytest.raises(ValueError, match="band order unconfirmed"):
+        read_stack(stack(tmp_path / "blank.tif", descriptions=None))
+
+
+def test_band_order_refused_on_conflicting_claims(tmp_path):
+    wrong = ("Q1_B02", "Q1_B03", "Q1_B04", "Q1_B08") + BAND_DESCRIPTIONS[4:]
+    with pytest.raises(ValueError, match="band descriptions"):
+        read_stack(stack(tmp_path / "swapped.tif", descriptions=wrong))
+    mislabelled = {"input_bands": "Q1,Q2,Q3,Q4 x B02,B03,B04,B08"}
+    with pytest.raises(ValueError, match="input_bands tag"):
+        read_stack(stack(tmp_path / "mislabelled.tif", tags=mislabelled))

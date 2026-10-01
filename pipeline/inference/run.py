@@ -15,6 +15,11 @@ from affine import Affine
 from predict import predict_tile
 
 PROVIDERS = {"cuda": "CUDAExecutionProvider", "cpu": "CPUExecutionProvider"}
+# The contract the mosaic pipeline writes (pipeline/mosaics/download.py): quarter-major.
+BANDS = ("B04", "B03", "B02", "B08")
+QUARTERS = ("Q1", "Q2", "Q3", "Q4")
+BAND_DESCRIPTIONS = tuple(f"{q}_{b}" for q in QUARTERS for b in BANDS)
+INPUT_BANDS = f"{','.join(QUARTERS)} x {','.join(BANDS)}"
 
 
 def read_stack(path: Path):
@@ -25,12 +30,18 @@ def read_stack(path: Path):
             raise ValueError(f"{path}: expected north-up 10 m pixels")
         if not np.isclose(ds.transform.b, 0) or not np.isclose(ds.transform.d, 0):
             raise ValueError(f"{path}: rotated input grid")
-        expected = tuple(
-            f"{q}_{b}" for q in ("Q1", "Q2", "Q3", "Q4") for b in ("B04", "B03", "B02", "B08")
-        )
-        if any(ds.descriptions) and ds.descriptions != expected:
-            raise ValueError(f"{path}: unexpected band order")
-        return ds.read().astype(np.float32), ds.transform, ds.crs, ds.tags()
+        tags = ds.tags()
+        described, declared = tuple(ds.descriptions), tags.get("input_bands")
+        if any(described) and described != BAND_DESCRIPTIONS:
+            raise ValueError(f"{path}: band descriptions {described} are not {BAND_DESCRIPTIONS}")
+        if declared is not None and declared != INPUT_BANDS:
+            raise ValueError(f"{path}: input_bands tag {declared!r} is not {INPUT_BANDS!r}")
+        if described != BAND_DESCRIPTIONS and declared != INPUT_BANDS:
+            raise ValueError(
+                f"{path}: band order unconfirmed — needs {BAND_DESCRIPTIONS} band descriptions "
+                f"or an input_bands={INPUT_BANDS!r} tag"
+            )
+        return ds.read().astype(np.float32), ds.transform, ds.crs, tags
 
 
 def fingerprint(
@@ -43,16 +54,17 @@ def fingerprint(
 def output_tags(
     src_tags: dict, model_hash: str, fp: str, norm: float, overlap: float, provider: str
 ) -> dict:
-    """Source tags plus this run's provenance."""
-    return dict(
+    """Source tags plus this run's provenance; the input's verified band-order tag is kept."""
+    tags = dict(
         src_tags,
         model_sha256=model_hash,
         inference_fingerprint=fp,
         execution_provider=provider,
-        input_bands="Q1,Q2,Q3,Q4 x B04,B03,B02,B08",
         normalization=str(norm),
         overlap=str(overlap),
     )
+    tags.setdefault("input_bands", INPUT_BANDS)
+    return tags
 
 
 def current(dst: Path, fp: str) -> bool:
