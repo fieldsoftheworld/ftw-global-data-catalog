@@ -439,8 +439,12 @@ def thumbnail(source: Path, dest: Path, width: int, webp: bool) -> None:
             "-r", "average", str(source), str(tmp)],
            "gdal_translate thumbnail")
     os.replace(tmp, dest)
+    # GDAL's WEBP driver writes the mask as a .msk sidecar (the format has
+    # no alpha plane of its own), named after the tmp file.
     for stray in (dest.with_suffix(dest.suffix + ".aux.xml"),
-                  tmp.with_suffix(tmp.suffix + ".aux.xml")):
+                  tmp.with_suffix(tmp.suffix + ".aux.xml"),
+                  dest.with_suffix(dest.suffix + ".msk"),
+                  tmp.with_suffix(tmp.suffix + ".msk")):
         stray.unlink(missing_ok=True)
     bc.say(f"{dest}: {dest.stat().st_size / 1e3:,.0f} kB")
 
