@@ -72,10 +72,12 @@ def test_blend_allocates_one_accumulator():
     arr = np.full((16, h, w), 1500, np.float32)
     with AllocTrace() as trace:
         result, _ = predict_tile(ConstantSession(), arr, dev="cpu", batch=3)
-    scores, weights = (2, h * 4, w * 4), (h * 4, w * 4)
+    scores, weights, tile = (2, h * 4, w * 4), (h * 4, w * 4), (16, h, w)
     assert result.shape == scores
     assert trace.fresh.count(scores) == 1, f"extra full-size tensors: {trace.fresh}"
     assert trace.fresh.count(weights) == 1, f"extra weight tensors: {trace.fresh}"
+    # one device copy only: normalization is in place and this size needs no padding
+    assert trace.fresh.count(tile) == 1, f"extra tile-size tensors: {trace.fresh}"
     np.testing.assert_array_equal(arr, 1500)
 
 

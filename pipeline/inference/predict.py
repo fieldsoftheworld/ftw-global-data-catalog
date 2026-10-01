@@ -31,8 +31,10 @@ def predict_tile(sess, arr, *, batch=64, overlap=0.25, norm=3000.0, dev="cuda", 
         obuf_cache = {}
     tile_t = torch.from_numpy(arr).to(dev, copy=True).div_(norm)
     _, h, w = tile_t.shape
-    tile_t = F.pad(tile_t, (0, max(0, NATIVE - w), 0, max(0, NATIVE - h)), mode="replicate")
-    h, w = tile_t.shape[1:]
+    pad = (0, max(0, NATIVE - w), 0, max(0, NATIVE - h))
+    if any(pad):  # a no-op F.pad still copies the whole tile
+        tile_t = F.pad(tile_t, pad, mode="replicate")
+        h, w = tile_t.shape[1:]
     out_h, out_w = h * UP, w * UP
     acc = torch.zeros((2, out_h, out_w), device=dev, dtype=torch.float32)
     wsum = torch.zeros((out_h, out_w), device=dev, dtype=torch.float32)
