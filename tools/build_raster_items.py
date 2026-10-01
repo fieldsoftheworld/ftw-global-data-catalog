@@ -1383,6 +1383,14 @@ def cmd_collections(args) -> int:
         (year_dir / "AGENTS.md").write_text(
             year_agents(year, year_stats, extra, report))
         drop_stale(year_dir)
+        # A webp downloaded by an earlier run, whose object has since gone,
+        # would otherwise stay in catalog/ unregistered and still publish.
+        if not args.no_probe and report["thumbnail.webp"] == "ABSENT":
+            stale_webp = year_dir / "thumbnail.webp"
+            if stale_webp.is_file():
+                stale_webp.unlink()
+                print(f"removed {stale_webp.relative_to(ROOT)} "
+                      "(its object is gone)")
         state = " ".join(f"{k}={v}" for k, v in report.items())
         print(f"{year}: {year_stats['n']:,} tiles, "
               f"{year_stats['bytes'] / 1e12:.2f} TB  [{state}]")
