@@ -48,6 +48,45 @@ from publish import (  # noqa: E402
     upload_all,
 )
 
+
+def remote_data_index(
+    uploads: list[Upload], config: dict[str, str],
+) -> dict[str, tuple[int, str]]:
+    """Size and ETag for the staged keys' prefixes, listed recursively.
+
+    publish.py lists per directory because catalog/ directories share the
+    bucket prefix with the data tree. The data tree is the opposite shape:
+    tens of thousands of per-item directories under a handful of top-level
+    prefixes (raster/, vector/, index/), where one recursive paginated
+    listing per prefix costs ~1 request per 1,000 objects and a per-directory
+    walk costs one subprocess per directory. Falls back to the per-directory
+    walk when boto3 is unavailable, and to {} (everything looks new) when a
+    listing fails — same erring-toward-upload contract as remote_index.
+    """
+    try:
+        import boto3
+    except ImportError:
+        return remote_index(uploads, config)
+    bucket, prefix = split_s3_uri(config["write_prefix"])
+    region = config.get("region", "us-west-2")
+    tops = {u.key.split("/", 1)[0] for u in uploads}
+    index: dict[str, tuple[int, str]] = {}
+    s3 = boto3.client("s3", region_name=region)
+    try:
+        for top in sorted(tops):
+            paginator = s3.get_paginator("list_objects_v2")
+            for page in paginator.paginate(
+                Bucket=bucket, Prefix=f"{prefix}/{top}/"
+            ):
+                for obj in page.get("Contents", []):
+                    key = obj["Key"][len(prefix) + 1:]
+                    index[key] = (obj["Size"], obj["ETag"].strip('"'))
+    except Exception as exc:  # noqa: BLE001 — same contract as remote_index
+        print(f"note: could not list s3://{bucket}/{prefix} ({exc}); "
+              "treating every file as changed")
+        return {}
+    return index
+
 # The suffixes that may reach the bucket. This is an allow-list, and it names
 # what may pass rather than what may not. A staging tree grows new scratch
 # files over time. An allow-list stays correct when it does, and a deny-list
@@ -155,7 +194,7 @@ def main() -> int:
         print(f"nothing under {base}/ to upload", file=sys.stderr)
         return 1
 
-    index = {} if args.force else remote_index(uploads, config)
+    index = {} if args.force else remote_data_index(uploads, config)
     changed = [
         u for u in uploads
         if args.force
