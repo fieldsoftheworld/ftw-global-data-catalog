@@ -35,10 +35,13 @@ REWRITES = {
         r"/vector/\1/zone=\2/utm\2.parquet",
         r"/vector/\d{4}/zone=\d{2}/utm\d{2}\.parquet$",
     ),
+    # Phase-2 relayout: per-item folders -> unified grouped hierarchy.
+    # RE2 has no backreferences, so the tile key is rebuilt from its parts:
+    # \2 = zone digits, \3 = band letter, \4 = the square/offset suffix.
     "raster": (
-        r"/raster/(\d{4})/([A-Za-z0-9_]+)\.tif$",
-        r"/raster/\1/\2/\2.tif",
-        r"/raster/\d{4}/[A-Za-z0-9_]+/[A-Za-z0-9_]+\.tif$",
+        r"/raster/(\d{4})/(\d{2})([A-Z])([A-Z0-9]+_\d+_\d+)/[^/]+\.tif$",
+        r"/raster/\1/zone=\2/gzd=\2\3/\2\3\4/\2\3\4.tif",
+        r"/raster/\d{4}/zone=\d{2}/gzd=\d{2}[A-Z]/[A-Z0-9_]+/[A-Z0-9_]+\.tif$",
     ),
 }
 

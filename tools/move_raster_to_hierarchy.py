@@ -1,13 +1,20 @@
 #!/usr/bin/env python3
-"""Move the raster COGs into per-item folders (user-approved 2026-10-01).
+"""Move the raster data into the unified grouped hierarchy (user-approved).
 
-Executes the copy half of the approved move: server-side S3 copies from the
-flat ``raster/{year}/{tile}.tif`` layout to the per-item hierarchy
-``raster/{year}/{tile}/{tile}.tif`` — the layout the vector tree already
-uses (one folder per item, data beside metadata, PORTO-CORE-071). The plan
-is derived from ``index/raster.parquet``, never guessed from tile ids.
-Deletion of the old keys happens separately, after the index and item
-metadata flip, via ``--delete-old`` — and only with explicit user approval.
+Phase 2 of the raster relayout (2026-10-01). Phase 1 (this morning, in git
+history) copied the flat ``raster/{year}/{tile}.tif`` into per-item folders.
+Chris then chose the unified grouped hierarchy, so this copies each tile's
+COG **and** its ``{tile}.thumb.png`` from ``raster/{year}/{tile}/`` into
+
+    raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/
+
+where ``{ZZ}`` is the tile key's leading two digits and ``{GZD}`` those
+digits plus the band letter (``01KFS_0_0`` → ``zone=01/gzd=01K``) — the same
+derivation pinned in ``tools/build_raster_items.py``. The plan comes from
+``index/raster.parquet`` (tifs) plus one recursive listing (thumb sizes),
+never from guessed keys. Deletion of superseded keys happens separately,
+after the index and metadata flip, via ``--delete-old`` — and only with
+explicit user approval.
 
     python3 tools/move_raster_to_hierarchy.py              # dry run: counts only
     python3 tools/move_raster_to_hierarchy.py --confirm    # copy phase (idempotent)
@@ -15,9 +22,9 @@ metadata flip, via ``--delete-old`` — and only with explicit user approval.
 
 Every object is under the 5 GB CopyObject limit (max observed 1.83 GB), so
 each move is one server-side call with no data egress. One paginated listing
-of ``raster/`` up front replaces 67k per-object HEADs: a destination already
+of ``raster/`` up front replaces per-object HEADs: a destination already
 present with the right size is skipped, so re-runs sweep stragglers. boto3,
-not the aws CLI — 67k subprocess startups would cost more than the copies.
+not the aws CLI — 134k subprocess startups would cost more than the copies.
 """
 from __future__ import annotations
 
@@ -35,9 +42,17 @@ PREFIX = "ftw/global-data-beta"
 INDEX = "https://data.source.coop/ftw/global-data-beta/index/raster.parquet"
 PUBLIC_BASE = "https://data.source.coop/ftw/global-data-beta"
 COG_TYPE = "image/tiff; application=geotiff; profile=cloud-optimized"
+PNG_TYPE = "image/png"
 
 
-def plan() -> list[dict]:
+def group(tile: str) -> tuple[str, str]:
+    """(zone, gzd) from a tile key — pinned convention, asserted not assumed."""
+    if not (tile[:2].isdigit() and tile[2].isalpha()):
+        sys.exit(f"tile key {tile!r} does not start with NN + band letter")
+    return tile[:2], tile[:3]
+
+
+def plan(sizes: dict[str, int]) -> list[dict]:
     con = duckdb.connect(
         config={"custom_user_agent": "Mozilla/5.0 (ftw-beta-catalog)"})
     con.execute("INSTALL httpfs; LOAD httpfs; SET http_retries=8;")
@@ -49,10 +64,19 @@ def plan() -> list[dict]:
         if not href.startswith(PUBLIC_BASE + "/"):
             sys.exit(f"index href outside public base: {href}")
         old = href[len(PUBLIC_BASE) + 1:]
-        new = f"raster/{year}/{tile}/{tile}.tif"
-        if old == new:
-            continue  # already moved and index already flipped
-        entries.append({"old": old, "new": new, "size": size})
+        zone, gzd = group(tile)
+        dest_dir = f"raster/{year}/zone={zone}/gzd={gzd}/{tile}"
+        new = f"{dest_dir}/{tile}.tif"
+        if old != new:
+            entries.append({"old": old, "new": new, "size": size,
+                            "type": COG_TYPE})
+        # The thumbnail rides along from the same folder; its size comes from
+        # the listing because the index does not carry it.
+        old_thumb = f"{old.rsplit('/', 1)[0]}/{tile}.thumb.png"
+        new_thumb = f"{dest_dir}/{tile}.thumb.png"
+        if old_thumb != new_thumb and old_thumb in sizes:
+            entries.append({"old": old_thumb, "new": new_thumb,
+                            "size": sizes[old_thumb], "type": PNG_TYPE})
     return entries
 
 
@@ -70,7 +94,7 @@ def copy_one(s3, entry: dict) -> str | None:
         s3.copy_object(
             Bucket=BUCKET, Key=f"{PREFIX}/{entry['new']}",
             CopySource={"Bucket": BUCKET, "Key": f"{PREFIX}/{entry['old']}"},
-            MetadataDirective="REPLACE", ContentType=COG_TYPE,
+            MetadataDirective="REPLACE", ContentType=entry["type"],
         )
         head = s3.head_object(Bucket=BUCKET, Key=f"{PREFIX}/{entry['new']}")
         if head["ContentLength"] != entry["size"]:
@@ -97,26 +121,26 @@ def main() -> int:
     parser.add_argument("--delete-old", action="store_true",
                         help="delete verified-copied old keys (separate "
                              "user approval required)")
-    parser.add_argument("--workers", type=int, default=32)
+    parser.add_argument("--workers", type=int, default=48)
     args = parser.parse_args()
 
     s3 = boto3.client("s3", region_name="us-west-2",
                       config=Config(max_pool_connections=max(args.workers, 10),
                                     retries={"max_attempts": 8,
                                              "mode": "adaptive"}))
-    entries = plan()
-    print(f"plan: {len(entries):,} object(s) from index", flush=True)
     sizes = list_sizes(s3)
     print(f"bucket: {len(sizes):,} object(s) under raster/", flush=True)
+    entries = plan(sizes)
+    print(f"plan: {len(entries):,} object(s) to move", flush=True)
 
     if args.delete_old:
         todo = [e for e in entries if e["old"] in sizes]
         action = lambda e: delete_one(s3, e, sizes)  # noqa: E731
-        verb = "deleted (old flat layout)"
+        verb = "deleted (superseded layout)"
     else:
         todo = [e for e in entries if sizes.get(e["new"]) != e["size"]]
         action = lambda e: copy_one(s3, e)  # noqa: E731
-        verb = "copied to per-item folders"
+        verb = "copied to the grouped hierarchy"
     print(f"todo: {len(todo):,} ({len(entries) - len(todo):,} already done)",
           flush=True)
     if not args.confirm and not args.delete_old:
