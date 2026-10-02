@@ -5,7 +5,7 @@ Guidance for AI agents. Every claim here is measured from the index manifest or 
 Related guides: the [catalog root](../AGENTS.md), the sibling [vector tree](../vector/AGENTS.md), and each year's own AGENTS.md ([2017](./2017/AGENTS.md), [2018](./2018/AGENTS.md), [2019](./2019/AGENTS.md), [2020](./2020/AGENTS.md), [2021](./2021/AGENTS.md), [2022](./2022/AGENTS.md), [2023](./2023/AGENTS.md), [2024](./2024/AGENTS.md), [2025](./2025/AGENTS.md)).
 
 - One collection per year, `2017/collection.json`, `2018/collection.json`, `2019/collection.json`, `2020/collection.json`, `2021/collection.json`, `2022/collection.json`, `2023/collection.json`, `2024/collection.json`, `2025/collection.json`.
-- Layout: `raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/` holds `{tile}.tif` (the COG), `{tile}.thumb.png`; `raster/{year}/` holds `collection.json`, `items.parquet`, the year's global `overview.tif`, and the zone catalogs that group the items.
+- Layout: `raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/` holds `{tile}.tif` (the COG), `{tile}.json` (its STAC item), `{tile}.thumb.png`; `raster/{year}/` holds `collection.json`, `items.parquet`, the year's global `overview.tif`, and the zone catalogs that group the items.
 - Enumerate tiles via the [index manifest](https://data.source.coop/ftw/global-data-beta/index/raster.parquet) or a year's `items.parquet`, never by listing the bucket and never by walking the browse tree (~400 catalogs per year); read each year's AGENTS.md for band semantics.
 - Band 1 `field`, band 2 `boundary`; uint8, probability = value / 255. No nodata is declared.
 - All years share the tile grid, so per-pixel year-over-year comparison works tile by tile.

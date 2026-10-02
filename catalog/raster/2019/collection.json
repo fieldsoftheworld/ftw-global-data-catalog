@@ -580,7 +580,8 @@
         "collection-mirror",
         "metadata"
       ],
-      "file:size": 1697055
+      "file:size": 1704677,
+      "file:checksum": "1220c0d6bec686e2a7dba10b316b6ca23eca5f9c14947837b6d564ad0fffb843df83"
     }
   }
 }

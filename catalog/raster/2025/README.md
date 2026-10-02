@@ -19,6 +19,7 @@ Tiles are grouped by UTM zone and grid zone designator, taken from the tile key 
 
 ```
 raster/2025/zone=01/gzd=01K/{tile}/{tile}.tif        the COG
+raster/2025/zone=01/gzd=01K/{tile}/{tile}.json       its STAC item
 raster/2025/zone=01/gzd=01K/{tile}/{tile}.thumb.png  its thumbnail
 ```
 
