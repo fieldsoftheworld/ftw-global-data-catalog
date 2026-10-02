@@ -197,6 +197,13 @@ def main() -> int:
         return 1
 
     index = {} if args.force else remote_data_index(uploads, config)
+    if not index and not args.force and args.confirm:
+        # Err-toward-upload is right for a dry run; on --confirm it just
+        # re-uploaded ~30 GB of unchanged data after one failed listing
+        # (2026-10-02). A confirm with no listing is a blind upload: refuse,
+        # and let the operator retry or say --force to mean it.
+        sys.exit("remote listing failed or empty; refusing blind --confirm "
+                 "(retry, or pass --force to upload everything)")
     changed = [
         u for u in uploads
         if args.force
