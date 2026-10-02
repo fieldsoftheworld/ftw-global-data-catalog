@@ -9,13 +9,12 @@ data.
   Source Cooperative and referenced in place; the git repository carries
   metadata only.
 - Resolve structural links relative to this object.
-- The bucket layout is `vector/{2024,2025}/utm{NN}.parquet` (per-UTM-zone
+- The bucket layout is `vector/{2017..2025}/zone={NN}/utm{NN}.parquet` (per-UTM-zone
   GeoParquet field polygons) and `raster/{2017..2025}/` (two-band uint8
   field/boundary-probability COGs at 2.5 m), with
   `index/{vector,raster}.parquet` manifests listing hrefs, sizes, and bboxes.
-- This catalog is under construction. Collections with documented, runnable
-  queries are added as they are built; until a collection appears here, read
-  the `index/*.parquet` manifests to enumerate the data.
+- Vector (2017–2025) and raster collections are published here; the
+  `index/*.parquet` manifests list every file with its href, size and bbox.
 - When querying the parquet over HTTP with DuckDB, use
   `https://data.source.coop/...` URLs, not `s3://`, and set a browser-like
   `User-Agent` for the list API.

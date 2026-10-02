@@ -1,6 +1,6 @@
 # FTW Global — Field Boundaries 2024 (GeoParquet)
 
-Predicted agricultural field boundaries for 2024: **120,251,932 parcels** in 54 per-UTM-zone GeoParquet files (108.0 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
+Predicted agricultural field boundaries for 2024: **120,295,636 parcels** in 54 per-UTM-zone GeoParquet files (85.7 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
 Browse it in the [data browser](https://source.coop/ftw/global-data-beta).
 
@@ -12,7 +12,7 @@ Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE 
 
 ## Files
 
-One file per UTM zone at `vector/2024/zone=NN/utm{NN}.parquet` (hive-partitioned by `zone`) (e.g. [utm48](https://data.source.coop/ftw/global-data-beta/vector/2024/utm48.parquet) is the largest, 14,228,648 parcels). Zone numbers with no land coverage are absent.
+One file per UTM zone at `vector/2024/zone=NN/utm{NN}.parquet` (hive-partitioned by `zone`) (e.g. [utm48](https://data.source.coop/ftw/global-data-beta/vector/2024/utm48.parquet) is the largest, 14,229,565 parcels). Zone numbers with no land coverage are absent.
 
 ## Columns
 

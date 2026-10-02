@@ -43,12 +43,12 @@
   ],
   "properties": {
     "title": "UTM zone 11 — 2024 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 11 for 2024: 437,909 parcels, 75,412 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 11 for 2024: 438,328 parcels, 75,277 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2024-01-01T00:00:00Z",
     "start_datetime": "2024-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 437909,
+    "table:row_count": 438328,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 671395749,
+      "file:size": 511397397,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-beta/vector/2024/zone=11/utm11.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "1220c443bb1b1605c8025de2e0be57c0a5f255013adb491e4c8210b507877891bfd3"
+      "file:checksum": "1220caaeafd6c28c37ff2590983f739d8e5e330c465bef88b743a93ef7c269ec0dde"
     }
   },
   "links": [

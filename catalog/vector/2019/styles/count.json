@@ -1,0 +1,63 @@
+{
+  "version": 8,
+  "name": "Field count (A5 r7 → fields) (2019)",
+  "metadata": {
+    "description": "Fields per A5 r7 cell at z0–8 (stepped bins), handing over to the actual 2019 field polygons from z9."
+  },
+  "sources": {
+    "data": {
+      "type": "vector",
+      "url": "pmtiles://https://data.source.coop/ftw/global-data-beta/vector/2019/fields-2019.pmtiles"
+    }
+  },
+  "layers": [
+    {
+      "id": "cells-fill",
+      "type": "fill",
+      "source": "data",
+      "source-layer": "cells",
+      "maxzoom": 9,
+      "paint": {
+        "fill-color": [
+          "step",
+          [
+            "get",
+            "count"
+          ],
+          "#ffffe5",
+          100,
+          "#addd8e",
+          1000,
+          "#41ab5d",
+          10000,
+          "#006837",
+          50000,
+          "#004529"
+        ],
+        "fill-opacity": 0.8
+      }
+    },
+    {
+      "id": "fields-fill",
+      "type": "fill",
+      "source": "data",
+      "source-layer": "fields",
+      "minzoom": 9,
+      "paint": {
+        "fill-color": "#33a02c",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "id": "fields-outline",
+      "type": "line",
+      "source": "data",
+      "source-layer": "fields",
+      "minzoom": 9,
+      "paint": {
+        "line-color": "#33a02c",
+        "line-width": 1
+      }
+    }
+  ]
+}

@@ -43,12 +43,12 @@
   ],
   "properties": {
     "title": "UTM zone 22 — 2020 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 22 for 2020: 2,124,106 parcels, 207,614 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 22 for 2020: 2,124,982 parcels, 207,406 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2020-01-01T00:00:00Z",
     "start_datetime": "2020-01-01T00:00:00Z",
     "end_datetime": "2020-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 2124106,
+    "table:row_count": 2124982,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 3109459433,
+      "file:size": 2406684192,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-beta/vector/2020/zone=22/utm22.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "1220f7051817ea06edf9ac420ef2878b92c6a320a2c152dd167d18495e5b694989bc"
+      "file:checksum": "1220b71c70805636d0c72825765d2e13b31df3c639d41168ea3ec6fba3444e83878b"
     }
   },
   "links": [

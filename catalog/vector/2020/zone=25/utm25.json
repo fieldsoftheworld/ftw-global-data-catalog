@@ -43,12 +43,12 @@
   ],
   "properties": {
     "title": "UTM zone 25 — 2020 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 25 for 2020: 160,427 parcels, 4,184 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 25 for 2020: 160,441 parcels, 4,183 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2020-01-01T00:00:00Z",
     "start_datetime": "2020-01-01T00:00:00Z",
     "end_datetime": "2020-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 160427,
+    "table:row_count": 160441,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 154658704,
+      "file:size": 123180523,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-beta/vector/2020/zone=25/utm25.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "12207474812ce30ce931dd1b0ee8304e66cd832d71ad042deff295a014b68f597e5f"
+      "file:checksum": "12207609c2ddaddb5131ae1924721fec67f595ecb46553f3a8421ad957d7fa4ca4f6"
     }
   },
   "links": [

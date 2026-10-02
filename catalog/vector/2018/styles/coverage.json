@@ -1,0 +1,65 @@
+{
+  "version": 8,
+  "name": "Field coverage (A5 r7 → fields) (2018)",
+  "metadata": {
+    "description": "Percent of each A5 r7 cell covered by 2018 fields at z0–8, handing over to the actual field polygons from z9."
+  },
+  "sources": {
+    "data": {
+      "type": "vector",
+      "url": "pmtiles://https://data.source.coop/ftw/global-data-beta/vector/2018/fields-2018.pmtiles"
+    }
+  },
+  "layers": [
+    {
+      "id": "cells-fill",
+      "type": "fill",
+      "source": "data",
+      "source-layer": "cells",
+      "maxzoom": 9,
+      "paint": {
+        "fill-color": [
+          "step",
+          [
+            "get",
+            "pct_covered"
+          ],
+          "#ffffd9",
+          2,
+          "#edf8b1",
+          10,
+          "#7fcdbb",
+          25,
+          "#41b6c4",
+          50,
+          "#225ea8",
+          75,
+          "#081d58"
+        ],
+        "fill-opacity": 0.8
+      }
+    },
+    {
+      "id": "fields-fill",
+      "type": "fill",
+      "source": "data",
+      "source-layer": "fields",
+      "minzoom": 9,
+      "paint": {
+        "fill-color": "#33a02c",
+        "fill-opacity": 0.25
+      }
+    },
+    {
+      "id": "fields-outline",
+      "type": "line",
+      "source": "data",
+      "source-layer": "fields",
+      "minzoom": 9,
+      "paint": {
+        "line-color": "#33a02c",
+        "line-width": 1
+      }
+    }
+  ]
+}

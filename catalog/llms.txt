@@ -1,7 +1,7 @@
 # Fields of the World — Global Data (beta)
 
 > Beta release of the Fields of the World (FTW) global field-boundary
-> predictions: per-UTM-zone GeoParquet field polygons for 2024 and 2025
+> predictions: per-UTM-zone GeoParquet field polygons for 2017–2025
 > (fiboa/vecorel schema) and 2.5 m field/boundary-probability
 > Cloud-Optimized GeoTIFFs for 2017–2025, derived from the TGE Labs
 > Sentinel-2 quarterly cloudless mosaics. Hosted on Source Cooperative.
@@ -15,12 +15,12 @@ backed by the S3 prefix
 
 ## Layout
 
-- `vector/{2024,2025}/utm{NN}.parquet` — field polygons, 54 UTM zones per year
+- `vector/{2020..2025}/zone={NN}/utm{NN}.parquet` — field polygons, 54 UTM zones per year
 - `raster/{2017..2025}/` — two-band (field, boundary probability) uint8 COGs, 2.5 m
 - `index/vector.parquet`, `index/raster.parquet` — manifests (hrefs, sizes, bboxes)
 
 ## STAC catalog
 
 - Root catalog: https://data.source.coop/ftw/global-data-beta/catalog.json
-- The catalog is under construction; vector and raster collections land
-  incrementally. See `AGENTS.md` beside this file for access guidance.
+- Vector (2017–2025) and raster collections are published. See `AGENTS.md`
+  beside this file for access guidance.

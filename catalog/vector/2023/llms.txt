@@ -1,0 +1,11 @@
+# FTW Global (beta) — field boundaries 2023
+
+> 133,227,819 predicted agricultural field parcels for 2023 as 54 per-UTM-zone cloud-native GeoParquet files. CC-BY-4.0.
+
+Data: `https://data.source.coop/ftw/global-data-beta/vector/2023/utm{NN}.parquet`
+Collection: https://data.source.coop/ftw/global-data-beta/vector/2023/collection.json
+
+Processing (from the dataset's embedded metadata):
+Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2023 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied.
+
+See AGENTS.md beside this file for query guidance.

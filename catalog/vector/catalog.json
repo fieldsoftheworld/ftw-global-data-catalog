@@ -39,9 +39,45 @@
     },
     {
       "rel": "child",
+      "href": "./2017/collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field Boundaries 2017 (GeoParquet)"
+    },
+    {
+      "rel": "child",
+      "href": "./2018/collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field Boundaries 2018 (GeoParquet)"
+    },
+    {
+      "rel": "child",
+      "href": "./2019/collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field Boundaries 2019 (GeoParquet)"
+    },
+    {
+      "rel": "child",
       "href": "./2020/collection.json",
       "type": "application/json",
       "title": "FTW Global — Field Boundaries 2020 (GeoParquet)"
+    },
+    {
+      "rel": "child",
+      "href": "./2021/collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field Boundaries 2021 (GeoParquet)"
+    },
+    {
+      "rel": "child",
+      "href": "./2022/collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field Boundaries 2022 (GeoParquet)"
+    },
+    {
+      "rel": "child",
+      "href": "./2023/collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field Boundaries 2023 (GeoParquet)"
     },
     {
       "rel": "child",

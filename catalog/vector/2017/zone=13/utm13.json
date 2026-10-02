@@ -1,0 +1,136 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+  ],
+  "id": "utm13",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -101.9692456131016,
+          17.169918624645494
+        ],
+        [
+          -101.9692456131016,
+          54.148102655222836
+        ],
+        [
+          -108.02198279236856,
+          54.148102655222836
+        ],
+        [
+          -108.02198279236856,
+          17.169918624645494
+        ],
+        [
+          -101.9692456131016,
+          17.169918624645494
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -108.02198279236856,
+    17.169918624645494,
+    -101.9692456131016,
+    54.148102655222836
+  ],
+  "properties": {
+    "title": "UTM zone 13 — 2017 field boundaries",
+    "description": "Predicted field boundaries falling in UTM zone 13 for 2017: 1,114,657 parcels, 222,000 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "datetime": "2017-01-01T00:00:00Z",
+    "start_datetime": "2017-01-01T00:00:00Z",
+    "end_datetime": "2017-12-31T23:59:59Z",
+    "proj:code": "EPSG:4326",
+    "table:row_count": 1114657,
+    "table:columns": [
+      {
+        "name": "id",
+        "type": "string",
+        "description": "Parcel identifier, unique per collection ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+      },
+      {
+        "name": "collection",
+        "type": "string",
+        "description": "The vecorel collection the parcel belongs to (constant per year, e.g. `ftw-s2-2025`)."
+      },
+      {
+        "name": "geometry",
+        "type": "binary",
+        "description": "Parcel footprint (WKB Polygon/MultiPolygon, WGS 84)."
+      },
+      {
+        "name": "bbox",
+        "type": "struct",
+        "description": "Bounding box of the parcel (xmin, ymin, xmax, ymax)."
+      },
+      {
+        "name": "metrics:area",
+        "type": "float",
+        "description": "Area of the parcel in square meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
+      },
+      {
+        "name": "metrics:perimeter",
+        "type": "float",
+        "description": "Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
+      },
+      {
+        "name": "score",
+        "type": "uint8",
+        "description": "Mean model field probability inside the parcel, × 100 rounded (0–100)."
+      },
+      {
+        "name": "determination:datetime",
+        "type": "timestamp",
+        "description": "The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+      },
+      {
+        "name": "determination:method",
+        "type": "string",
+        "description": "Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+      }
+    ]
+  },
+  "collection": "ftw-s2-2017",
+  "assets": {
+    "data": {
+      "href": "./utm13.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "UTM zone 13 — 2017 field boundaries (GeoParquet)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 1477802279,
+      "alternate": {
+        "s3": {
+          "href": "s3://ftw/global-data-beta/vector/2017/zone=13/utm13.parquet",
+          "title": "S3 URI (us-west-2, anonymous read)"
+        }
+      },
+      "file:checksum": "12200aa4a520cc202ae1acbb0d7071264a13166471beb86ebf5ecf26b1c3b67a4410"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    }
+  ]
+}

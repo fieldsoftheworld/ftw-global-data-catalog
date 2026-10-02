@@ -11,7 +11,7 @@
   ],
   "id": "ftw-s2-2025",
   "title": "FTW Global — Field Boundaries 2025 (GeoParquet)",
-  "description": "Predicted agricultural field boundaries for 2025: 134,047,870 parcels (6,539,964 km² of field area) in 54 per-UTM-zone GeoParquet files, 112.0 GiB total, browsable in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2025 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+  "description": "Predicted agricultural field boundaries for 2025: 134,085,099 parcels (6,531,048 km² of field area) in 54 per-UTM-zone GeoParquet files, 89.1 GiB total, browsable in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2025 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
   "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
@@ -522,8 +522,8 @@
       "roles": [
         "visual"
       ],
-      "file:size": 29190517358,
-      "file:checksum": "12203720188bbd22dc7870a0de5a7fc3c364e9221878a2bbc4d9aea0c6d6185fd3ed"
+      "file:size": 29201057312,
+      "file:checksum": "1220dab5500ec3f92604daeecf4a37630e704f0e9013cf86daa4baa975ad65a7312c"
     },
     "cells": {
       "href": "./cells_a5r7_2025.parquet",
@@ -533,8 +533,8 @@
       "roles": [
         "data"
       ],
-      "file:size": 1651398,
-      "file:checksum": "1220e7dd5059fcab05d48761902c00a1bcfbd98b9704219cf0fa50fa99a817caf0f0"
+      "file:size": 1652152,
+      "file:checksum": "1220cfb1a5a4ee5200ac71b656747d753b657bda82cd643828d84bbfffe3f7e542a8"
     },
     "styles/count": {
       "href": "./styles/count.json",
@@ -596,8 +596,8 @@
         "collection-mirror",
         "metadata"
       ],
-      "file:size": 34436,
-      "file:checksum": "12207d79901fe2524356068b26e95dc338f726cc7dd3488c93691fb22ed91b11a3c8"
+      "file:size": 34417,
+      "file:checksum": "1220b70e788244c4862fcf84918a20b31a41229938b62893256421796aef2ca208a9"
     }
   }
 }

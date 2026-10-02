@@ -632,7 +632,7 @@ def vector_readme(per_year: dict[int, list[dict]]) -> str:
         *[f"- [{y}](./{y}/collection.json) — "
           f"{sum(r['n_parcels'] for r in per_year[y]):,} parcels"
           for y in sorted(per_year)], "",
-        "New years drop in incrementally alongside these.", "",
+        "",
     ])
 
 

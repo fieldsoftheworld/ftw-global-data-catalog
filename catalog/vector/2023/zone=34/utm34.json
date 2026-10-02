@@ -1,0 +1,136 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+  ],
+  "id": "utm34",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          24.02390301726643,
+          -35.22686086852586
+        ],
+        [
+          24.02390301726643,
+          65.82062540846233
+        ],
+        [
+          17.991840819160448,
+          65.82062540846233
+        ],
+        [
+          17.991840819160448,
+          -35.22686086852586
+        ],
+        [
+          24.02390301726643,
+          -35.22686086852586
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    17.991840819160448,
+    -35.22686086852586,
+    24.02390301726643,
+    65.82062540846233
+  ],
+  "properties": {
+    "title": "UTM zone 34 — 2023 field boundaries",
+    "description": "Predicted field boundaries falling in UTM zone 34 for 2023: 6,316,788 parcels, 183,518 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "datetime": "2023-01-01T00:00:00Z",
+    "start_datetime": "2023-01-01T00:00:00Z",
+    "end_datetime": "2023-12-31T23:59:59Z",
+    "proj:code": "EPSG:4326",
+    "table:row_count": 6316788,
+    "table:columns": [
+      {
+        "name": "id",
+        "type": "string",
+        "description": "Parcel identifier, unique per collection ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+      },
+      {
+        "name": "collection",
+        "type": "string",
+        "description": "The vecorel collection the parcel belongs to (constant per year, e.g. `ftw-s2-2025`)."
+      },
+      {
+        "name": "geometry",
+        "type": "binary",
+        "description": "Parcel footprint (WKB Polygon/MultiPolygon, WGS 84)."
+      },
+      {
+        "name": "bbox",
+        "type": "struct",
+        "description": "Bounding box of the parcel (xmin, ymin, xmax, ymax)."
+      },
+      {
+        "name": "metrics:area",
+        "type": "float",
+        "description": "Area of the parcel in square meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
+      },
+      {
+        "name": "metrics:perimeter",
+        "type": "float",
+        "description": "Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
+      },
+      {
+        "name": "score",
+        "type": "uint8",
+        "description": "Mean model field probability inside the parcel, × 100 rounded (0–100)."
+      },
+      {
+        "name": "determination:datetime",
+        "type": "timestamp",
+        "description": "The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+      },
+      {
+        "name": "determination:method",
+        "type": "string",
+        "description": "Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+      }
+    ]
+  },
+  "collection": "ftw-s2-2023",
+  "assets": {
+    "data": {
+      "href": "./utm34.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "UTM zone 34 — 2023 field boundaries (GeoParquet)",
+      "roles": [
+        "data"
+      ],
+      "file:size": 4447707938,
+      "alternate": {
+        "s3": {
+          "href": "s3://ftw/global-data-beta/vector/2023/zone=34/utm34.parquet",
+          "title": "S3 URI (us-west-2, anonymous read)"
+        }
+      },
+      "file:checksum": "1220d7d40dd6208640d71e18b36adbb27c73aa76d54cd27ed18acfca77c7fe40e9a1"
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json"
+    },
+    {
+      "rel": "collection",
+      "href": "../collection.json",
+      "type": "application/json"
+    }
+  ]
+}
