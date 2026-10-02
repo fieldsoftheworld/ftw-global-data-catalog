@@ -262,6 +262,51 @@ def _list_dir(aws: str, bucket: str, prefix: str, region: str) -> list:
     return json.loads(out) or []
 
 
+# Above this many distinct directories, per-directory listing costs more
+# subprocesses than one recursive listing costs pages: the committed raster
+# item tree alone is ~71k directories, and a recursive listing of its
+# top-level prefixes is a few hundred paginated calls.
+RECURSIVE_LISTING_THRESHOLD = 64
+
+
+def remote_index_recursive(
+    uploads: list[Upload], config: dict[str, str],
+) -> dict[str, tuple[int, str]] | None:
+    """One recursive listing per top-level prefix, via boto3.
+
+    Returns None when boto3 is unavailable (caller falls back to the
+    per-directory walk) and {} when a listing fails — the same
+    err-toward-upload contract as the per-directory path.
+    """
+    try:
+        import boto3
+    except ImportError:
+        return None
+    bucket, prefix = split_s3_uri(config["write_prefix"])
+    region = config.get("region", "us-west-2")
+    tops = set()
+    for u in uploads:
+        rel = u.key[len(prefix) + 1:] if prefix else u.key
+        first, sep, _ = rel.partition("/")
+        # A root-level file is its own prefix; a directory gets the slash so
+        # "raster/" cannot also match a sibling named "raster.json".
+        tops.add(f"{first}/" if sep else first)
+    index: dict[str, tuple[int, str]] = {}
+    s3 = boto3.client("s3", region_name=region)
+    try:
+        for top in sorted(tops):
+            head = f"{prefix}/{top}" if prefix else top
+            paginator = s3.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=bucket, Prefix=head):
+                for obj in page.get("Contents", []):
+                    index[obj["Key"]] = (obj["Size"], obj["ETag"].strip('"'))
+    except Exception as exc:  # noqa: BLE001 — same contract as remote_index
+        print(f"note: could not list s3://{bucket}/{prefix} ({exc}); "
+              "treating every file as changed")
+        return {}
+    return index
+
+
 def remote_index(
     uploads: list[Upload], config: dict[str, str],
     workers: int = MAX_UPLOAD_WORKERS,
@@ -271,8 +316,16 @@ def remote_index(
     Lists each directory the catalog occupies non-recursively, concurrently.
     Returns {} if any listing fails, so a dry run still works without
     credentials; every file then simply looks new, which errs toward
-    uploading. It never silently skips.
+    uploading. It never silently skips. Past RECURSIVE_LISTING_THRESHOLD
+    distinct directories (the committed raster item tree is ~71k of them),
+    one recursive listing per top-level prefix replaces the walk.
     """
+    if len(key_dirs(uploads)) > RECURSIVE_LISTING_THRESHOLD:
+        recursive = remote_index_recursive(uploads, config)
+        if recursive is not None:
+            return recursive
+        print("note: boto3 not available; falling back to per-directory "
+              "listing — this will be slow for a tree this size")
     aws = aws_cli()
     if aws is None:
         print("note: aws CLI not found; treating every file as changed")
