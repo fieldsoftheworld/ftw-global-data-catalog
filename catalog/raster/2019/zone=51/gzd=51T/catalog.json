@@ -1,0 +1,324 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2019-51t",
+  "title": "Grid zone 51T — 2019",
+  "description": "The 48 field/boundary probability tiles of 2019 in grid zone designator `51T` — UTM zone 51, latitude band T. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 51 — 2019](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 51 — 2019"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./51TTE_0_0/51TTE_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TTE_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TTF_0_0/51TTF_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TTF_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TTG_0_0/51TTG_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TTG_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TUE_0_0/51TUE_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TUE_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TUF_0_0/51TUF_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TUF_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TUG_0_0/51TUG_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TUG_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TUH_0_0/51TUH_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TUH_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TUJ_0_0/51TUJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TUJ_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TUK_0_0/51TUK_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TUK_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TUL_0_0/51TUL_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TUL_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TUM_0_0/51TUM_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TUM_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TUN_0_0/51TUN_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TUN_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TVE_0_0/51TVE_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TVE_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TVF_0_0/51TVF_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TVF_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TVG_0_0/51TVG_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TVG_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TVH_0_0/51TVH_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TVH_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TVJ_0_0/51TVJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TVJ_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TVK_0_0/51TVK_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TVK_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TVL_0_0/51TVL_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TVL_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TVM_0_0/51TVM_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TVM_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TVN_0_0/51TVN_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TVN_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TWE_0_0/51TWE_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TWE_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TWF_0_0/51TWF_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TWF_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TWG_0_0/51TWG_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TWG_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TWH_0_0/51TWH_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TWH_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TWJ_0_0/51TWJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TWJ_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TWK_0_0/51TWK_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TWK_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TWL_0_0/51TWL_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TWL_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TWM_0_0/51TWM_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TWM_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TWN_0_0/51TWN_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TWN_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TXE_0_0/51TXE_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TXE_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TXF_0_0/51TXF_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TXF_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TXG_0_0/51TXG_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TXG_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TXH_0_0/51TXH_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TXH_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TXJ_0_0/51TXJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TXJ_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TXK_0_0/51TXK_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TXK_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TXL_0_0/51TXL_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TXL_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TXM_0_0/51TXM_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TXM_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TXN_0_0/51TXN_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TXN_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TYE_0_0/51TYE_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TYE_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TYF_0_0/51TYF_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TYF_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TYG_0_0/51TYG_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TYG_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TYH_0_0/51TYH_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TYH_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TYJ_0_0/51TYJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TYJ_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TYK_0_0/51TYK_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TYK_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TYL_0_0/51TYL_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TYL_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TYM_0_0/51TYM_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TYM_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./51TYN_0_0/51TYN_0_0.json",
+      "type": "application/geo+json",
+      "title": "51TYN_0_0 — 2019"
+    }
+  ]
+}

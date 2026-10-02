@@ -1,0 +1,204 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2021-33l",
+  "title": "Grid zone 33L — 2021",
+  "description": "The 28 field/boundary probability tiles of 2021 in grid zone designator `33L` — UTM zone 33, latitude band L. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 33 — 2021](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 33 — 2021"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./33LTF_0_0/33LTF_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LTF_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LUC_0_0/33LUC_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LUC_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LUD_0_0/33LUD_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LUD_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LUG_0_0/33LUG_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LUG_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LUH_0_0/33LUH_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LUH_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LUK_0_0/33LUK_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LUK_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LUL_0_0/33LUL_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LUL_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LVC_0_0/33LVC_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LVC_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LVD_0_0/33LVD_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LVD_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LVE_0_0/33LVE_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LVE_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LVF_0_0/33LVF_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LVF_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LVG_0_0/33LVG_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LVG_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LVH_0_0/33LVH_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LVH_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LWC_0_0/33LWC_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LWC_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LWD_0_0/33LWD_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LWD_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LWE_0_0/33LWE_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LWE_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LWF_0_0/33LWF_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LWF_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LWG_0_0/33LWG_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LWG_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LWH_0_0/33LWH_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LWH_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LWJ_0_0/33LWJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LWJ_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LWK_0_0/33LWK_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LWK_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LXE_0_0/33LXE_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LXE_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LXF_0_0/33LXF_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LXF_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LXG_0_0/33LXG_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LXG_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LXK_0_0/33LXK_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LXK_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LYF_0_0/33LYF_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LYF_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LYG_0_0/33LYG_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LYG_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33LZD_0_0/33LZD_0_0.json",
+      "type": "application/geo+json",
+      "title": "33LZD_0_0 — 2021"
+    }
+  ]
+}

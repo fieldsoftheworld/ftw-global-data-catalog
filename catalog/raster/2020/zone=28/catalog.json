@@ -1,0 +1,54 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2020-zone-28",
+  "title": "UTM zone 28 — 2020",
+  "description": "The 46 field/boundary probability tiles of 2020 that fall in UTM zone 28, grouped by grid zone designator (3 of them: `28P`, `28Q`, `28R`). Part of [FTW Global — Field & Boundary Probabilities 2020](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2020 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=28P/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 28P"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=28Q/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 28Q"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=28R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 28R"
+    }
+  ]
+}

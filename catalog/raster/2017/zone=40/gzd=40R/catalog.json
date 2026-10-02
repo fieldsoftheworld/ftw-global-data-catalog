@@ -1,0 +1,156 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2017-40r",
+  "title": "Grid zone 40R — 2017",
+  "description": "The 20 field/boundary probability tiles of 2017 in grid zone designator `40R` — UTM zone 40, latitude band R. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 40 — 2017](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 40 — 2017"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./40RBS_0_0/40RBS_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RBS_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RBT_0_0/40RBT_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RBT_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RBU_0_0/40RBU_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RBU_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RCS_0_0/40RCS_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RCS_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RCT_0_0/40RCT_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RCT_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RCU_0_0/40RCU_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RCU_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RCV_0_0/40RCV_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RCV_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RDR_0_0/40RDR_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RDR_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RDS_0_0/40RDS_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RDS_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RDT_0_0/40RDT_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RDT_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RDU_0_0/40RDU_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RDU_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RDV_0_0/40RDV_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RDV_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RER_0_0/40RER_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RER_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RES_0_0/40RES_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RES_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40REU_0_0/40REU_0_0.json",
+      "type": "application/geo+json",
+      "title": "40REU_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RFR_0_0/40RFR_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RFR_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RFS_0_0/40RFS_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RFS_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RFT_0_0/40RFT_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RFT_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RGQ_0_0/40RGQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RGQ_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40RGR_0_0/40RGR_0_0.json",
+      "type": "application/geo+json",
+      "title": "40RGR_0_0 — 2017"
+    }
+  ]
+}

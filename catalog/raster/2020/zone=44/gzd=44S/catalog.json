@@ -1,0 +1,78 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2020-44s",
+  "title": "Grid zone 44S — 2020",
+  "description": "The 7 field/boundary probability tiles of 2020 in grid zone designator `44S` — UTM zone 44, latitude band S. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 44 — 2020](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 44 — 2020"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./44SKG_0_0/44SKG_0_0.json",
+      "type": "application/geo+json",
+      "title": "44SKG_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./44SKJ_0_0/44SKJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "44SKJ_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./44SLG_0_0/44SLG_0_0.json",
+      "type": "application/geo+json",
+      "title": "44SLG_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./44SLJ_0_0/44SLJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "44SLJ_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./44SMF_0_0/44SMF_0_0.json",
+      "type": "application/geo+json",
+      "title": "44SMF_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./44SMG_0_0/44SMG_0_0.json",
+      "type": "application/geo+json",
+      "title": "44SMG_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./44SNF_0_0/44SNF_0_0.json",
+      "type": "application/geo+json",
+      "title": "44SNF_0_0 — 2020"
+    }
+  ]
+}

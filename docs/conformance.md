@@ -73,13 +73,13 @@ The same reasoning covers two collection-level assets: the per-year
 and no checksum. The per-year `thumbnail.webp` is small, so the generator
 downloads it and carries both.
 
-## Open: the raster collections publish no item connectivity (PTL-COL-005)
+## How the raster items are reachable (PTL-COL-005, closed)
 
-Each year collection has ~7,466 items. They are generated straight to S3 and
-not committed (docs/plan.md Phase 4), and the collections carry no `rel: item`
-link, so enumeration goes through `index/raster.parquet` and each collection's
-`items.parquet` collection-mirror. rashid 0.1.8 reports that as an **error**,
-nine times:
+67,197 raster items, ~7,466 per year. Until 2026-10-02 they were generated
+straight to S3 and not committed, and the collections carried no `rel: item`
+link, so enumeration went through `index/raster.parquet` and each
+collection's `items.parquet` mirror alone. rashid 0.1.8 reported that as an
+**error**, nine times:
 
 ```
 PTL-COL-005  raster/{2017..2025}/collection.json: collection registers item
@@ -88,78 +88,120 @@ item JSON remains the normative representation
 (PORTO-CORE-015, PORTO-CORE-032, PORTO-FMT-042)
 ```
 
-This is **not** an accepted deviation and not a validator artifact. The
-finding is correct: PORTO-CORE-032 wants "a `child` or `item` link for every
-object it contains", and 67,197 published items have none. It is recorded
-here as an open item, with the measurements that bound the repair, so the
-next session does not redo them.
+The finding was correct, not a validator artifact: PORTO-CORE-032 wants "a
+`child` or `item` link for every object it contains", and 67,197 published
+items had none. It is closed by publishing the connectivity, not by waiving
+the rule — the items are committed and grouped under browse subcatalogs
+(user ruling 2026-10-02; docs/plan.md Phase 4 has the layout). Verified:
+`rashid check catalog --no-data` over the full nine-year tree reports **no
+PTL-COL-005 at all**, and the only error-severity rule left is PTL-VIZ-002
+(9×, the waiver above), so the gate passes with `ACCEPTED` exactly
+`{"PTL-VIZ-002"}`. The measurements that chose that shape are kept below,
+because they also bound what may and may not be changed about it later.
 
-### What a grouped browse subcatalog tree can and cannot do
+### Containment is directory nesting, so the group must be in the key
 
-The obvious repair — group the items under browse subcatalogs instead of
-listing them flat — was measured against rashid 0.1.8 and **does not work
-with the published layout**, because rashid derives containment from
-directory nesting (`CatalogGraph.parent_of` walks up from a file's own
-directory to the nearest `catalog.json`/`collection.json`). Measured, on
-scratch copies of this catalog:
+rashid derives containment from the file tree: `CatalogGraph.parent_of` walks
+up from a file's own directory to the nearest `catalog.json` /
+`collection.json`, and the graph holds only JSON the walk finds on disk.
+Measured on scratch copies of this catalog, before the layout changed:
 
 | Tried | Result |
 |---|---|
-| Browse catalogs committed under `raster/{year}/browse/{zone}/`, `rel: item` links (relative **or** absolute under the published base) to the bucket-side items | PTL-COL-005 **stays** (9×) *and* one new PTL-LNK-006 error per item link — "href … does not resolve to any file" — i.e. 67,197 new errors |
-| The same, with the item JSONs present on disk at `raster/{year}/{tile}/{tile}.json` | PTL-COL-005 clears, but the browse catalogs' item links become PTL-LNK-006 "points to the wrong object: must point to an item contained by this object", and PTL-LNK-002 demands a `rel: item` link on the **collection** for every item instead |
+| Browse catalogs committed under `raster/{year}/browse/{zone}/`, `rel: item` links (relative **or** absolute under the published base) to bucket-side items | PTL-COL-005 **stays** (9×) *and* one new PTL-LNK-006 error per item link — "href … does not resolve to any file" — i.e. 67,197 new errors |
+| The same, with the item JSONs on disk at `raster/{year}/{tile}/{tile}.json` | PTL-COL-005 clears, but the browse catalogs' item links become PTL-LNK-006 "points to the wrong object: must point to an item contained by this object", and PTL-LNK-002 demands a `rel: item` link on the **collection** for all 7,466 items instead |
 
-So a browse subcatalog can only own items that live **inside its own
-directory**, and the item JSON must be in the checkout for rashid to see it
-at all. `PTL-CAT-001`'s threshold is 20 ungrouped children (`PORTO-CORE-078`,
-a SHOULD, so a warning), which no flat list of 7,466 can meet.
+Two rules follow, and both are load-bearing:
 
-### The two layouts that do clear it
+- **The item JSON must be in the checkout.** A collection whose items live
+  only in the bucket cannot pass, whatever links it carries.
+- **A subcatalog can only own items inside its own directory.** Grouping is
+  therefore a property of the object key, which is why the data moved with
+  the metadata rather than the metadata reaching back with `../../`.
 
-Both were built for 2017 and run through rashid; both clear PTL-COL-005 for
-that year with **no link errors**. Both require the item JSONs in git
-(measured: 67,197 items, 288 MiB on disk, ~16 MB packed — one year's 7,466
-items are 32 MiB raw and 1.77 MB gzipped, since the items are near-identical).
+`PTL-CAT-001` is the companion warning: its threshold is 20 *ungrouped*
+children (`PORTO-CORE-078`, a SHOULD). Children that are themselves catalogs
+do not count, so a year collection with 54 zone catalogs and no direct items
+reports nothing at all, while a flat list of 7,466 could never comply.
 
-1. **Flat, layout unchanged.** Items committed at
-   `catalog/raster/{year}/{tile}/{tile}.json` — the keys they already occupy
-   in the bucket — and ~7,466 `rel: item` links per collection
-   (`collection.json` grows to 1.11 MiB). No bucket relayout, no new keys.
-   Leaves one PTL-CAT-001 **warning** per year collection ("7466 children
-   with no subcatalog grouping them"), the same warning the vector
-   collections already carry at 54 children.
-2. **Grouped, item keys only.** Items move to
-   `raster/{year}/zone-{NN}/{GZD}/{tile}/{tile}.json`, reaching their COG and
-   thumbnail — which never move — with an upward relative href
-   (`../../../{tile}/{tile}.tif`). Per year: 54 zone catalogs → 356 GZD
-   catalogs → items, median 17 and max 63 per leaf. 486 zone + 3,204 GZD
-   catalogs across nine years, each needing README.md and AGENTS.md
-   (PTL-FIL-001/002/003 bind plain catalogs too, measured). Clears the
-   collection-level PTL-CAT-001; leaves 166 leaf warnings per year where a
-   GZD holds 20 or more tiles. Costs 288 MiB of item JSON re-uploaded to new
-   keys, leaves the old item keys stale, and walks back part of the
-   2026-10-01 per-item-folder ruling (the item no longer sits beside its COG).
+### What the chosen layout costs
 
-Either way, committing the items adds ~201,000 PTL-AST-003 **warnings**
-(three per item: no `data` checksum, no `thumbnail` checksum, no `thumbnail`
-`file:size`) — see the checksum policy above; the thumbnail `file:size` is
-fillable from the recursive bucket listing the item uploader already does.
+- **Git.** 67,197 items, 320 MiB in the working tree, **22 MiB for a full
+  clone** (measured with `git bundle create … HEAD`: the items are
+  near-identical, so they delta extremely well). Committing them leaves
+  ~150k loose objects until someone runs `git gc`.
+- **Files.** 3,690 group catalogs (486 zone + 3,204 GZD across nine years),
+  each with a README.md and an AGENTS.md, because PTL-FIL-001/002/003 bind
+  plain catalogs and not only collections (measured). That is 11,070
+  generated documentation files.
+- **Warnings, not errors.** Measured over the committed tree: 1,497
+  PTL-CAT-001 (1,494 GZD leaves holding 20 or more tiles, plus the 3 vector
+  collections that already warned) and 201,615 PTL-AST-003 (134,415 "no
+  `file:checksum`" and 67,200 "no `file:size`"). The year collections
+  themselves no longer warn, because all of their children are catalogs.
+  A fourth level (the 100-km square) would clear the leaf warnings and is
+  deliberately not used: every extra group catalog costs rashid a full-tree
+  scan (below), so it would buy a warning-free report with an unusable gate.
+  The `file:checksum` absences are the documented policy above; the 67,197
+  thumbnail `file:size` absences are fillable from the recursive bucket
+  listing the item uploader already does.
 
-Gate runtime is the other cost, and it separates the two. rashid's
-containment helpers cost (nodes × catalog-or-collection nodes):
+### Gate runtime, and why the sampling below exists
+
+rashid's containment helpers cost (nodes × catalog-or-collection nodes):
 `children_of` calls `parent_of` once per node, and `PTL-LNK-002` calls
-`children_of` once per catalog. Measured on this machine: layout 1 at one
-year is 7,658 files in **32 s** and at three years 22,590 files in **95 s**
-— linear, because the structural-node count stays at 13, so nine years
-projects to ~5 minutes. Layout 2 at one year is 8,068 files in **124 s**,
-4× slower for 5% more files, because its 410 group catalogs each trigger a
-full-tree scan; nine years (≈71,700 nodes, ≈3,700 catalogs) projects to
-**~2.7 hours**, which no CI gate can carry. Either an upstream rashid
-perf fix or layout 1 is needed.
+`children_of` once per catalog. Measured, all on rails with rashid 0.1.8:
 
-`tools/publish.py` would also need the recursive-listing treatment
-`tools/upload_data.py` already got, for either layout: it lists each catalog
-directory non-recursively, which with 67,197 item directories is 67,197
-list calls.
+| tree | json files | catalogs + collections | wall |
+|---|---|---|---|
+| flat, 1 year | 7,658 | 13 | 32 s |
+| flat, 3 years | 22,590 | 13 | 95 s |
+| grouped, 1 year | 8,068 | 423 | 124 s |
+| **grouped, 9 years (this catalog)** | **71,088** | **3,703** | **2 h 30 min** |
+
+The flat rows are linear in file count, because their structural-node count
+never moves. The grouped rows are not: one grouped year is 4× slower than a
+flat one for 5% more files, because each of its 410 group catalogs triggers
+a full-tree scan. 8,629 s of that 2 h 30 min is user CPU, single-threaded,
+and it peaks at 1.4 GiB — it is compute, not memory.
+
+Two consequences, both practical:
+
+- **The gate does not run on a login node.** A nine-year run there was killed
+  at 39 minutes, well under the 64 GiB cgroup limit, so it is a CPU-time
+  policy rather than memory. `pipeline/rashid_check.sbatch` runs it as a
+  Slurm job instead and reports `sacct` MaxRSS and elapsed. It needs no
+  network: `--no-data` skips the byte checks and the schemas are bundled.
+- **It cannot gate every commit.** An upstream perf fix is the real repair
+  (precompute the containment map once per graph instead of rescanning per
+  catalog). Until then the CI split has to be chosen deliberately and
+  written down here — the gate must not quietly stop reading the tree.
+
+`tools/publish.py` lists each catalog directory non-recursively, which over
+67,197 item directories is 67,197 list calls. `tools/build_raster_items.py
+items --confirm` exists for exactly that reason: it lists each year
+recursively instead, nine calls in total, and publishes only item JSON.
+
+## Policy: the link check samples the per-item bucket hrefs
+
+`tests/test_links.py` resolves every relative href and, without `CI_LIGHT`,
+HEAD-checks the ones whose bytes live only in object storage. The committed
+item tree makes that 134,394 hrefs — a `data` and a `thumbnail` per item —
+which is half an hour of requests aimed at one host on every gate run.
+
+So those hrefs are **sampled per family**, a family being one collection
+directory and one asset key (`raster/2017` × `data`), capped at
+`LINK_SAMPLE` (default 40) and spread across the family by stride, so the
+sample spans every UTM zone instead of clustering in zone 01. The gate
+prints how many it checked and how many it sampled out, and `LINK_SAMPLE=all`
+checks every one — run that before publishing.
+
+Two things keep this honest. Structural links are never sampled: all 67,197
+`rel: item` links resolve on disk, so checking every one costs no network.
+And the exemption that lets an item's `{tile}.thumb.png` be checked over
+HTTP at all reads the suffix and nothing else — `.thumb.png` is in
+`DATA_SUFFIXES`, plain `.png` deliberately is not, because a collection's own
+`thumbnail.png` is committed and must resolve on disk.
 
 ## Validator workarounds
 

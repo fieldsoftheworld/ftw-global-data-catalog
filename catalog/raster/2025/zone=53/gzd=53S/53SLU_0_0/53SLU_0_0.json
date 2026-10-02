@@ -1,0 +1,154 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/raster/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+  ],
+  "id": "53SLU_0_0",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          132.8262478354803,
+          34.32128409650184
+        ],
+        [
+          132.802458346288,
+          35.223124939786175
+        ],
+        [
+          133.90183827640033,
+          35.238095514680076
+        ],
+        [
+          133.91373503798826,
+          34.33576278804229
+        ],
+        [
+          132.8262478354803,
+          34.32128409650184
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    132.802458346288,
+    34.32128409650184,
+    133.91373503798826,
+    35.238095514680076
+  ],
+  "properties": {
+    "title": "53SLU_0_0 — 2025 field & boundary probabilities",
+    "description": "Field and boundary probability raster for Sentinel-2 tile 53SLU_0_0 in 2025: 40,032 × 40,032 pixels at 2.5 m in EPSG:32653. 0.1% of pixels are field interior and 1.6% field boundary at the dataset's own thresholds. Probability = pixel value × 1/255.",
+    "datetime": "2025-01-01T00:00:00Z",
+    "start_datetime": "2025-01-01T00:00:00Z",
+    "end_datetime": "2025-12-31T23:59:59Z",
+    "gsd": 2.5,
+    "proj:code": "EPSG:32653",
+    "proj:shape": [
+      40032,
+      40032
+    ],
+    "proj:transform": [
+      2.5,
+      0.0,
+      300000.0,
+      0.0,
+      -2.5,
+      3900000.0
+    ],
+    "proj:bbox": [
+      300000.0,
+      3799920.0,
+      400080.0,
+      3900000.0
+    ],
+    "ftw:tile_key": "53SLU_0_0",
+    "ftw:field_frac": 0.001339,
+    "ftw:boundary_frac": 0.0161,
+    "ftw:cropland_frac": 0.022621,
+    "ftw:model": "unet_balanced_fp32.onnx",
+    "ftw:source_items": [
+      "Sentinel-2_mosaic_2025_Q1_53SLU_0_0",
+      "Sentinel-2_mosaic_2025_Q2_53SLU_0_0",
+      "Sentinel-2_mosaic_2025_Q3_53SLU_0_0",
+      "Sentinel-2_mosaic_2025_Q4_53SLU_0_0"
+    ]
+  },
+  "collection": "ftw-raster-2025",
+  "assets": {
+    "data": {
+      "href": "./53SLU_0_0.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "53SLU_0_0 2025 — field & boundary probabilities (COG)",
+      "roles": [
+        "data"
+      ],
+      "bands": [
+        {
+          "name": "field",
+          "description": "Field-interior probability: the model's probability that the pixel lies inside an agricultural field. probability = value × 1/255.",
+          "data_type": "uint8",
+          "raster:scale": 0.00392156862745098,
+          "raster:offset": 0,
+          "raster:sampling": "area",
+          "raster:spatial_resolution": 2.5
+        },
+        {
+          "name": "boundary",
+          "description": "Field-boundary probability: the model's probability that the pixel lies on a field boundary. probability = value × 1/255.",
+          "data_type": "uint8",
+          "raster:scale": 0.00392156862745098,
+          "raster:offset": 0,
+          "raster:sampling": "area",
+          "raster:spatial_resolution": 2.5
+        }
+      ],
+      "file:size": 375724979,
+      "alternate": {
+        "s3": {
+          "href": "s3://us-west-2.opendata.source.coop/ftw/global-data-beta/raster/2025/zone=53/gzd=53S/53SLU_0_0/53SLU_0_0.tif",
+          "title": "S3 URI (us-west-2, anonymous read)"
+        }
+      }
+    },
+    "thumbnail": {
+      "href": "./53SLU_0_0.thumb.png",
+      "type": "image/png",
+      "title": "53SLU_0_0 2025 — field probability preview",
+      "roles": [
+        "thumbnail"
+      ]
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 53S — 2025"
+    },
+    {
+      "rel": "collection",
+      "href": "../../../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2025 (COG)"
+    },
+    {
+      "rel": "derived_from",
+      "href": "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/",
+      "type": "text/html",
+      "title": "TGE Labs Sentinel-2 quarterly cloudless mosaics (source item ids in ftw:source_items)"
+    }
+  ]
+}

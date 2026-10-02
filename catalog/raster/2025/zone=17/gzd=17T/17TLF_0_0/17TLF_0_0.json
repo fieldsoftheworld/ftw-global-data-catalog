@@ -1,0 +1,154 @@
+{
+  "type": "Feature",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/raster/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+  ],
+  "id": "17TLF_0_0",
+  "geometry": {
+    "type": "Polygon",
+    "coordinates": [
+      [
+        [
+          -83.36466172867559,
+          40.62609965777472
+        ],
+        [
+          -83.39718261996151,
+          41.52685230012297
+        ],
+        [
+          -82.19801064072402,
+          41.54560376356987
+        ],
+        [
+          -82.18174412152592,
+          40.644268921803516
+        ],
+        [
+          -83.36466172867559,
+          40.62609965777472
+        ]
+      ]
+    ]
+  },
+  "bbox": [
+    -83.39718261996151,
+    40.62609965777472,
+    -82.18174412152592,
+    41.54560376356987
+  ],
+  "properties": {
+    "title": "17TLF_0_0 — 2025 field & boundary probabilities",
+    "description": "Field and boundary probability raster for Sentinel-2 tile 17TLF_0_0 in 2025: 40,032 × 40,032 pixels at 2.5 m in EPSG:32617. 49.8% of pixels are field interior and 2.2% field boundary at the dataset's own thresholds. Probability = pixel value × 1/255.",
+    "datetime": "2025-01-01T00:00:00Z",
+    "start_datetime": "2025-01-01T00:00:00Z",
+    "end_datetime": "2025-12-31T23:59:59Z",
+    "gsd": 2.5,
+    "proj:code": "EPSG:32617",
+    "proj:shape": [
+      40032,
+      40032
+    ],
+    "proj:transform": [
+      2.5,
+      0.0,
+      300000.0,
+      0.0,
+      -2.5,
+      4600020.0
+    ],
+    "proj:bbox": [
+      300000.0,
+      4499940.0,
+      400080.0,
+      4600020.0
+    ],
+    "ftw:tile_key": "17TLF_0_0",
+    "ftw:field_frac": 0.497577,
+    "ftw:boundary_frac": 0.021906,
+    "ftw:cropland_frac": 0.659336,
+    "ftw:model": "unet_balanced_fp32.onnx",
+    "ftw:source_items": [
+      "Sentinel-2_mosaic_2025_Q1_17TLF_0_0",
+      "Sentinel-2_mosaic_2025_Q2_17TLF_0_0",
+      "Sentinel-2_mosaic_2025_Q3_17TLF_0_0",
+      "Sentinel-2_mosaic_2025_Q4_17TLF_0_0"
+    ]
+  },
+  "collection": "ftw-raster-2025",
+  "assets": {
+    "data": {
+      "href": "./17TLF_0_0.tif",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "17TLF_0_0 2025 — field & boundary probabilities (COG)",
+      "roles": [
+        "data"
+      ],
+      "bands": [
+        {
+          "name": "field",
+          "description": "Field-interior probability: the model's probability that the pixel lies inside an agricultural field. probability = value × 1/255.",
+          "data_type": "uint8",
+          "raster:scale": 0.00392156862745098,
+          "raster:offset": 0,
+          "raster:sampling": "area",
+          "raster:spatial_resolution": 2.5
+        },
+        {
+          "name": "boundary",
+          "description": "Field-boundary probability: the model's probability that the pixel lies on a field boundary. probability = value × 1/255.",
+          "data_type": "uint8",
+          "raster:scale": 0.00392156862745098,
+          "raster:offset": 0,
+          "raster:sampling": "area",
+          "raster:spatial_resolution": 2.5
+        }
+      ],
+      "file:size": 673376745,
+      "alternate": {
+        "s3": {
+          "href": "s3://us-west-2.opendata.source.coop/ftw/global-data-beta/raster/2025/zone=17/gzd=17T/17TLF_0_0/17TLF_0_0.tif",
+          "title": "S3 URI (us-west-2, anonymous read)"
+        }
+      }
+    },
+    "thumbnail": {
+      "href": "./17TLF_0_0.thumb.png",
+      "type": "image/png",
+      "title": "17TLF_0_0 2025 — field probability preview",
+      "roles": [
+        "thumbnail"
+      ]
+    }
+  },
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 17T — 2025"
+    },
+    {
+      "rel": "collection",
+      "href": "../../../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2025 (COG)"
+    },
+    {
+      "rel": "derived_from",
+      "href": "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/",
+      "type": "text/html",
+      "title": "TGE Labs Sentinel-2 quarterly cloudless mosaics (source item ids in ftw:source_items)"
+    }
+  ]
+}

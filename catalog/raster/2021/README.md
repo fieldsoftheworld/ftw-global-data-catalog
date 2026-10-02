@@ -15,12 +15,11 @@ Each COG is 40,032 × 40,032 pixels at 2.5 m in its tile's UTM zone, with two ui
 | 1 | `field` | uint8 | 1/255 | 2.5 m | Field-interior probability: the model's probability that the pixel lies inside an agricultural field. probability = value × 1/255. |
 | 2 | `boundary` | uint8 | 1/255 | 2.5 m | Field-boundary probability: the model's probability that the pixel lies on a field boundary. probability = value × 1/255. |
 
-Each tile has its own directory, so the COG and its metadata sit together:
+Tiles are grouped by UTM zone and grid zone designator, taken from the tile key — `01KFS_0_0` is zone `01`, grid zone `01K` — and each tile's own directory holds its COG, its STAC item and its thumbnail:
 
 ```
-raster/2021/{tile}/{tile}.tif        the COG
-raster/2021/{tile}/{tile}.json       its STAC item
-raster/2021/{tile}/{tile}.thumb.png  its thumbnail
+raster/2021/zone=01/gzd=01K/{tile}/{tile}.tif        the COG
+raster/2021/zone=01/gzd=01K/{tile}/{tile}.thumb.png  its thumbnail
 ```
 
 ## Find tiles
@@ -62,12 +61,23 @@ con.sql(f"""
 ## Read a tile
 
 ```bash
-gdalinfo /vsicurl/https://data.source.coop/ftw/global-data-beta/raster/2021/01KFS_0_0/01KFS_0_0.tif
+gdalinfo /vsicurl/https://data.source.coop/ftw/global-data-beta/raster/2021/zone=01/gzd=01K/01KFS_0_0/01KFS_0_0.tif
 ```
 
 Any COG reader works over HTTP range requests; the overviews make low-zoom reads cheap.
 
 ## Browse it
+
+The 7,466 items are grouped into 54 UTM-zone subcatalogs, each splitting into its grid zone designators, so every tile is reachable by `child`/`item` links a few clicks deep instead of through one list of thousands:
+
+```
+2021/collection.json
+2021/zone={ZZ}/catalog.json        54 of these
+2021/zone={ZZ}/gzd={GZD}/catalog.json
+2021/zone={ZZ}/gzd={GZD}/{tile}/{tile}.json
+```
+
+The UTM zones present this year: 01, 04, 05, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60 — 54 of the 60 UTM zones; the others hold no tiles in this collection.
 
 One [global overview COG](https://data.source.coop/ftw/global-data-beta/raster/2021/overview.tif) renders the whole year at global scale (the collection's `overview` asset). Every tile's own thumbnail sits beside its COG.
 

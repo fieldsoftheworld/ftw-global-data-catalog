@@ -1,0 +1,108 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2022-zone-38",
+  "title": "UTM zone 38 — 2022",
+  "description": "The 260 field/boundary probability tiles of 2022 that fall in UTM zone 38, grouped by grid zone designator (12 of them: `38J`, `38K`, `38L`, `38M`, `38N`, `38P`, `38Q`, `38R`, `38S`, `38T`, `38U`, `38V`). Part of [FTW Global — Field & Boundary Probabilities 2022](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2022 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38J/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38J"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38K/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38K"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38L/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38L"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38M/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38M"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38N/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38N"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38P/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38P"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38Q/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38Q"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38R"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38U"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=38V/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 38V"
+    }
+  ]
+}

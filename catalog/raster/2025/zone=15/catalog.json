@@ -1,0 +1,72 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2025-zone-15",
+  "title": "UTM zone 15 — 2025",
+  "description": "The 147 field/boundary probability tiles of 2025 that fall in UTM zone 15, grouped by grid zone designator (6 of them: `15P`, `15Q`, `15R`, `15S`, `15T`, `15U`). Part of [FTW Global — Field & Boundary Probabilities 2025](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2025 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=15P/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 15P"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=15Q/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 15Q"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=15R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 15R"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=15S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 15S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=15T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 15T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=15U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 15U"
+    }
+  ]
+}

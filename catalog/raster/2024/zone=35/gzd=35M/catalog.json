@@ -1,0 +1,138 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2024-35m",
+  "title": "Grid zone 35M — 2024",
+  "description": "The 17 field/boundary probability tiles of 2024 in grid zone designator `35M` — UTM zone 35, latitude band M. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 35 — 2024](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 35 — 2024"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./35MKM_0_0/35MKM_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MKM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MLN_0_0/35MLN_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MLN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MPS_0_0/35MPS_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MPS_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MPT_0_0/35MPT_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MPT_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MQR_0_0/35MQR_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MQR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MQS_0_0/35MQS_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MQS_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MQT_0_0/35MQT_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MQT_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MQU_0_0/35MQU_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MQU_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MQV_0_0/35MQV_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MQV_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MRM_0_0/35MRM_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MRM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MRN_0_0/35MRN_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MRN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MRQ_0_0/35MRQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MRQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MRR_0_0/35MRR_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MRR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MRS_0_0/35MRS_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MRS_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MRT_0_0/35MRT_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MRT_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MRU_0_0/35MRU_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MRU_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35MRV_0_0/35MRV_0_0.json",
+      "type": "application/geo+json",
+      "title": "35MRV_0_0 — 2024"
+    }
+  ]
+}

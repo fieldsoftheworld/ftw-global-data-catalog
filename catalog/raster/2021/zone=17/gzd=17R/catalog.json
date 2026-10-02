@@ -1,0 +1,132 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2021-17r",
+  "title": "Grid zone 17R — 2021",
+  "description": "The 16 field/boundary probability tiles of 2021 in grid zone designator `17R` — UTM zone 17, latitude band R. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 17 — 2021](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 17 — 2021"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./17RKP_0_0/17RKP_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RKP_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RKQ_0_0/17RKQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RKQ_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RLL_0_0/17RLL_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RLL_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RLM_0_0/17RLM_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RLM_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RLN_0_0/17RLN_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RLN_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RLP_0_0/17RLP_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RLP_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RLQ_0_0/17RLQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RLQ_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RMK_0_0/17RMK_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RMK_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RML_0_0/17RML_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RML_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RMM_0_0/17RMM_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RMM_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RMN_0_0/17RMN_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RMN_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RMP_0_0/17RMP_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RMP_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RMQ_0_0/17RMQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RMQ_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RNJ_0_0/17RNJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RNJ_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RNK_0_0/17RNK_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RNK_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./17RNL_0_0/17RNL_0_0.json",
+      "type": "application/geo+json",
+      "title": "17RNL_0_0 — 2021"
+    }
+  ]
+}

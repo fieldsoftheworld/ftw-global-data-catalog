@@ -1,0 +1,96 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2024-46s",
+  "title": "Grid zone 46S — 2024",
+  "description": "The 10 field/boundary probability tiles of 2024 in grid zone designator `46S` — UTM zone 46, latitude band S. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 46 — 2024](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 46 — 2024"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./46SBC_0_0/46SBC_0_0.json",
+      "type": "application/geo+json",
+      "title": "46SBC_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./46SBD_0_0/46SBD_0_0.json",
+      "type": "application/geo+json",
+      "title": "46SBD_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./46SCC_0_0/46SCC_0_0.json",
+      "type": "application/geo+json",
+      "title": "46SCC_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./46SDA_0_0/46SDA_0_0.json",
+      "type": "application/geo+json",
+      "title": "46SDA_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./46SEA_0_0/46SEA_0_0.json",
+      "type": "application/geo+json",
+      "title": "46SEA_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./46SEB_0_0/46SEB_0_0.json",
+      "type": "application/geo+json",
+      "title": "46SEB_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./46SFC_0_0/46SFC_0_0.json",
+      "type": "application/geo+json",
+      "title": "46SFC_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./46SFF_0_0/46SFF_0_0.json",
+      "type": "application/geo+json",
+      "title": "46SFF_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./46SGA_0_0/46SGA_0_0.json",
+      "type": "application/geo+json",
+      "title": "46SGA_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./46SGD_0_0/46SGD_0_0.json",
+      "type": "application/geo+json",
+      "title": "46SGD_0_0 — 2024"
+    }
+  ]
+}

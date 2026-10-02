@@ -1,0 +1,72 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2021-46n",
+  "title": "Grid zone 46N — 2021",
+  "description": "The 6 field/boundary probability tiles of 2021 in grid zone designator `46N` — UTM zone 46, latitude band N. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 46 — 2021](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 46 — 2021"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./46NGL_0_0/46NGL_0_0.json",
+      "type": "application/geo+json",
+      "title": "46NGL_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./46NGM_0_0/46NGM_0_0.json",
+      "type": "application/geo+json",
+      "title": "46NGM_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./46NHH_0_0/46NHH_0_0.json",
+      "type": "application/geo+json",
+      "title": "46NHH_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./46NHK_0_0/46NHK_0_0.json",
+      "type": "application/geo+json",
+      "title": "46NHK_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./46NHL_0_0/46NHL_0_0.json",
+      "type": "application/geo+json",
+      "title": "46NHL_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./46NHM_0_0/46NHM_0_0.json",
+      "type": "application/geo+json",
+      "title": "46NHM_0_0 — 2021"
+    }
+  ]
+}

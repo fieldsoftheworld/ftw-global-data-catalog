@@ -1,0 +1,102 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2022-zone-18",
+  "title": "UTM zone 18 — 2022",
+  "description": "The 173 field/boundary probability tiles of 2022 that fall in UTM zone 18, grouped by grid zone designator (11 of them: `18G`, `18H`, `18K`, `18L`, `18M`, `18N`, `18P`, `18Q`, `18S`, `18T`, `18U`). Part of [FTW Global — Field & Boundary Probabilities 2022](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2022 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18G/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18G"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18H/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18H"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18K/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18K"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18L/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18L"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18M/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18M"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18N/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18N"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18P/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18P"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18Q/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18Q"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=18U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 18U"
+    }
+  ]
+}

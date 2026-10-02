@@ -1,0 +1,84 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2017-zone-44",
+  "title": "UTM zone 44 — 2017",
+  "description": "The 211 field/boundary probability tiles of 2017 that fall in UTM zone 44, grouped by grid zone designator (8 of them: `44N`, `44P`, `44Q`, `44R`, `44S`, `44T`, `44U`, `44V`). Part of [FTW Global — Field & Boundary Probabilities 2017](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2017 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=44N/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 44N"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=44P/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 44P"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=44Q/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 44Q"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=44R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 44R"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=44S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 44S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=44T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 44T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=44U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 44U"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=44V/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 44V"
+    }
+  ]
+}

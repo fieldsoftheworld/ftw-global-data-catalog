@@ -1,0 +1,318 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2023-50r",
+  "title": "Grid zone 50R — 2023",
+  "description": "The 47 field/boundary probability tiles of 2023 in grid zone designator `50R` — UTM zone 50, latitude band R. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 50 — 2023](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 50 — 2023"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./50RKN_0_0/50RKN_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RKN_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RKP_0_0/50RKP_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RKP_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RKQ_0_0/50RKQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RKQ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RKR_0_0/50RKR_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RKR_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RKS_0_0/50RKS_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RKS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RKT_0_0/50RKT_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RKT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RKU_0_0/50RKU_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RKU_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RKV_0_0/50RKV_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RKV_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RLN_0_0/50RLN_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RLN_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RLP_0_0/50RLP_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RLP_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RLQ_0_0/50RLQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RLQ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RLR_0_0/50RLR_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RLR_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RLS_0_0/50RLS_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RLS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RLT_0_0/50RLT_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RLT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RLU_0_0/50RLU_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RLU_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RLV_0_0/50RLV_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RLV_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RMN_0_0/50RMN_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RMN_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RMP_0_0/50RMP_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RMP_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RMQ_0_0/50RMQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RMQ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RMR_0_0/50RMR_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RMR_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RMS_0_0/50RMS_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RMS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RMT_0_0/50RMT_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RMT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RMU_0_0/50RMU_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RMU_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RMV_0_0/50RMV_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RMV_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RNN_0_0/50RNN_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RNN_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RNP_0_0/50RNP_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RNP_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RNQ_0_0/50RNQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RNQ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RNR_0_0/50RNR_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RNR_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RNS_0_0/50RNS_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RNS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RNT_0_0/50RNT_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RNT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RNU_0_0/50RNU_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RNU_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RNV_0_0/50RNV_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RNV_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RPN_0_0/50RPN_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RPN_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RPP_0_0/50RPP_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RPP_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RPQ_0_0/50RPQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RPQ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RPR_0_0/50RPR_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RPR_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RPS_0_0/50RPS_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RPS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RPT_0_0/50RPT_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RPT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RPU_0_0/50RPU_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RPU_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RPV_0_0/50RPV_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RPV_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RQN_0_0/50RQN_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RQN_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RQP_0_0/50RQP_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RQP_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RQQ_0_0/50RQQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RQQ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RQS_0_0/50RQS_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RQS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RQT_0_0/50RQT_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RQT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RQU_0_0/50RQU_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RQU_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50RQV_0_0/50RQV_0_0.json",
+      "type": "application/geo+json",
+      "title": "50RQV_0_0 — 2023"
+    }
+  ]
+}

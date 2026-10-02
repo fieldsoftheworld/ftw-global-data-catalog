@@ -1,0 +1,48 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2025-30r",
+  "title": "Grid zone 30R — 2025",
+  "description": "The 2 field/boundary probability tiles of 2025 in grid zone designator `30R` — UTM zone 30, latitude band R. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 30 — 2025](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 30 — 2025"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./30RTU_0_0/30RTU_0_0.json",
+      "type": "application/geo+json",
+      "title": "30RTU_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./30RYR_0_0/30RYR_0_0.json",
+      "type": "application/geo+json",
+      "title": "30RYR_0_0 — 2025"
+    }
+  ]
+}

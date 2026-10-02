@@ -1,0 +1,90 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2025-zone-47",
+  "title": "UTM zone 47 — 2025",
+  "description": "The 217 field/boundary probability tiles of 2025 that fall in UTM zone 47, grouped by grid zone designator (9 of them: `47M`, `47N`, `47P`, `47Q`, `47R`, `47S`, `47T`, `47U`, `47V`). Part of [FTW Global — Field & Boundary Probabilities 2025](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2025 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=47M/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 47M"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=47N/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 47N"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=47P/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 47P"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=47Q/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 47Q"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=47R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 47R"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=47S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 47S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=47T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 47T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=47U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 47U"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=47V/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 47V"
+    }
+  ]
+}

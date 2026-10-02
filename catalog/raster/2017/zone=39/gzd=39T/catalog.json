@@ -1,0 +1,96 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2017-39t",
+  "title": "Grid zone 39T — 2017",
+  "description": "The 10 field/boundary probability tiles of 2017 in grid zone designator `39T` — UTM zone 39, latitude band T. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 39 — 2017](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 39 — 2017"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./39TTE_0_0/39TTE_0_0.json",
+      "type": "application/geo+json",
+      "title": "39TTE_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./39TTF_0_0/39TTF_0_0.json",
+      "type": "application/geo+json",
+      "title": "39TTF_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./39TTG_0_0/39TTG_0_0.json",
+      "type": "application/geo+json",
+      "title": "39TTG_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./39TUE_0_0/39TUE_0_0.json",
+      "type": "application/geo+json",
+      "title": "39TUE_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./39TUF_0_0/39TUF_0_0.json",
+      "type": "application/geo+json",
+      "title": "39TUF_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./39TUG_0_0/39TUG_0_0.json",
+      "type": "application/geo+json",
+      "title": "39TUG_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./39TUM_0_0/39TUM_0_0.json",
+      "type": "application/geo+json",
+      "title": "39TUM_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./39TVE_0_0/39TVE_0_0.json",
+      "type": "application/geo+json",
+      "title": "39TVE_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./39TWN_0_0/39TWN_0_0.json",
+      "type": "application/geo+json",
+      "title": "39TWN_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./39TYK_0_0/39TYK_0_0.json",
+      "type": "application/geo+json",
+      "title": "39TYK_0_0 — 2017"
+    }
+  ]
+}

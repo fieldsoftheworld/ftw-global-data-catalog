@@ -1,0 +1,114 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2024-60h",
+  "title": "Grid zone 60H — 2024",
+  "description": "The 13 field/boundary probability tiles of 2024 in grid zone designator `60H` — UTM zone 60, latitude band H. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 60 — 2024](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 60 — 2024"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./60HTB_0_0/60HTB_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HTB_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HTD_0_0/60HTD_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HTD_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HTE_0_0/60HTE_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HTE_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HTF_0_0/60HTF_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HTF_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HUB_0_0/60HUB_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HUB_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HUC_0_0/60HUC_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HUC_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HUD_0_0/60HUD_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HUD_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HVB_0_0/60HVB_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HVB_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HVC_0_0/60HVC_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HVC_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HVD_0_0/60HVD_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HVD_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HWB_0_0/60HWB_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HWB_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HWC_0_0/60HWC_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HWC_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./60HXC_0_0/60HXC_0_0.json",
+      "type": "application/geo+json",
+      "title": "60HXC_0_0 — 2024"
+    }
+  ]
+}

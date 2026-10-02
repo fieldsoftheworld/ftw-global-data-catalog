@@ -1,0 +1,54 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2018-34l",
+  "title": "Grid zone 34L — 2018",
+  "description": "The 3 field/boundary probability tiles of 2018 in grid zone designator `34L` — UTM zone 34, latitude band L. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 34 — 2018](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 34 — 2018"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./34LDM_0_0/34LDM_0_0.json",
+      "type": "application/geo+json",
+      "title": "34LDM_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./34LGH_0_0/34LGH_0_0.json",
+      "type": "application/geo+json",
+      "title": "34LGH_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./34LGJ_0_0/34LGJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "34LGJ_0_0 — 2018"
+    }
+  ]
+}

@@ -1,0 +1,60 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2017-zone-23",
+  "title": "UTM zone 23 — 2017",
+  "description": "The 136 field/boundary probability tiles of 2017 that fall in UTM zone 23, grouped by grid zone designator (4 of them: `23J`, `23K`, `23L`, `23M`). Part of [FTW Global — Field & Boundary Probabilities 2017](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2017 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=23J/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 23J"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=23K/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 23K"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=23L/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 23L"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=23M/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 23M"
+    }
+  ]
+}

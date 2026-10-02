@@ -16,6 +16,19 @@ disk — the bytes live only at ``public_base``. Two modes:
   ``public_base`` and HEAD-checked over HTTP, concurrently. This is the real
   check that every advertised object actually exists in the bucket.
 
+Since the raster items were committed, that second mode has 134,394 bucket
+hrefs to check — two per item across 67,197 items — which is half an hour of
+HEAD requests aimed at one host on every run. So hrefs are **sampled per
+family**, a family being one collection directory and one asset key
+(``raster/2017`` × ``data``), with the sample spread across the family by
+stride rather than taken from the front, so it spans every UTM zone instead
+of clustering in zone 01. The gate prints how many it checked and how many
+it sampled out, and ``LINK_SAMPLE=all`` checks every one (run that before
+publishing). ``LINK_SAMPLE=N`` sets the per-family size.
+
+Structural links are never sampled: every one of them resolves on disk, so
+checking all 67,197 item links costs no network at all.
+
 Run: python3 tests/test_links.py
 """
 import json
@@ -41,12 +54,20 @@ globs = 0
 CI_LIGHT = os.environ.get("CI_LIGHT") == "1"
 # The exemption reads the suffix and nothing else. A directory rule or a path
 # prefix rule widens on its own as the catalog grows. This tuple does not.
+# `.thumb.png` is here, and plain `.png` deliberately is not: the per-item
+# browse thumbnails are rendered on rails and live only in the bucket, while
+# a collection's own `thumbnail.png` is committed and must resolve on disk.
 DATA_SUFFIXES = (
     ".parquet", ".pmtiles", ".tif", ".tiff", ".copc.laz", ".laz", ".gpkg",
-    ".zarr", ".geojsonl", ".shp", ".zip",
+    ".zarr", ".geojsonl", ".shp", ".zip", ".thumb.png",
 )
 HEAD_WORKERS = 16
 UA = "Mozilla/5.0 (ftw-global-data-catalog link check)"
+
+# Per-family HEAD budget. "all" checks every href; an integer caps each
+# (collection directory, asset key) family at that many.
+_SAMPLE = os.environ.get("LINK_SAMPLE", "40")
+SAMPLE: int | None = None if _SAMPLE == "all" else int(_SAMPLE)
 
 
 def is_remote(href: str) -> bool:
@@ -79,8 +100,13 @@ def head_ok(url: str) -> str | None:
         return str(exc)
 
 
-def stac_documents() -> list[Path]:
-    """Every STAC object under the published directory."""
+def stac_documents() -> list[tuple[Path, dict]]:
+    """Every STAC object under the published directory, parsed once.
+
+    Parsed once and carried, not re-read per check: the raster items make
+    this 67k files, and reading each twice doubled the gate's disk time for
+    nothing.
+    """
     out = []
     for path in sorted(BASE.rglob("*.json")):
         if any(part.startswith(".") for part in path.relative_to(BASE).parts):
@@ -95,16 +121,46 @@ def stac_documents() -> list[Path]:
         if isinstance(doc, dict) and doc.get("type") in {
             "Catalog", "Collection", "Feature"
         }:
-            out.append(path)
+            out.append((path, doc))
     return out
+
+
+def family(path: Path, key: str) -> tuple[str, ...]:
+    """Which sampling family one href belongs to.
+
+    The collection directory (the first two path components under the
+    published root — ``raster/2017``, ``vector/2025``) plus the asset key.
+    Every member of a family is the same kind of object produced by the same
+    generator, which is what makes a sample of it meaningful.
+    """
+    return tuple(path.relative_to(BASE).parts[:2]) + (key,)
+
+
+def sample(entries: list[tuple], limit: int | None) -> tuple[list, int]:
+    """Cap each family at ``limit`` hrefs, spread across it by stride."""
+    if limit is None:
+        return entries, 0
+    groups: dict[tuple, list] = {}
+    for entry in entries:
+        groups.setdefault(entry[0], []).append(entry)
+    chosen: list[tuple] = []
+    dropped = 0
+    for _fam, members in sorted(groups.items()):
+        if len(members) <= limit:
+            chosen += members
+            continue
+        stride = len(members) / limit
+        chosen += [members[int(i * stride)] for i in range(limit)]
+        dropped += len(members) - limit
+    return chosen, dropped
 
 
 documents = stac_documents()
 checked = 0
-to_head: list[tuple[Path, str, str]] = []  # (doc, asset key, url)
+# (family, doc, asset key, url)
+to_head: list[tuple[tuple[str, ...], Path, str, str]] = []
 
-for path in documents:
-    doc = json.loads(path.read_text())
+for path, doc in documents:
     rel_path = path.relative_to(ROOT)
 
     for link in doc.get("links", []):
@@ -120,9 +176,9 @@ for path in documents:
             if CI_LIGHT:
                 skipped += 1
             else:
-                to_head.append(
-                    (rel_path, f"link:{link.get('rel')}", published_url(path, href))
-                )
+                key = f"link:{link.get('rel')}"
+                to_head.append((family(path, key), rel_path, key,
+                                published_url(path, href)))
             continue
         checked += 1
         errors.append(
@@ -145,18 +201,21 @@ for path in documents:
             if CI_LIGHT:
                 skipped += 1
             else:
-                to_head.append((rel_path, key, published_url(path, href)))
+                to_head.append((family(path, key), rel_path, key,
+                                published_url(path, href)))
             continue
         checked += 1
         errors.append(f"{rel_path}: asset {key} -> {href} does not exist")
 
 if to_head:
-    print(f"HEAD-checking {len(to_head)} data href(s) against "
+    total = len(to_head)
+    to_head, sampled_out = sample(to_head, SAMPLE)
+    print(f"HEAD-checking {len(to_head)} of {total} data href(s) against "
           f"{PUBLIC_BASE} ...")
     with ThreadPoolExecutor(max_workers=HEAD_WORKERS) as pool:
         futures = {
             pool.submit(head_ok, url): (rel_path, key, url)
-            for rel_path, key, url in to_head
+            for _fam, rel_path, key, url in to_head
         }
         for future in as_completed(futures):
             rel_path, key, url = futures[future]
@@ -164,6 +223,13 @@ if to_head:
             detail = future.result()
             if detail is not None:
                 errors.append(f"{rel_path}: asset {key} -> {url}: {detail}")
+    if sampled_out:
+        print(
+            f"note   {sampled_out} further data href(s) sampled out "
+            f"(LINK_SAMPLE={SAMPLE} per collection+asset family, spread by\n"
+            "       stride). LINK_SAMPLE=all HEAD-checks every one; run that "
+            "before publishing."
+        )
 
 if skipped:
     print(

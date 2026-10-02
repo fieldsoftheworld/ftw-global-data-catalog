@@ -1,0 +1,66 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2023-zone-12",
+  "title": "UTM zone 12 — 2023",
+  "description": "The 126 field/boundary probability tiles of 2023 that fall in UTM zone 12, grouped by grid zone designator (5 of them: `12J`, `12R`, `12S`, `12T`, `12U`). Part of [FTW Global — Field & Boundary Probabilities 2023](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2023 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=12J/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 12J"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=12R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 12R"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=12S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 12S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=12T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 12T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=12U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 12U"
+    }
+  ]
+}

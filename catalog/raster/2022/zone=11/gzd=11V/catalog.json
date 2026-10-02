@@ -1,0 +1,72 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2022-11v",
+  "title": "Grid zone 11V — 2022",
+  "description": "The 6 field/boundary probability tiles of 2022 in grid zone designator `11V` — UTM zone 11, latitude band V. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 11 — 2022](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 11 — 2022"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./11VLC_0_0/11VLC_0_0.json",
+      "type": "application/geo+json",
+      "title": "11VLC_0_0 — 2022"
+    },
+    {
+      "rel": "item",
+      "href": "./11VMC_0_0/11VMC_0_0.json",
+      "type": "application/geo+json",
+      "title": "11VMC_0_0 — 2022"
+    },
+    {
+      "rel": "item",
+      "href": "./11VMD_0_0/11VMD_0_0.json",
+      "type": "application/geo+json",
+      "title": "11VMD_0_0 — 2022"
+    },
+    {
+      "rel": "item",
+      "href": "./11VME_0_0/11VME_0_0.json",
+      "type": "application/geo+json",
+      "title": "11VME_0_0 — 2022"
+    },
+    {
+      "rel": "item",
+      "href": "./11VNC_0_0/11VNC_0_0.json",
+      "type": "application/geo+json",
+      "title": "11VNC_0_0 — 2022"
+    },
+    {
+      "rel": "item",
+      "href": "./11VNE_0_0/11VNE_0_0.json",
+      "type": "application/geo+json",
+      "title": "11VNE_0_0 — 2022"
+    }
+  ]
+}

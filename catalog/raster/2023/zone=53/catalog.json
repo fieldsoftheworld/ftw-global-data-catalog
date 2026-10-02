@@ -1,0 +1,72 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2023-zone-53",
+  "title": "UTM zone 53 — 2023",
+  "description": "The 47 field/boundary probability tiles of 2023 that fall in UTM zone 53, grouped by grid zone designator (6 of them: `53H`, `53K`, `53L`, `53S`, `53T`, `53U`). Part of [FTW Global — Field & Boundary Probabilities 2023](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2023 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=53H/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 53H"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=53K/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 53K"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=53L/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 53L"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=53S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 53S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=53T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 53T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=53U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 53U"
+    }
+  ]
+}

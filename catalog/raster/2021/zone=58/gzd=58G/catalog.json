@@ -1,0 +1,48 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2021-58g",
+  "title": "Grid zone 58G — 2021",
+  "description": "The 2 field/boundary probability tiles of 2021 in grid zone designator `58G` — UTM zone 58, latitude band G. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 58 — 2021](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 58 — 2021"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./58GGP_0_0/58GGP_0_0.json",
+      "type": "application/geo+json",
+      "title": "58GGP_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./58GGQ_0_0/58GGQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "58GGQ_0_0 — 2021"
+    }
+  ]
+}

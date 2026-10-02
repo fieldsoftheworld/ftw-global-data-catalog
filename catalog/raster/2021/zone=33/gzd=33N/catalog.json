@@ -1,0 +1,72 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2021-33n",
+  "title": "Grid zone 33N — 2021",
+  "description": "The 6 field/boundary probability tiles of 2021 in grid zone designator `33N` — UTM zone 33, latitude band N. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 33 — 2021](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 33 — 2021"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./33NTJ_0_0/33NTJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "33NTJ_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33NUJ_0_0/33NUJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "33NUJ_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33NVJ_0_0/33NVJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "33NVJ_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33NWJ_0_0/33NWJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "33NWJ_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33NXH_0_0/33NXH_0_0.json",
+      "type": "application/geo+json",
+      "title": "33NXH_0_0 — 2021"
+    },
+    {
+      "rel": "item",
+      "href": "./33NXJ_0_0/33NXJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "33NXJ_0_0 — 2021"
+    }
+  ]
+}
