@@ -18,7 +18,9 @@ Each COG is 40,032 × 40,032 pixels at 2.5 m in its tile's UTM zone, with two ui
 Each tile has its own directory, so the COG and its metadata sit together:
 
 ```
-raster/2017/{tile}/{tile}.tif  the COG
+raster/2017/{tile}/{tile}.tif        the COG
+raster/2017/{tile}/{tile}.json       its STAC item
+raster/2017/{tile}/{tile}.thumb.png  its thumbnail
 ```
 
 ## Find tiles
@@ -64,3 +66,22 @@ gdalinfo /vsicurl/https://data.source.coop/ftw/global-data-beta/raster/2017/01KF
 ```
 
 Any COG reader works over HTTP range requests; the overviews make low-zoom reads cheap.
+
+## Browse it
+
+One [global overview COG](https://data.source.coop/ftw/global-data-beta/raster/2017/overview.tif) renders the whole year at global scale (the collection's `overview` asset). Every tile's own thumbnail sits beside its COG.
+
+The [items.parquet mirror](https://data.source.coop/ftw/global-data-beta/raster/2017/items.parquet) holds every item's metadata in one stac-geoparquet file, so a spatial lookup over 7,466 tiles is one query rather than 7,466 HTTP requests:
+
+```python
+import duckdb
+con = duckdb.connect()
+con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
+url = "https://data.source.coop/ftw/global-data-beta/raster/2017/items.parquet"
+con.sql(f"""
+    SELECT id, assets['data']['href'] AS cog
+    FROM read_parquet('{url}')
+    WHERE ST_Intersects(geometry,
+          ST_Point(12.5, 55.7))
+""").show()
+```

@@ -42,6 +42,7 @@ When you accept one, add a row and a section explaining it, like this:
 | Rule | Where | Why accepted | Tracking |
 |---|---|---|---|
 | PTL-VIZ-001 | all thumbnails | WebP is not yet permitted; the size saving is 4x | portolan-spec#121 |
+| PTL-VIZ-002 | `raster/{2017..2025}/collection.json` | The visualization derivative is a pre-rendered RGB JPEG COG (roles `visual`,`overview`,`cloud-optimized`); its styling is baked into the pixels at build time, so no client-side style document exists for a `style` asset to name. The colormap is documented in each README and in `pipeline/make_overview.py`. | rashid#202 |
 
 Then add the rule id to ACCEPTED in tests/test_portolan_conformance.py. Both, or
 neither.

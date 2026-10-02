@@ -33,7 +33,11 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from publish import load_config  # noqa: E402
 
-ACCEPTED: set[str] = set()
+ACCEPTED: set[str] = {
+    # Raster browse overviews are pre-rendered RGB COGs; no client-side style
+    # document applies. docs/conformance.md has the row; portolan-sdi/rashid#202.
+    "PTL-VIZ-002",
+}
 
 config = load_config()
 target = ROOT / config["publish_dir"]

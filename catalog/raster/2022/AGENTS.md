@@ -4,12 +4,14 @@ Guidance for AI agents. Every claim here is quoted from a verified COG header or
 
 Related guides: the [raster tree](../AGENTS.md), the [catalog root](../../AGENTS.md), and this collection's [README](./README.md).
 
-- 7,466 COGs at `https://data.source.coop/ftw/global-data-beta/raster/2022/{tile}.tif` (anonymous read), tile keys like `01KFS_0_0`.
+- 7,466 COGs at `https://data.source.coop/ftw/global-data-beta/raster/2022/{tile}/{tile}.tif` (anonymous read), tile keys like `01KFS_0_0`. Each tile's directory also holds `{tile}.json`, its STAC item and `{tile}.thumb.png`.
 - Band 1 `field`, band 2 `boundary`; uint8, probability = value / 255 (the files carry scale 1/255). 2.5 m, per-tile UTM CRS (79 distinct EPSG codes this year; `epsg` in the index, `proj:code` on each item). No nodata is declared.
-- Enumerate tiles via the [index manifest](https://data.source.coop/ftw/global-data-beta/index/raster.parquet) (`year = 2022`), never by listing the bucket. There are no `rel: item` links on the collection: with thousands of items per year the index manifest carry the enumeration.
+- Enumerate tiles via the [index manifest](https://data.source.coop/ftw/global-data-beta/index/raster.parquet) (`year = 2022`), never by listing the bucket. There are no `rel: item` links on the collection: with thousands of items per year the index manifest and `items.parquet` carry the enumeration.
 - Measured across 2022: mean field fraction 0.1231, max 0.9419.
 - Each COG's GDAL metadata names its four source mosaic tiles (`source_items`, mirrored into each item's `ftw:source_items`) and the model (`unet_balanced_fp32.onnx`).
 - Tile origins are not derivable from the tile key (measured: `01KFS_0_0` starts at (600000, 7700020), `33UUU_0_0` at (300000, 5900040)). Read `proj:transform` from the item, or the COG header.
+
+- `https://data.source.coop/ftw/global-data-beta/raster/2022/items.parquet` mirrors every item for bulk and spatial queries.
 
 Runnable example — the five field-densest tiles:
 

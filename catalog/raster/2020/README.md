@@ -15,7 +15,13 @@ Each COG is 40,032 × 40,032 pixels at 2.5 m in its tile's UTM zone, with two ui
 | 1 | `field` | uint8 | 1/255 | 2.5 m | Field-interior probability: the model's probability that the pixel lies inside an agricultural field. probability = value × 1/255. |
 | 2 | `boundary` | uint8 | 1/255 | 2.5 m | Field-boundary probability: the model's probability that the pixel lies on a field boundary. probability = value × 1/255. |
 
-Each tile will get its own directory (`raster/2020/{tile}/`) holding the COG, its STAC item and its thumbnail. The copy into those keys is still running, so the COGs currently answer at `raster/2020/{tile}.tif` (for example `01KFS_0_0.tif`).
+Each tile has its own directory, so the COG and its metadata sit together:
+
+```
+raster/2020/{tile}/{tile}.tif        the COG
+raster/2020/{tile}/{tile}.json       its STAC item
+raster/2020/{tile}/{tile}.thumb.png  its thumbnail
+```
 
 ## Find tiles
 
@@ -56,7 +62,26 @@ con.sql(f"""
 ## Read a tile
 
 ```bash
-gdalinfo /vsicurl/https://data.source.coop/ftw/global-data-beta/raster/2020/01KFS_0_0.tif
+gdalinfo /vsicurl/https://data.source.coop/ftw/global-data-beta/raster/2020/01KFS_0_0/01KFS_0_0.tif
 ```
 
 Any COG reader works over HTTP range requests; the overviews make low-zoom reads cheap.
+
+## Browse it
+
+One [global overview COG](https://data.source.coop/ftw/global-data-beta/raster/2020/overview.tif) renders the whole year at global scale (the collection's `overview` asset). Every tile's own thumbnail sits beside its COG.
+
+The [items.parquet mirror](https://data.source.coop/ftw/global-data-beta/raster/2020/items.parquet) holds every item's metadata in one stac-geoparquet file, so a spatial lookup over 7,466 tiles is one query rather than 7,466 HTTP requests:
+
+```python
+import duckdb
+con = duckdb.connect()
+con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
+url = "https://data.source.coop/ftw/global-data-beta/raster/2020/items.parquet"
+con.sql(f"""
+    SELECT id, assets['data']['href'] AS cog
+    FROM read_parquet('{url}')
+    WHERE ST_Intersects(geometry,
+          ST_Point(12.5, 55.7))
+""").show()
+```
