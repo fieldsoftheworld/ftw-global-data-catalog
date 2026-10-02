@@ -144,8 +144,12 @@ the folder keys. llms.txt is removed from the catalog (same ruling).
    bbox, epsg, field/boundary/cropland fracs) + a one-time COG-header pass for proj:transform/shape
    (or derive from index bbox+known 40032² grid). Emits per year: collection.json (committed),
    ~7,466 items **straight to S3** at `raster/{year}/{tile}/{tile}.json` next to each `.tif` (relative
-   asset hrefs), grouped browse subcatalogs if flat item-link count is unwieldy (alpha's
-   zone/gzd tree in `build_features_items.py` is the model), and `items.parquet` collection-mirror.
+   asset hrefs), and `items.parquet` collection-mirror. (The browse-subcatalog idea here named
+   alpha's `build_features_items.py` as the model; that script has no zone/gzd tree — it publishes
+   S3-only items with no item links at all, which is where PTL-COL-005 comes from. Measured
+   outcome and the two layouts that clear it: docs/conformance.md, "Open: the raster collections
+   publish no item connectivity". **Decision pending** — a browse tree cannot carry items that
+   live outside its own directories.)
    Items carry proj + file + render extensions; bands metadata (field, boundary, scale 1/255,
    quantization) from the verified gdalinfo; `derived_from` links to the four Sentinel-2 quarter
    source items recorded in GDAL metadata.
