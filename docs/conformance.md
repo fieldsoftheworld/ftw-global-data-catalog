@@ -92,9 +92,12 @@ The finding was correct, not a validator artifact: PORTO-CORE-032 wants "a
 `child` or `item` link for every object it contains", and 67,197 published
 items had none. It is closed by publishing the connectivity, not by waiving
 the rule — the items are committed and grouped under browse subcatalogs
-(user ruling 2026-10-02; docs/plan.md Phase 4 has the layout). The
-measurements that chose that shape are kept below, because they also bound
-what may and may not be changed about it later.
+(user ruling 2026-10-02; docs/plan.md Phase 4 has the layout). Verified:
+`rashid check catalog --no-data` over the full nine-year tree reports **no
+PTL-COL-005 at all**, and the only error-severity rule left is PTL-VIZ-002
+(9×, the waiver above), so the gate passes with `ACCEPTED` exactly
+`{"PTL-VIZ-002"}`. The measurements that chose that shape are kept below,
+because they also bound what may and may not be changed about it later.
 
 ### Containment is directory nesting, so the group must be in the key
 
@@ -123,36 +126,56 @@ reports nothing at all, while a flat list of 7,466 could never comply.
 
 ### What the chosen layout costs
 
-- **Git.** 67,197 items, 288 MiB in the working tree, ~16 MB packed
-  (measured: one year's 7,466 items are 32 MiB raw and 1.77 MB gzipped —
-  the items are near-identical, so they delta extremely well).
+- **Git.** 67,197 items, 320 MiB in the working tree, **22 MiB for a full
+  clone** (measured with `git bundle create … HEAD`: the items are
+  near-identical, so they delta extremely well). Committing them leaves
+  ~150k loose objects until someone runs `git gc`.
 - **Files.** 3,690 group catalogs (486 zone + 3,204 GZD across nine years),
   each with a README.md and an AGENTS.md, because PTL-FIL-001/002/003 bind
   plain catalogs and not only collections (measured). That is 11,070
   generated documentation files.
-- **Warnings, not errors.** 166 GZD leaves per year hold 20 or more tiles, so
-  they carry a PTL-CAT-001 warning (1,494 across nine years). A fourth level
-  (the 100-km square) would clear them and is deliberately not used: every
-  extra group catalog costs rashid a full-tree scan (below), so it would buy
-  a warning-free report with an unusable gate. The vector collections carry
-  the same warning at 54 children.
-- **More PTL-AST-003 warnings.** Three per item — no `data` checksum, no
-  `thumbnail` checksum, no `thumbnail` `file:size` — so ~201,000 of them.
-  See the checksum policy above; the thumbnail `file:size` is fillable from
-  the recursive bucket listing the item uploader already does.
+- **Warnings, not errors.** Measured over the committed tree: 1,497
+  PTL-CAT-001 (1,494 GZD leaves holding 20 or more tiles, plus the 3 vector
+  collections that already warned) and 201,615 PTL-AST-003 (134,415 "no
+  `file:checksum`" and 67,200 "no `file:size`"). The year collections
+  themselves no longer warn, because all of their children are catalogs.
+  A fourth level (the 100-km square) would clear the leaf warnings and is
+  deliberately not used: every extra group catalog costs rashid a full-tree
+  scan (below), so it would buy a warning-free report with an unusable gate.
+  The `file:checksum` absences are the documented policy above; the 67,197
+  thumbnail `file:size` absences are fillable from the recursive bucket
+  listing the item uploader already does.
 
 ### Gate runtime, and why the sampling below exists
 
 rashid's containment helpers cost (nodes × catalog-or-collection nodes):
 `children_of` calls `parent_of` once per node, and `PTL-LNK-002` calls
-`children_of` once per catalog. Measured on this machine: a flat committed
-tree is 7,658 files in **32 s** at one year and 22,590 files in **95 s** at
-three — linear, because its structural-node count stays at 13. One *grouped*
-year is 8,068 files in **124 s**: 4× slower for 5% more files, because each
-of its 410 group catalogs triggers a full-tree scan. The nine-year
-measurement is in the branch report; the projection was ~2.7 hours. An
-upstream perf fix is the real repair, and a CI option has to be chosen
-rather than the gate quietly skipping the tree.
+`children_of` once per catalog. Measured, all on rails with rashid 0.1.8:
+
+| tree | json files | catalogs + collections | wall |
+|---|---|---|---|
+| flat, 1 year | 7,658 | 13 | 32 s |
+| flat, 3 years | 22,590 | 13 | 95 s |
+| grouped, 1 year | 8,068 | 423 | 124 s |
+| **grouped, 9 years (this catalog)** | **71,088** | **3,703** | **2 h 30 min** |
+
+The flat rows are linear in file count, because their structural-node count
+never moves. The grouped rows are not: one grouped year is 4× slower than a
+flat one for 5% more files, because each of its 410 group catalogs triggers
+a full-tree scan. 8,629 s of that 2 h 30 min is user CPU, single-threaded,
+and it peaks at 1.4 GiB — it is compute, not memory.
+
+Two consequences, both practical:
+
+- **The gate does not run on a login node.** A nine-year run there was killed
+  at 39 minutes, well under the 64 GiB cgroup limit, so it is a CPU-time
+  policy rather than memory. `pipeline/rashid_check.sbatch` runs it as a
+  Slurm job instead and reports `sacct` MaxRSS and elapsed. It needs no
+  network: `--no-data` skips the byte checks and the schemas are bundled.
+- **It cannot gate every commit.** An upstream perf fix is the real repair
+  (precompute the containment map once per graph instead of rescanning per
+  catalog). Until then the CI split has to be chosen deliberately and
+  written down here — the gate must not quietly stop reading the tree.
 
 `tools/publish.py` lists each catalog directory non-recursively, which over
 67,197 item directories is 67,197 list calls. `tools/build_raster_items.py
