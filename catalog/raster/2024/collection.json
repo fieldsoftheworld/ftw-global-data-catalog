@@ -546,8 +546,8 @@
         "thumbnail",
         "overview"
       ],
-      "file:size": 34716,
-      "file:checksum": "12206fa76323122c98d7ff0ceff917664c809c566f83ae4c7d3e645b42475dbc1a30"
+      "file:size": 31548,
+      "file:checksum": "12202a9a5b81791cca17e210146f46cf94b80e462c4653e3f8d4455d6bad83f2fd6f"
     },
     "coverage": {
       "href": "./thumbnail.png",
@@ -569,7 +569,7 @@
         "overview",
         "cloud-optimized"
       ],
-      "file:size": 2401505144
+      "file:size": 2321107638
     },
     "mirror": {
       "href": "./items.parquet",
