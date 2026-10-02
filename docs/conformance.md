@@ -73,18 +73,93 @@ The same reasoning covers two collection-level assets: the per-year
 and no checksum. The per-year `thumbnail.webp` is small, so the generator
 downloads it and carries both.
 
-## Policy: no `rel: item` links on the raster collections
+## Open: the raster collections publish no item connectivity (PTL-COL-005)
 
-Each year collection has ~7,466 items. The items are generated straight to
-S3 and not committed (docs/plan.md Phase 4), so committing 7,466 item links
-per year — ~10 MB of JSON across the nine years, in git forever — would
-contradict that ruling to buy a flat list that PTL-CAT-001 already calls
-hard to browse at 54 entries. Enumeration goes through
-`index/raster.parquet` and each collection's `items.parquet`
-collection-mirror instead, and both collection AGENTS.md files say so. rashid
-reports nothing for this; a browse-subcatalog tree (docs/plan.md Phase 4.1)
-is the open option if browsing the items in the data browser becomes a
-requirement.
+Each year collection has ~7,466 items. They are generated straight to S3 and
+not committed (docs/plan.md Phase 4), and the collections carry no `rel: item`
+link, so enumeration goes through `index/raster.parquet` and each collection's
+`items.parquet` collection-mirror. rashid 0.1.8 reports that as an **error**,
+nine times:
+
+```
+PTL-COL-005  raster/{2017..2025}/collection.json: collection registers item
+mirror 'mirror' but publishes no items; the mirror is a derived copy and the
+item JSON remains the normative representation
+(PORTO-CORE-015, PORTO-CORE-032, PORTO-FMT-042)
+```
+
+This is **not** an accepted deviation and not a validator artifact. The
+finding is correct: PORTO-CORE-032 wants "a `child` or `item` link for every
+object it contains", and 67,197 published items have none. It is recorded
+here as an open item, with the measurements that bound the repair, so the
+next session does not redo them.
+
+### What a grouped browse subcatalog tree can and cannot do
+
+The obvious repair — group the items under browse subcatalogs instead of
+listing them flat — was measured against rashid 0.1.8 and **does not work
+with the published layout**, because rashid derives containment from
+directory nesting (`CatalogGraph.parent_of` walks up from a file's own
+directory to the nearest `catalog.json`/`collection.json`). Measured, on
+scratch copies of this catalog:
+
+| Tried | Result |
+|---|---|
+| Browse catalogs committed under `raster/{year}/browse/{zone}/`, `rel: item` links (relative **or** absolute under the published base) to the bucket-side items | PTL-COL-005 **stays** (9×) *and* one new PTL-LNK-006 error per item link — "href … does not resolve to any file" — i.e. 67,197 new errors |
+| The same, with the item JSONs present on disk at `raster/{year}/{tile}/{tile}.json` | PTL-COL-005 clears, but the browse catalogs' item links become PTL-LNK-006 "points to the wrong object: must point to an item contained by this object", and PTL-LNK-002 demands a `rel: item` link on the **collection** for every item instead |
+
+So a browse subcatalog can only own items that live **inside its own
+directory**, and the item JSON must be in the checkout for rashid to see it
+at all. `PTL-CAT-001`'s threshold is 20 ungrouped children (`PORTO-CORE-078`,
+a SHOULD, so a warning), which no flat list of 7,466 can meet.
+
+### The two layouts that do clear it
+
+Both were built for 2017 and run through rashid; both clear PTL-COL-005 for
+that year with **no link errors**. Both require the item JSONs in git
+(measured: 67,197 items, 288 MiB on disk, ~16 MB packed — one year's 7,466
+items are 32 MiB raw and 1.77 MB gzipped, since the items are near-identical).
+
+1. **Flat, layout unchanged.** Items committed at
+   `catalog/raster/{year}/{tile}/{tile}.json` — the keys they already occupy
+   in the bucket — and ~7,466 `rel: item` links per collection
+   (`collection.json` grows to 1.11 MiB). No bucket relayout, no new keys.
+   Leaves one PTL-CAT-001 **warning** per year collection ("7466 children
+   with no subcatalog grouping them"), the same warning the vector
+   collections already carry at 54 children.
+2. **Grouped, item keys only.** Items move to
+   `raster/{year}/zone-{NN}/{GZD}/{tile}/{tile}.json`, reaching their COG and
+   thumbnail — which never move — with an upward relative href
+   (`../../../{tile}/{tile}.tif`). Per year: 54 zone catalogs → 356 GZD
+   catalogs → items, median 17 and max 63 per leaf. 486 zone + 3,204 GZD
+   catalogs across nine years, each needing README.md and AGENTS.md
+   (PTL-FIL-001/002/003 bind plain catalogs too, measured). Clears the
+   collection-level PTL-CAT-001; leaves 166 leaf warnings per year where a
+   GZD holds 20 or more tiles. Costs 288 MiB of item JSON re-uploaded to new
+   keys, leaves the old item keys stale, and walks back part of the
+   2026-10-01 per-item-folder ruling (the item no longer sits beside its COG).
+
+Either way, committing the items adds ~201,000 PTL-AST-003 **warnings**
+(three per item: no `data` checksum, no `thumbnail` checksum, no `thumbnail`
+`file:size`) — see the checksum policy above; the thumbnail `file:size` is
+fillable from the recursive bucket listing the item uploader already does.
+
+Gate runtime is the other cost, and it separates the two. rashid's
+containment helpers cost (nodes × catalog-or-collection nodes):
+`children_of` calls `parent_of` once per node, and `PTL-LNK-002` calls
+`children_of` once per catalog. Measured on this machine: layout 1 at one
+year is 7,658 files in **32 s** and at three years 22,590 files in **95 s**
+— linear, because the structural-node count stays at 13, so nine years
+projects to ~5 minutes. Layout 2 at one year is 8,068 files in **124 s**,
+4× slower for 5% more files, because its 410 group catalogs each trigger a
+full-tree scan; nine years (≈71,700 nodes, ≈3,700 catalogs) projects to
+**~2.7 hours**, which no CI gate can carry. Either an upstream rashid
+perf fix or layout 1 is needed.
+
+`tools/publish.py` would also need the recursive-listing treatment
+`tools/upload_data.py` already got, for either layout: it lists each catalog
+directory non-recursively, which with 67,197 item directories is 67,197
+list calls.
 
 ## Validator workarounds
 
