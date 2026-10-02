@@ -150,6 +150,21 @@ def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> No
             ds.set_band_description(1, "field")
             ds.set_band_description(2, "boundary")
             ds.update_tags(**tags)
+            # Embedded band statistics are a Portolan MUST (PTL-DAT-009,
+            # read with PAM disabled, so a sidecar does not count). The
+            # array is already in memory, so exact statistics are free here
+            # — unlike retrofitting them into a published COG, which would
+            # rewrite the file.
+            for bidx in range(scores.shape[0]):
+                band = scores[bidx]
+                ds.update_tags(
+                    bidx + 1,
+                    STATISTICS_MINIMUM=int(band.min()),
+                    STATISTICS_MAXIMUM=int(band.max()),
+                    STATISTICS_MEAN=float(band.mean()),
+                    STATISTICS_STDDEV=float(band.std()),
+                    STATISTICS_VALID_PERCENT=100.0,
+                )
         os.replace(tmp, dst)
     except BaseException:
         tmp.unlink(missing_ok=True)

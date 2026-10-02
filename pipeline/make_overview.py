@@ -48,9 +48,28 @@ The three steps
    exists is skipped, so a job that ran out of time resumes where it
    stopped.
 3. ``gdalbuildvrt`` over the warped zones, then one ``gdal_translate -of
-   COG`` with ``TILING_SCHEME=GoogleMapsCompatible``, which aligns the
-   COG and its internal overviews to the XYZ tile grid a web client asks
-   for.
+   COG`` in 1024 px blocks on the zoom level's exact pixel grid (the
+   ``-tap`` warps already pinned it).
+
+512 px blocks, not GoogleMapsCompatible
+---------------------------------------
+The first build used ``TILING_SCHEME=GoogleMapsCompatible``, which pins
+256 px blocks. At zoom 10 that is a 262,144 px wide base level in 413,696
+tiles — doubled by the JPEG transparency mask's own tile set — so the
+TileOffsets/ByteCounts arrays alone were 12-15 MB, and the Portolan
+Browser spent ~480 range requests and 11.9 MB paging tile indexes before
+it could draw much of anything (measured in DevTools, 2026-10-02: 38-41 kB
+index reads alternating with 2-4 kB mask tiles at 350-920 ms each).
+``BLOCKSIZE=512`` quarters the tile count (~103k base tiles, ~3-4 MB of
+index across the whole pyramid, mask included) and is the Portolan
+ceiling: PTL-DAT-013 (MUST, from OGC 21-026 /req/optimized_geotiff/
+small-sizes) rejects internal tiles larger than 512. 1024 would halve the
+index again but fails validation — raise it as a spec discussion, never
+publish it. The remaining open cost is client-side fetch granularity
+(geotiff.js's 64 KB default), tracked on the Portolan Browser. What the
+scheme's loss gives up is XYZ-grid alignment, which only a tile server
+slicing the COG directly would miss; the pixel grid itself is still the
+zoom-10 grid from the ``-tap`` warps.
 
 Zoom 10, for all nine years
 ---------------------------
@@ -391,6 +410,17 @@ def build(year: int, index: str, work: Path, out: Path, zoom: int,
             "-colorinterp", "red,green,blue,alpha",
             str(mosaic), str(rgba)], "gdal_translate alpha")
 
+    # Embedded band statistics are a Portolan MUST (PTL-DAT-009, with PAM
+    # disabled, so a .aux.xml sidecar does not count). Computing them on the
+    # source VRT writes PAM beside it, and the COG translate copies band
+    # metadata into the file's GDAL_METADATA tag — verified with rashid's
+    # own check. -approx_stats reads the warped zones' overviews, not every
+    # base pixel, which the spec permits for statistics.
+    t0 = time.monotonic()
+    bc.run(["gdalinfo", "-approx_stats", str(rgba)], "band statistics")
+    bc.say(f"{year}: band statistics computed, "
+           f"{time.monotonic() - t0:,.1f}s")
+
     # JPEG, not WebP and not a lossless codec, and the choice is about the
     # readers and the bytes. JPEG-in-TIFF is the most widely decoded
     # compression there is: every GDAL build, every geotiff.js and all the
@@ -410,8 +440,9 @@ def build(year: int, index: str, work: Path, out: Path, zoom: int,
             "-co", "OVERVIEW_COMPRESS=JPEG",
             "-co", "QUALITY=85",
             "-co", "OVERVIEW_QUALITY=85",
-            "-co", "TILING_SCHEME=GoogleMapsCompatible",
-            "-co", f"ZOOM_LEVEL={zoom}",
+            # 512 is the Portolan ceiling (PTL-DAT-013): tiles MUST be
+            # square and no larger than 512.
+            "-co", f"BLOCKSIZE={os.environ.get('BLOCKSIZE', '512')}",
             "-co", "RESAMPLING=AVERAGE",
             "-co", "OVERVIEW_RESAMPLING=AVERAGE",
             "-co", "BIGTIFF=IF_SAFER",
