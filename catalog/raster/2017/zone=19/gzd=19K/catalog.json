@@ -1,0 +1,96 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2017-19k",
+  "title": "Grid zone 19K — 2017",
+  "description": "The 10 field/boundary probability tiles of 2017 in grid zone designator `19K` — UTM zone 19, latitude band K. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 19 — 2017](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 19 — 2017"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./19KBA_0_0/19KBA_0_0.json",
+      "type": "application/geo+json",
+      "title": "19KBA_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./19KBB_0_0/19KBB_0_0.json",
+      "type": "application/geo+json",
+      "title": "19KBB_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./19KCA_0_0/19KCA_0_0.json",
+      "type": "application/geo+json",
+      "title": "19KCA_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./19KCV_0_0/19KCV_0_0.json",
+      "type": "application/geo+json",
+      "title": "19KCV_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./19KDB_0_0/19KDB_0_0.json",
+      "type": "application/geo+json",
+      "title": "19KDB_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./19KEB_0_0/19KEB_0_0.json",
+      "type": "application/geo+json",
+      "title": "19KEB_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./19KFA_0_0/19KFA_0_0.json",
+      "type": "application/geo+json",
+      "title": "19KFA_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./19KGA_0_0/19KGA_0_0.json",
+      "type": "application/geo+json",
+      "title": "19KGA_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./19KGV_0_0/19KGV_0_0.json",
+      "type": "application/geo+json",
+      "title": "19KGV_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./19KHA_0_0/19KHA_0_0.json",
+      "type": "application/geo+json",
+      "title": "19KHA_0_0 — 2017"
+    }
+  ]
+}

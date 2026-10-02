@@ -1,0 +1,78 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2023-32r",
+  "title": "Grid zone 32R — 2023",
+  "description": "The 7 field/boundary probability tiles of 2023 in grid zone designator `32R` — UTM zone 32, latitude band R. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 32 — 2023](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 32 — 2023"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./32RKQ_0_0/32RKQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "32RKQ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./32RLP_0_0/32RLP_0_0.json",
+      "type": "application/geo+json",
+      "title": "32RLP_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./32RMP_0_0/32RMP_0_0.json",
+      "type": "application/geo+json",
+      "title": "32RMP_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./32RMS_0_0/32RMS_0_0.json",
+      "type": "application/geo+json",
+      "title": "32RMS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./32RPS_0_0/32RPS_0_0.json",
+      "type": "application/geo+json",
+      "title": "32RPS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./32RQP_0_0/32RQP_0_0.json",
+      "type": "application/geo+json",
+      "title": "32RQP_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./32RRP_0_0/32RRP_0_0.json",
+      "type": "application/geo+json",
+      "title": "32RRP_0_0 — 2023"
+    }
+  ]
+}

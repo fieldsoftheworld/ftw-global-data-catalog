@@ -1,0 +1,48 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2017-55t",
+  "title": "Grid zone 55T — 2017",
+  "description": "The 2 field/boundary probability tiles of 2017 in grid zone designator `55T` — UTM zone 55, latitude band T. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 55 — 2017](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 55 — 2017"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./55TCH_0_0/55TCH_0_0.json",
+      "type": "application/geo+json",
+      "title": "55TCH_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./55TCJ_0_0/55TCJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "55TCJ_0_0 — 2017"
+    }
+  ]
+}

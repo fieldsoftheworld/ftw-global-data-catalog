@@ -1,0 +1,42 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2017-zone-57",
+  "title": "UTM zone 57 — 2017",
+  "description": "The 1 field/boundary probability tiles of 2017 that fall in UTM zone 57, grouped by grid zone designator (1 of them: `57V`). Part of [FTW Global — Field & Boundary Probabilities 2017](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2017 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=57V/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 57V"
+    }
+  ]
+}

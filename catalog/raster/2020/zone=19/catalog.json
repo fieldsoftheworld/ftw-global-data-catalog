@@ -1,0 +1,96 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2020-zone-19",
+  "title": "UTM zone 19 — 2020",
+  "description": "The 127 field/boundary probability tiles of 2020 that fall in UTM zone 19, grouped by grid zone designator (10 of them: `19G`, `19H`, `19J`, `19K`, `19L`, `19N`, `19P`, `19Q`, `19T`, `19U`). Part of [FTW Global — Field & Boundary Probabilities 2020](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2020 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=19G/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 19G"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=19H/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 19H"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=19J/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 19J"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=19K/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 19K"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=19L/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 19L"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=19N/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 19N"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=19P/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 19P"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=19Q/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 19Q"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=19T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 19T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=19U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 19U"
+    }
+  ]
+}

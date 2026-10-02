@@ -1,0 +1,156 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2024-54t",
+  "title": "Grid zone 54T — 2024",
+  "description": "The 20 field/boundary probability tiles of 2024 in grid zone designator `54T` — UTM zone 54, latitude band T. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 54 — 2024](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 54 — 2024"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./54TVK_0_0/54TVK_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TVK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TVL_0_0/54TVL_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TVL_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TVM_0_0/54TVM_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TVM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TVN_0_0/54TVN_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TVN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TWK_0_0/54TWK_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TWK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TWL_0_0/54TWL_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TWL_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TWN_0_0/54TWN_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TWN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TWP_0_0/54TWP_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TWP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TWQ_0_0/54TWQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TWQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TWR_0_0/54TWR_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TWR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TXM_0_0/54TXM_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TXM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TXN_0_0/54TXN_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TXN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TXP_0_0/54TXP_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TXP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TXQ_0_0/54TXQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TXQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TXR_0_0/54TXR_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TXR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TXS_0_0/54TXS_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TXS_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TXT_0_0/54TXT_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TXT_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TYN_0_0/54TYN_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TYN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TYP_0_0/54TYP_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TYP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./54TYQ_0_0/54TYQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "54TYQ_0_0 — 2024"
+    }
+  ]
+}

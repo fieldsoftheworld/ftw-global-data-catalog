@@ -1,0 +1,174 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2024-42t",
+  "title": "Grid zone 42T — 2024",
+  "description": "The 23 field/boundary probability tiles of 2024 in grid zone designator `42T` — UTM zone 42, latitude band T. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 42 — 2024](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 42 — 2024"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./42TTK_0_0/42TTK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TTK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TUK_0_0/42TUK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TUK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TUP_0_0/42TUP_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TUP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TUQ_0_0/42TUQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TUQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TVK_0_0/42TVK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TVK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TVL_0_0/42TVL_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TVL_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TVM_0_0/42TVM_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TVM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TVN_0_0/42TVN_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TVN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TVP_0_0/42TVP_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TVP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TVQ_0_0/42TVQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TVQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TWK_0_0/42TWK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TWK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TWL_0_0/42TWL_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TWL_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TWM_0_0/42TWM_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TWM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TWN_0_0/42TWN_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TWN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TWP_0_0/42TWP_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TWP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TXK_0_0/42TXK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TXK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TXL_0_0/42TXL_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TXL_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TXM_0_0/42TXM_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TXM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TXN_0_0/42TXN_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TXN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TYK_0_0/42TYK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TYK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TYL_0_0/42TYL_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TYL_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TYM_0_0/42TYM_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TYM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./42TYN_0_0/42TYN_0_0.json",
+      "type": "application/geo+json",
+      "title": "42TYN_0_0 — 2024"
+    }
+  ]
+}

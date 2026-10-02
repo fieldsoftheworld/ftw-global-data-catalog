@@ -1,0 +1,246 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2025-20l",
+  "title": "Grid zone 20L — 2025",
+  "description": "The 35 field/boundary probability tiles of 2025 in grid zone designator `20L` — UTM zone 20, latitude band L. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 20 — 2025](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 20 — 2025"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./20LKP_0_0/20LKP_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LKP_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LKQ_0_0/20LKQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LKQ_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LLJ_0_0/20LLJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LLJ_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LLK_0_0/20LLK_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LLK_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LLM_0_0/20LLM_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LLM_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LLP_0_0/20LLP_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LLP_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LLQ_0_0/20LLQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LLQ_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LMH_0_0/20LMH_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LMH_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LMJ_0_0/20LMJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LMJ_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LMM_0_0/20LMM_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LMM_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LMP_0_0/20LMP_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LMP_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LMQ_0_0/20LMQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LMQ_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LMR_0_0/20LMR_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LMR_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LNM_0_0/20LNM_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LNM_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LNN_0_0/20LNN_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LNN_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LNP_0_0/20LNP_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LNP_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LNQ_0_0/20LNQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LNQ_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LPH_0_0/20LPH_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LPH_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LPL_0_0/20LPL_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LPL_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LPM_0_0/20LPM_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LPM_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LPN_0_0/20LPN_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LPN_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LPP_0_0/20LPP_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LPP_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LPQ_0_0/20LPQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LPQ_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LQH_0_0/20LQH_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LQH_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LQJ_0_0/20LQJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LQJ_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LQK_0_0/20LQK_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LQK_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LQL_0_0/20LQL_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LQL_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LQM_0_0/20LQM_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LQM_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LQN_0_0/20LQN_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LQN_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LQP_0_0/20LQP_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LQP_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LRH_0_0/20LRH_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LRH_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LRJ_0_0/20LRJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LRJ_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LRK_0_0/20LRK_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LRK_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LRL_0_0/20LRL_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LRL_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./20LRM_0_0/20LRM_0_0.json",
+      "type": "application/geo+json",
+      "title": "20LRM_0_0 — 2025"
+    }
+  ]
+}

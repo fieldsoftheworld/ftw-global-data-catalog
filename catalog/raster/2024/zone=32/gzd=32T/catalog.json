@@ -1,0 +1,240 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2024-32t",
+  "title": "Grid zone 32T — 2024",
+  "description": "The 34 field/boundary probability tiles of 2024 in grid zone designator `32T` — UTM zone 32, latitude band T. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 32 — 2024](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 32 — 2024"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./32TLN_0_0/32TLN_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TLN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TLQ_0_0/32TLQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TLQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TLR_0_0/32TLR_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TLR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TLS_0_0/32TLS_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TLS_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TLT_0_0/32TLT_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TLT_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TMK_0_0/32TMK_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TMK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TML_0_0/32TML_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TML_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TMN_0_0/32TMN_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TMN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TMQ_0_0/32TMQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TMQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TMR_0_0/32TMR_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TMR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TMS_0_0/32TMS_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TMS_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TMT_0_0/32TMT_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TMT_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TNK_0_0/32TNK_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TNK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TNL_0_0/32TNL_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TNL_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TNM_0_0/32TNM_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TNM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TNN_0_0/32TNN_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TNN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TNQ_0_0/32TNQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TNQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TNR_0_0/32TNR_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TNR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TNS_0_0/32TNS_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TNS_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TNT_0_0/32TNT_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TNT_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TPM_0_0/32TPM_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TPM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TPN_0_0/32TPN_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TPN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TPP_0_0/32TPP_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TPP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TPQ_0_0/32TPQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TPQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TPR_0_0/32TPR_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TPR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TPS_0_0/32TPS_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TPS_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TPT_0_0/32TPT_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TPT_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TQM_0_0/32TQM_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TQM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TQN_0_0/32TQN_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TQN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TQP_0_0/32TQP_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TQP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TQQ_0_0/32TQQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TQQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TQR_0_0/32TQR_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TQR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TQS_0_0/32TQS_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TQS_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./32TQT_0_0/32TQT_0_0.json",
+      "type": "application/geo+json",
+      "title": "32TQT_0_0 — 2024"
+    }
+  ]
+}

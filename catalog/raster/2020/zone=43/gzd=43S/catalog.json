@@ -1,0 +1,174 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2020-43s",
+  "title": "Grid zone 43S — 2020",
+  "description": "The 23 field/boundary probability tiles of 2020 in grid zone designator `43S` — UTM zone 43, latitude band S. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 43 — 2020](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 43 — 2020"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./43SBD_0_0/43SBD_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SBD_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SBR_0_0/43SBR_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SBR_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SBS_0_0/43SBS_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SBS_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SBT_0_0/43SBT_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SBT_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SBU_0_0/43SBU_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SBU_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SCR_0_0/43SCR_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SCR_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SCS_0_0/43SCS_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SCS_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SCT_0_0/43SCT_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SCT_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SCU_0_0/43SCU_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SCU_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SDR_0_0/43SDR_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SDR_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SDS_0_0/43SDS_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SDS_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SDT_0_0/43SDT_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SDT_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SDU_0_0/43SDU_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SDU_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SED_0_0/43SED_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SED_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SER_0_0/43SER_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SER_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SES_0_0/43SES_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SES_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SET_0_0/43SET_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SET_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SFC_0_0/43SFC_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SFC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SFD_0_0/43SFD_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SFD_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SFR_0_0/43SFR_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SFR_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SGB_0_0/43SGB_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SGB_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SGC_0_0/43SGC_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SGC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./43SGD_0_0/43SGD_0_0.json",
+      "type": "application/geo+json",
+      "title": "43SGD_0_0 — 2020"
+    }
+  ]
+}

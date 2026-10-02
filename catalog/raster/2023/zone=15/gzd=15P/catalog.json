@@ -1,0 +1,108 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2023-15p",
+  "title": "Grid zone 15P — 2023",
+  "description": "The 12 field/boundary probability tiles of 2023 in grid zone designator `15P` — UTM zone 15, latitude band P. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 15 — 2023](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 15 — 2023"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./15PTT_0_0/15PTT_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PTT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PWS_0_0/15PWS_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PWS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PWT_0_0/15PWT_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PWT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PXR_0_0/15PXR_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PXR_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PXS_0_0/15PXS_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PXS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PXT_0_0/15PXT_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PXT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PYR_0_0/15PYR_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PYR_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PYS_0_0/15PYS_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PYS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PYT_0_0/15PYT_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PYT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PZR_0_0/15PZR_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PZR_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PZS_0_0/15PZS_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PZS_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./15PZT_0_0/15PZT_0_0.json",
+      "type": "application/geo+json",
+      "title": "15PZT_0_0 — 2023"
+    }
+  ]
+}

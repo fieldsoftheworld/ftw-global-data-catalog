@@ -1,0 +1,246 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2018-13q",
+  "title": "Grid zone 13Q — 2018",
+  "description": "The 35 field/boundary probability tiles of 2018 in grid zone designator `13Q` — UTM zone 13, latitude band Q. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 13 — 2018](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 13 — 2018"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./13QBG_0_0/13QBG_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QBG_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QCF_0_0/13QCF_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QCF_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QCG_0_0/13QCG_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QCG_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QDB_0_0/13QDB_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QDB_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QDC_0_0/13QDC_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QDC_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QDD_0_0/13QDD_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QDD_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QDE_0_0/13QDE_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QDE_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QDF_0_0/13QDF_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QDF_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QEA_0_0/13QEA_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QEA_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QEB_0_0/13QEB_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QEB_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QEC_0_0/13QEC_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QEC_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QED_0_0/13QED_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QED_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QEG_0_0/13QEG_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QEG_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QFA_0_0/13QFA_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QFA_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QFB_0_0/13QFB_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QFB_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QFC_0_0/13QFC_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QFC_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QFD_0_0/13QFD_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QFD_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QFE_0_0/13QFE_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QFE_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QFF_0_0/13QFF_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QFF_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QFG_0_0/13QFG_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QFG_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QGA_0_0/13QGA_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QGA_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QGB_0_0/13QGB_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QGB_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QGC_0_0/13QGC_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QGC_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QGD_0_0/13QGD_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QGD_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QGE_0_0/13QGE_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QGE_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QGF_0_0/13QGF_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QGF_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QGG_0_0/13QGG_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QGG_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QGV_0_0/13QGV_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QGV_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QHA_0_0/13QHA_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QHA_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QHB_0_0/13QHB_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QHB_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QHC_0_0/13QHC_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QHC_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QHD_0_0/13QHD_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QHD_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QHE_0_0/13QHE_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QHE_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QHF_0_0/13QHF_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QHF_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./13QHG_0_0/13QHG_0_0.json",
+      "type": "application/geo+json",
+      "title": "13QHG_0_0 — 2018"
+    }
+  ]
+}

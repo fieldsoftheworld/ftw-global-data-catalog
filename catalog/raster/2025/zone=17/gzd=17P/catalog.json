@@ -1,0 +1,84 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2025-17p",
+  "title": "Grid zone 17P — 2025",
+  "description": "The 8 field/boundary probability tiles of 2025 in grid zone designator `17P` — UTM zone 17, latitude band P. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 17 — 2025](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 17 — 2025"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./17PKK_0_0/17PKK_0_0.json",
+      "type": "application/geo+json",
+      "title": "17PKK_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./17PKL_0_0/17PKL_0_0.json",
+      "type": "application/geo+json",
+      "title": "17PKL_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./17PKM_0_0/17PKM_0_0.json",
+      "type": "application/geo+json",
+      "title": "17PKM_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./17PLK_0_0/17PLK_0_0.json",
+      "type": "application/geo+json",
+      "title": "17PLK_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./17PLL_0_0/17PLL_0_0.json",
+      "type": "application/geo+json",
+      "title": "17PLL_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./17PNK_0_0/17PNK_0_0.json",
+      "type": "application/geo+json",
+      "title": "17PNK_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./17PPK_0_0/17PPK_0_0.json",
+      "type": "application/geo+json",
+      "title": "17PPK_0_0 — 2025"
+    },
+    {
+      "rel": "item",
+      "href": "./17PRK_0_0/17PRK_0_0.json",
+      "type": "application/geo+json",
+      "title": "17PRK_0_0 — 2025"
+    }
+  ]
+}

@@ -131,31 +131,55 @@ Adapt `alpha:scripts/tiles/` (README there has measured timings). Beta is ~12× 
 
 ## Phase 4 — Raster (COG) catalog + thumbnails (on rails)
 
-**Layout ruling (2026-10-01, user-approved):** raster uses full per-item folders,
-vector-style — `raster/{year}/{tile}/` holds `{tile}.tif`, `{tile}.json` and
-`{tile}.thumb.png` (PORTO-CORE-071). The existing 67,197 flat COGs are
-server-side copied into the folders by `tools/move_raster_to_hierarchy.py`
-(old flat keys deleted only after the index/metadata flip, with separate
-approval), and the inference pipeline now emits this hierarchy directly, so
-new generations never need a relayout. `index/raster.parquet` hrefs flip to
-the folder keys. llms.txt is removed from the catalog (same ruling).
+**Layout ruling (2026-10-02, user-approved — supersedes the per-item-folder
+ruling of 2026-10-01):** one grouped hierarchy carries data *and* metadata,
+hive-separated like the vector tree's `zone=NN/`:
+
+```
+raster/{year}/collection.json                              committed
+raster/{year}/zone={ZZ}/catalog.json                       committed, 54/year
+raster/{year}/zone={ZZ}/gzd={GZD}/catalog.json             committed, 356/year
+raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif        the COG
+raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.json       the item  (committed)
+raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.thumb.png  its thumbnail
+raster/{year}/{overview.tif,thumbnail.webp,items.parquet}  collection level
+```
+
+`{ZZ}` is the tile key's two leading digits and `{GZD}` those plus the
+latitude-band letter, so `01KFS_0_0` groups under `zone=01/gzd=01K/`. The
+per-tile folder keeps data beside metadata, so every item asset href is
+`./{tile}.tif` / `./{tile}.thumb.png`.
+
+The 67,197 COGs and thumbnails are server-side copied into the grouped keys
+and `index/raster.parquet` is rewritten to match (same machinery as the
+first move; old keys deleted only with separate approval). The items are
+**committed** under `catalog/raster/` together with the zone/GZD catalogs
+that group them — that is what makes them reachable by `rel` links and what
+closes PTL-COL-005, since rashid derives containment from directory nesting
+and only sees item JSON that is in the tree (docs/conformance.md has the
+measurements). The inference pipeline emits this hierarchy directly, so new
+generations never need a relayout. llms.txt is removed from the catalog
+(2026-10-01 ruling, unchanged).
 
 1. `tools/build_raster_items.py` reads `index/raster.parquet` (all fields needed: href, size,
    bbox, epsg, field/boundary/cropland fracs) + a one-time COG-header pass for proj:transform/shape
    (or derive from index bbox+known 40032² grid). Emits per year: collection.json (committed),
-   ~7,466 items **straight to S3** at `raster/{year}/{tile}/{tile}.json` next to each `.tif` (relative
-   asset hrefs), and `items.parquet` collection-mirror. (The browse-subcatalog idea here named
-   alpha's `build_features_items.py` as the model; that script has no zone/gzd tree — it publishes
-   S3-only items with no item links at all, which is where PTL-COL-005 comes from. Measured
-   outcome and the two layouts that clear it: docs/conformance.md, "Open: the raster collections
-   publish no item connectivity". **Decision pending** — a browse tree cannot carry items that
-   live outside its own directories.)
+   ~7,466 **committed** items per year at
+   `raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.json` beside each `.tif` (relative asset
+   hrefs), the zone/GZD browse catalogs that group them (with README.md + AGENTS.md each,
+   since PTL-FIL-001/002/003 bind plain catalogs too), and the `items.parquet`
+   collection-mirror. Run order is `items` → `collections` → `mirror`: a collection links the
+   zone catalogs that exist on disk, and `portolan stac-geoparquet` finds the nested items by
+   following those `child` links. (The browse-subcatalog idea here named alpha's
+   `build_features_items.py` as the model; that script has no zone/gzd tree — it publishes
+   S3-only items with no item links at all, which is where PTL-COL-005 came from.
+   docs/conformance.md records what was measured.)
    Items carry proj + file + render extensions; bands metadata (field, boundary, scale 1/255,
    quantization) from the verified gdalinfo; `derived_from` links to the four Sentinel-2 quarter
    source items recorded in GDAL metadata.
 2. **Thumbnails**: extend `make_thumbnails.py` — per-item PNG from each COG's smallest overview
    (rasterio decimated read of the `field` band, colormap, nodata→alpha, composite over `#0b1414`),
-   uploaded next to the item (`raster/{year}/{tile}/{tile}.thumb.png`, item asset role `thumbnail`). Run as an
+   uploaded next to the item (`…/gzd={GZD}/{tile}/{tile}.thumb.png`, item asset role `thumbnail`). Run as an
    sbatch array on rails (67k renders, embarrassingly parallel, data in-region). Collection
    thumbnails: low-zoom mosaic per year. Start with 2025, then batch 2017–2024.
 3. **Global overview COGs (per year)**: mosaic each year's 7,466 tiles at overview resolution

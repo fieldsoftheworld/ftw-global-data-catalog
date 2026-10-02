@@ -1,0 +1,216 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2024-35p",
+  "title": "Grid zone 35P — 2024",
+  "description": "The 30 field/boundary probability tiles of 2024 in grid zone designator `35P` — UTM zone 35, latitude band P. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 35 — 2024](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 35 — 2024"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./35PKM_0_0/35PKM_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PKM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PKN_0_0/35PKN_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PKN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PKP_0_0/35PKP_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PKP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PKQ_0_0/35PKQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PKQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PKR_0_0/35PKR_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PKR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PLN_0_0/35PLN_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PLN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PLP_0_0/35PLP_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PLP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PLQ_0_0/35PLQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PLQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PLR_0_0/35PLR_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PLR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PLT_0_0/35PLT_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PLT_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PMN_0_0/35PMN_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PMN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PMP_0_0/35PMP_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PMP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PMQ_0_0/35PMQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PMQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PMR_0_0/35PMR_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PMR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PNL_0_0/35PNL_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PNL_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PNN_0_0/35PNN_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PNN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PNP_0_0/35PNP_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PNP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PNQ_0_0/35PNQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PNQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PPN_0_0/35PPN_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PPN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PPP_0_0/35PPP_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PPP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PQM_0_0/35PQM_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PQM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PQN_0_0/35PQN_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PQN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PQP_0_0/35PQP_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PQP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PQQ_0_0/35PQQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PQQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PQR_0_0/35PQR_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PQR_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PRM_0_0/35PRM_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PRM_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PRN_0_0/35PRN_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PRN_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PRP_0_0/35PRP_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PRP_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PRQ_0_0/35PRQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PRQ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./35PRR_0_0/35PRR_0_0.json",
+      "type": "application/geo+json",
+      "title": "35PRR_0_0 — 2024"
+    }
+  ]
+}

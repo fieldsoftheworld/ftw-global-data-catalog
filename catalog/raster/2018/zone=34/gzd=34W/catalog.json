@@ -1,0 +1,60 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2018-34w",
+  "title": "Grid zone 34W — 2018",
+  "description": "The 4 field/boundary probability tiles of 2018 in grid zone designator `34W` — UTM zone 34, latitude band W. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 34 — 2018](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 34 — 2018"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./34WDS_0_0/34WDS_0_0.json",
+      "type": "application/geo+json",
+      "title": "34WDS_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./34WES_0_0/34WES_0_0.json",
+      "type": "application/geo+json",
+      "title": "34WES_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./34WET_0_0/34WET_0_0.json",
+      "type": "application/geo+json",
+      "title": "34WET_0_0 — 2018"
+    },
+    {
+      "rel": "item",
+      "href": "./34WFS_0_0/34WFS_0_0.json",
+      "type": "application/geo+json",
+      "title": "34WFS_0_0 — 2018"
+    }
+  ]
+}

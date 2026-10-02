@@ -1,0 +1,132 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2020-49n",
+  "title": "Grid zone 49N — 2020",
+  "description": "The 16 field/boundary probability tiles of 2020 in grid zone designator `49N` — UTM zone 49, latitude band N. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 49 — 2020](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 49 — 2020"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./49NBA_0_0/49NBA_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NBA_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NBB_0_0/49NBB_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NBB_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NCA_0_0/49NCA_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NCA_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NCB_0_0/49NCB_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NCB_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NDA_0_0/49NDA_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NDA_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NDB_0_0/49NDB_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NDB_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NEA_0_0/49NEA_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NEA_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NEB_0_0/49NEB_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NEB_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NEC_0_0/49NEC_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NEC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NED_0_0/49NED_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NED_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NFC_0_0/49NFC_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NFC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NFD_0_0/49NFD_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NFD_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NGD_0_0/49NGD_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NGD_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NGE_0_0/49NGE_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NGE_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NHE_0_0/49NHE_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NHE_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./49NHF_0_0/49NHF_0_0.json",
+      "type": "application/geo+json",
+      "title": "49NHF_0_0 — 2020"
+    }
+  ]
+}

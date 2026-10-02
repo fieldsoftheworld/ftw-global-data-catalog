@@ -1,0 +1,90 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2025-zone-52",
+  "title": "UTM zone 52 — 2025",
+  "description": "The 111 field/boundary probability tiles of 2025 that fall in UTM zone 52, grouped by grid zone designator (9 of them: `52K`, `52L`, `52M`, `52N`, `52R`, `52S`, `52T`, `52U`, `52V`). Part of [FTW Global — Field & Boundary Probabilities 2025](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2025 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=52K/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 52K"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=52L/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 52L"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=52M/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 52M"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=52N/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 52N"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=52R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 52R"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=52S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 52S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=52T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 52T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=52U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 52U"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=52V/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 52V"
+    }
+  ]
+}

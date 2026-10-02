@@ -1,0 +1,162 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2023-42q",
+  "title": "Grid zone 42Q — 2023",
+  "description": "The 21 field/boundary probability tiles of 2023 in grid zone designator `42Q` — UTM zone 42, latitude band Q. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 42 — 2023](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 42 — 2023"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./42QVK_0_0/42QVK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QVK_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QVL_0_0/42QVL_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QVL_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QVM_0_0/42QVM_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QVM_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QWJ_0_0/42QWJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QWJ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QWK_0_0/42QWK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QWK_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QWL_0_0/42QWL_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QWL_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QWM_0_0/42QWM_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QWM_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QXH_0_0/42QXH_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QXH_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QXJ_0_0/42QXJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QXJ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QXK_0_0/42QXK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QXK_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QXL_0_0/42QXL_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QXL_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QXM_0_0/42QXM_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QXM_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QYH_0_0/42QYH_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QYH_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QYJ_0_0/42QYJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QYJ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QYK_0_0/42QYK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QYK_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QYL_0_0/42QYL_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QYL_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QYM_0_0/42QYM_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QYM_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QZJ_0_0/42QZJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QZJ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QZK_0_0/42QZK_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QZK_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QZL_0_0/42QZL_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QZL_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./42QZM_0_0/42QZM_0_0.json",
+      "type": "application/geo+json",
+      "title": "42QZM_0_0 — 2023"
+    }
+  ]
+}

@@ -24,28 +24,48 @@ is usually enough) and appends a line to a resumable JSONL sidecar. 67k tiles,
 so it is resumable by design: re-running skips what the sidecar already holds.
 
 ``items`` — the ~7,466 items per year, built from the index plus that sidecar,
-written to the staging tree and uploaded straight to S3. They are **not**
-committed (docs/plan.md Phase 4: "items **straight to S3**"); 67k JSON files
-in git would be paid for by every clone.
+**committed** under ``catalog/raster/``, together with the zone and GZD
+catalogs that group them. Committing them is what makes the items reachable
+by ``rel`` links: rashid derives containment from directory nesting and only
+sees item JSON that is in the tree, so a collection whose items live only in
+the bucket publishes no item connectivity at all (PTL-COL-005, and
+PORTO-CORE-032 behind it — docs/conformance.md has the measurements).
 
-Published layout (one directory per item, PORTO-CORE-071, matching the
-vector tree's ``zone=NN/`` precedent)::
+Published layout (user ruling 2026-10-02; one hierarchy for data and
+metadata, hive-separated like the vector tree's ``zone=NN/``)::
 
-    raster/{year}/{tile}/{tile}.tif        the COG
-    raster/{year}/{tile}/{tile}.json       the item (this script)
-    raster/{year}/{tile}/{tile}.thumb.png  the per-item thumbnail
+    raster/{year}/collection.json                        committed
+    raster/{year}/zone={ZZ}/catalog.json                 committed, 54/year
+    raster/{year}/zone={ZZ}/gzd={GZD}/catalog.json       committed, 356/year
+    raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif        the COG
+    raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.json       the item
+    raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.thumb.png  its thumbnail
     raster/{year}/overview.tif             the per-year global overview COG
     raster/{year}/thumbnail.webp           its render
     raster/{year}/items.parquet            the stac-geoparquet mirror
-    raster/{year}/collection.json          committed, from `collections`
+
+``{ZZ}`` is the tile key's two leading digits (the UTM zone) and ``{GZD}``
+those digits plus the latitude-band letter — ``01KFS_0_0`` groups under
+``zone=01/gzd=01K/``. Every catalog directory carries README.md and AGENTS.md
+because PTL-FIL-001/002/003 bind plain catalogs too, not only collections
+(measured). The data sits beside its item, so every item asset href is
+``./{tile}.tif`` / ``./{tile}.thumb.png``, with no reach-back.
 
 Data hrefs are derived from that layout, not from the index's ``href``
-column, because the index is rewritten to the nested keys separately.
+column, because the index is rewritten to the grouped keys separately.
 
-    .venv/bin/python3 tools/build_raster_items.py collections
     .venv/bin/python3 tools/build_raster_items.py headers --year 2025
-    .venv/bin/python3 tools/build_raster_items.py items --year 2025 --mirror
+    .venv/bin/python3 tools/build_raster_items.py items --year 2025
+    .venv/bin/python3 tools/build_raster_items.py collections
+    .venv/bin/python3 tools/build_raster_items.py mirror --year 2025
     .venv/bin/python3 tools/build_raster_items.py items --confirm   # upload
+
+That order is not arbitrary. ``items`` comes before ``collections`` because a
+year collection links the zone catalogs that are on disk and nothing else,
+and ``mirror`` comes after ``collections`` because ``portolan
+stac-geoparquet`` finds the nested items by following those ``child`` links.
+Re-run ``collections`` once the new mirror is uploaded, to pick up its
+``file:size``/``file:checksum``.
 
 Band facts in :data:`BANDS` are quoted from verified ``rasterio`` reads of
 ``raster/2025/01KFS_0_0.tif`` and three other tiles across three years
@@ -91,11 +111,14 @@ WRITE_PREFIX = _CONFIG["write_prefix"].rstrip("/")
 INDEX_URL = f"{PUBLIC_BASE}/index/raster.parquet"
 YEARS = tuple(range(2017, 2026))
 
-# Where the header sidecar and the generated items live. Both are outside
-# catalog/, so neither can be published by tools/publish.py; the item tree's
-# keys mirror its layout under the write prefix.
+# The header sidecar stays outside catalog/ (it is build state, not metadata).
+# The items do not: they are committed, so they live in the published tree and
+# tools/publish.py syncs them like every other metadata file.
 SIDECAR = ROOT / "staging-data" / "checksums" / "raster_headers.jsonl"
-ITEMS_DIR = ROOT / "staging-data" / "raster"
+ITEMS_DIR = ROOT / "catalog" / "raster"
+# Where the per-year stac-geoparquet mirror lands. It is a data file, so it
+# never sits in catalog/ — tools/upload_data.py publishes it from here.
+MIRROR_DIR = ROOT / "staging-data" / "raster"
 
 PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
 PROJ_EXT = "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
@@ -196,21 +219,58 @@ def band_table() -> list[str]:
 
 # ── layout ───────────────────────────────────────────────────────────────────
 
-def item_dir_key(year: int, tile: str) -> str:
-    """The object-key prefix of one item's own directory."""
-    return f"raster/{year}/{tile}"
+def zone_of(tile: str) -> str:
+    """The tile key's UTM zone, zero-padded: ``01`` from ``01KFS_0_0``.
 
-
-def cog_url(year: int, tile: str, nested: bool = True) -> str:
-    """The public URL of one COG.
-
-    ``nested`` is the published layout (``raster/{year}/{tile}/{tile}.tif``).
-    The flat legacy key is still readable while the server-side copy runs, so
-    the header pass can fall back to it.
+    Every one of the 67,197 tile keys matches ``\\d{2}[A-Z]{3}_\\d+_\\d+``
+    (measured), so the two leading characters are always the padded zone and
+    slicing beats parsing.
     """
-    if nested:
-        return f"{PUBLIC_BASE}/{item_dir_key(year, tile)}/{tile}.tif"
-    return f"{PUBLIC_BASE}/raster/{year}/{tile}.tif"
+    return tile[:2]
+
+
+def gzd_of(tile: str) -> str:
+    """The grid zone designator: ``01K`` from ``01KFS_0_0``.
+
+    The zone plus the latitude-band letter. The two characters after it are
+    the 100-km square, which is one level finer than this tree groups.
+    """
+    return tile[:3]
+
+
+def group_key(year: int, tile: str) -> str:
+    """The object-key prefix of the GZD catalog one tile groups under."""
+    return f"raster/{year}/zone={zone_of(tile)}/gzd={gzd_of(tile)}"
+
+
+def item_dir_key(year: int, tile: str) -> str:
+    """The object-key prefix of one item's own directory.
+
+    Data and metadata share it: the COG, the item JSON and the thumbnail are
+    the three objects in here (user ruling 2026-10-02).
+    """
+    return f"{group_key(year, tile)}/{tile}"
+
+
+# The key layouts this tile tree has had, newest first. The header pass can
+# read a COG from any of them, because it runs while a server-side copy into
+# the newest one is in flight: "grouped" is the published layout, "folder" is
+# the per-item folder it supersedes, and "flat" is the original.
+LAYOUTS = ("grouped", "folder", "flat")
+
+
+def cog_key(year: int, tile: str, layout: str = "grouped") -> str:
+    """The object key of one COG under the named layout."""
+    if layout == "grouped":
+        return f"{item_dir_key(year, tile)}/{tile}.tif"
+    if layout == "folder":
+        return f"raster/{year}/{tile}/{tile}.tif"
+    return f"raster/{year}/{tile}.tif"
+
+
+def cog_url(year: int, tile: str, layout: str = "grouped") -> str:
+    """The public URL of one COG under the named layout."""
+    return f"{PUBLIC_BASE}/{cog_key(year, tile, layout)}"
 
 
 def cog_s3_uri(year: int, tile: str) -> str:
@@ -349,13 +409,16 @@ def probe_urls(year: int, sample_tile: str) -> dict[str, str]:
     """What `collections` probes for one year, by report key.
 
     The three collection-level objects are probed because they are
-    registered as assets. The three ``{sample_tile}/`` objects are probed
-    because the docs describe the per-item directory and give a runnable
-    ``gdalinfo`` command: one tile's directory proves the published layout is
-    live, so the docs describe what is there rather than what is planned.
+    registered as assets. The ``{sample_tile}/`` objects are probed because
+    the docs describe the per-item directory and give a runnable ``gdalinfo``
+    command: one tile's directory proves the published layout is live, so the
+    docs describe what is there rather than what is planned. ``cog_folder``
+    is the same tile under the layout the grouped keys supersede, so that
+    while the server-side copy is in flight the docs can still name a key
+    that answers today.
     """
     base = f"{PUBLIC_BASE}/raster/{year}"
-    tile_dir = f"{base}/{sample_tile}"
+    tile_dir = f"{PUBLIC_BASE}/{item_dir_key(year, sample_tile)}"
     return {
         "overview": f"{base}/overview.tif",
         "thumbnail.webp": f"{base}/thumbnail.webp",
@@ -363,6 +426,7 @@ def probe_urls(year: int, sample_tile: str) -> dict[str, str]:
         "cog": f"{tile_dir}/{sample_tile}.tif",
         "item": f"{tile_dir}/{sample_tile}.json",
         "thumb": f"{tile_dir}/{sample_tile}.thumb.png",
+        "cog_folder": cog_url(year, sample_tile, "folder"),
     }
 
 
@@ -379,7 +443,7 @@ def bucket_assets(year: int, year_dir: Path, probes: dict[str, int | None],
     urls = probe_urls(year, sample_tile)
     report = {
         key: ("PRESENT" if probes.get(urls[key]) is not None else "ABSENT")
-        for key in ("cog", "item", "thumb")
+        for key in ("cog", "item", "thumb", "cog_folder")
     }
     base = f"{PUBLIC_BASE}/raster/{year}"
 
@@ -433,21 +497,46 @@ def bucket_assets(year: int, year_dir: Path, probes: dict[str, int | None],
     return assets, report
 
 
+GROUPED_PATH = "raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif"
+
+
 def cog_rel_path(year: int, report: dict) -> str:
     """Where the COGs are *now*, in documentation form.
 
-    The published layout is one directory per item, and the server-side copy
-    into those keys runs separately. Until a probed tile directory answers,
-    the docs name the flat key that actually resolves; a re-run switches
-    them over. No sentence here describes a key that 404s.
+    The published layout groups every tile under ``zone=``/``gzd=``, and the
+    server-side copy into those keys runs separately. Until a probed tile
+    directory answers, the docs name the key that actually resolves; a re-run
+    switches them over. No sentence here describes a key that 404s.
     """
     if report.get("cog") == "PRESENT":
+        return GROUPED_PATH.replace("{year}", str(year))
+    if report.get("cog_folder") == "PRESENT":
         return f"raster/{year}/{{tile}}/{{tile}}.tif"
     return f"raster/{year}/{{tile}}.tif"
 
 
+def zone_children(year_dir: Path) -> list[dict]:
+    """``child`` links to the zone catalogs that exist on disk.
+
+    Read from the directory rather than from the index, for the same reason
+    the bucket-side assets are probed: a ``child`` link to a catalog that is
+    not there is a PTL-LNK-006 error, and a zone catalog on disk with no
+    ``child`` link to it is a PTL-LNK-002 error. Deriving the links from the
+    tree makes both impossible — run ``items`` first, then ``collections``.
+    """
+    links = []
+    for path in sorted(year_dir.glob("zone=*/catalog.json")):
+        zone = path.parent.name.removeprefix("zone=")
+        links.append({
+            "rel": "child", "href": f"./{path.parent.name}/catalog.json",
+            "type": "application/json",
+            "title": f"UTM zone {int(zone)}",
+        })
+    return links
+
+
 def build_collection(year: int, stats: dict, extra: dict[str, dict],
-                     report: dict) -> dict:
+                     report: dict, children: list[dict] | None = None) -> dict:
     tb = stats["bytes"] / 1e12
     assets: dict[str, dict] = {}
     if "thumbnail" in extra:
@@ -468,13 +557,16 @@ def build_collection(year: int, stats: dict, extra: dict[str, dict],
     for key in ("overview", "mirror"):
         if key in extra:
             assets[key] = extra[key]
-    per_tile = [name for key, name in (("item", "its STAC item"),
-                                       ("thumb", "a thumbnail"))
-                if report.get(key) == "PRESENT"]
+    children = children or []
     browse = ""
-    if per_tile:
-        browse = ("\n\nEach tile's directory also holds "
-                  + " and ".join(per_tile) + ".")
+    if children:
+        browse = (
+            f"\n\n**Browsing.** The {stats['n']:,} items are grouped into "
+            f"{len(children)} UTM-zone subcatalogs, each splitting into its "
+            "grid zone designators (`zone=33/gzd=33U/…`), so every item is "
+            "reachable by `child`/`item` links without any one object "
+            "carrying thousands of them."
+        )
     if "overview" in extra:
         browse += ("\n\nThe year's `overview` asset renders the whole "
                    "collection at global scale.")
@@ -491,10 +583,10 @@ def build_collection(year: int, stats: dict, extra: dict[str, dict],
             f"`{cog_rel_path(year, report)}`, browsable in the "
             f"[data browser]({DATA_BROWSER}). {_PROJECT}\n\n"
             f"**The rasters.** {_BANDS_PROSE}\n\n"
-            f"Per-item STAC metadata is generated to the bucket next to "
-            f"each COG; the [index manifest]({INDEX_URL}) lists every tile "
-            "with href, size, bbox, and per-tile field/boundary/cropland "
-            f"pixel fractions.{browse}"
+            f"Each tile's STAC item sits beside its COG and thumbnail; the "
+            f"[index manifest]({INDEX_URL}) lists every tile with href, "
+            "size, bbox, and per-tile field/boundary/cropland pixel "
+            f"fractions.{browse}"
         ),
         "license": "CC-BY-4.0",
         "keywords": ["agriculture", "field boundaries", "Fields of the World",
@@ -526,6 +618,7 @@ def build_collection(year: int, stats: dict, extra: dict[str, dict],
              "type": "text/markdown", "title": "Collection README"},
             {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
              "title": "Collection agent guide"},
+            *children,
         ],
         "assets": assets,
     }
@@ -640,18 +733,201 @@ def build_item(row: dict, header: dict, with_thumbnail: bool = True) -> dict:
         "collection": f"ftw-raster-{year}",
         "assets": assets,
         "links": [
-            {"rel": "root", "href": "../../../catalog.json",
+            # raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/ is five directories
+            # below the catalog root; the GZD catalog is the containing
+            # object, and the collection sits three above.
+            {"rel": "root", "href": "../../../../../catalog.json",
              "type": "application/json",
              "title": "Fields of the World — Global Data (beta)"},
-            {"rel": "parent", "href": "../collection.json",
-             "type": "application/json"},
-            {"rel": "collection", "href": "../collection.json",
-             "type": "application/json"},
+            {"rel": "parent", "href": "../catalog.json",
+             "type": "application/json",
+             "title": f"Grid zone {gzd_of(tile)} — {year}"},
+            {"rel": "collection", "href": "../../../collection.json",
+             "type": "application/json",
+             "title": f"FTW Global — Field & Boundary Probabilities {year} "
+                      "(COG)"},
             {"rel": "derived_from", "href": MOSAICS_URL, "type": "text/html",
              "title": "TGE Labs Sentinel-2 quarterly cloudless mosaics "
                       "(source item ids in ftw:source_items)"},
         ],
     }
+
+
+# ── the zone / GZD browse tree ───────────────────────────────────────────────
+
+def build_zone_catalog(year: int, zone: str, gzds: dict[str, list[str]],
+                       ) -> dict:
+    """One UTM zone's catalog: a child per grid zone designator in it."""
+    tiles = sum(len(v) for v in gzds.values())
+    return {
+        "type": "Catalog",
+        "stac_version": "1.1.0",
+        "stac_extensions": [PORTOLAN_EXT],
+        "id": f"ftw-raster-{year}-zone-{zone}",
+        "title": f"UTM zone {int(zone)} — {year}",
+        "description": (
+            f"The {tiles:,} field/boundary probability tiles of {year} that "
+            f"fall in UTM zone {int(zone)}, grouped by grid zone designator "
+            f"({len(gzds)} of them: "
+            + ", ".join(f"`{g}`" for g in sorted(gzds)) + "). "
+            f"Part of [FTW Global — Field & Boundary Probabilities {year}]"
+            "(../collection.json)."
+        ),
+        "links": [
+            {"rel": "root", "href": "../../../catalog.json",
+             "type": "application/json",
+             "title": "Fields of the World — Global Data (beta)"},
+            {"rel": "parent", "href": "../collection.json",
+             "type": "application/json",
+             "title": f"FTW Global — Field & Boundary Probabilities {year} "
+                      "(COG)"},
+            {"rel": "describedby", "href": "./README.md",
+             "type": "text/markdown", "title": "Zone README"},
+            {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
+             "title": "Zone agent guide"},
+            *[{"rel": "child", "href": f"./gzd={gzd}/catalog.json",
+               "type": "application/json", "title": f"Grid zone {gzd}"}
+              for gzd in sorted(gzds)],
+        ],
+    }
+
+
+def build_gzd_catalog(year: int, zone: str, gzd: str,
+                      tiles: list[str]) -> dict:
+    """One grid zone designator's catalog: an item link per tile in it."""
+    band = gzd[2]
+    return {
+        "type": "Catalog",
+        "stac_version": "1.1.0",
+        "stac_extensions": [PORTOLAN_EXT],
+        "id": f"ftw-raster-{year}-{gzd.lower()}",
+        "title": f"Grid zone {gzd} — {year}",
+        "description": (
+            f"The {len(tiles):,} field/boundary probability tiles of {year} "
+            f"in grid zone designator `{gzd}` — UTM zone {int(zone)}, "
+            f"latitude band {band}. Each tile's directory holds its COG, its "
+            "STAC item and its thumbnail. Part of "
+            f"[UTM zone {int(zone)} — {year}](../catalog.json)."
+        ),
+        "links": [
+            {"rel": "root", "href": "../../../../catalog.json",
+             "type": "application/json",
+             "title": "Fields of the World — Global Data (beta)"},
+            {"rel": "parent", "href": "../catalog.json",
+             "type": "application/json",
+             "title": f"UTM zone {int(zone)} — {year}"},
+            {"rel": "describedby", "href": "./README.md",
+             "type": "text/markdown", "title": "Grid zone README"},
+            {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
+             "title": "Grid zone agent guide"},
+            *[{"rel": "item", "href": f"./{tile}/{tile}.json",
+               "type": "application/geo+json",
+               "title": f"{tile} — {year}"} for tile in tiles],
+        ],
+    }
+
+
+def _group_docs(kind: str, title: str, body: list[str],
+                queries: list[str]) -> tuple[str, str]:
+    """README.md and AGENTS.md for one group catalog.
+
+    Short, but every line is a measured fact about *this* group, not a stub:
+    PTL-FIL-004 wants a title heading and content, and the documentation
+    contract wants no unedited boilerplate.
+    """
+    readme = "\n".join([
+        f"# {title}", "", *body, "",
+        "Data license: "
+        "[CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). "
+        "Produced by Taylor Geospatial from the "
+        f"[Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}).", "",
+        "## Band semantics", "",
+        "Band 1 `field`, band 2 `boundary`; uint8 with scale 1/255, so "
+        f"probability = value × 1/255. {GSD} m, per-tile UTM CRS. The "
+        "collection's [README](../../README.md) has the full band table.", "",
+    ])
+    agents = "\n".join([
+        f"# AGENTS.md — {title}", "",
+        f"Guidance for AI agents. This is a {kind} browse catalog: it exists "
+        "so the items are reachable by `child`/`item` links. Every number "
+        "here is measured from `index/raster.parquet`.", "",
+        *body, "",
+        "- Probability = pixel value × 1/255; band 1 `field`, band 2 "
+        "`boundary`; no nodata is declared.",
+        "- To enumerate tiles in bulk, query the collection's "
+        "`items.parquet` mirror or the index manifest rather than walking "
+        "these catalogs.", "",
+        *queries,
+    ])
+    return readme, agents
+
+
+def zone_docs(year: int, zone: str, gzds: dict[str, list[str]],
+              ) -> tuple[str, str]:
+    tiles = sum(len(v) for v in gzds.values())
+    body = [
+        f"- {tiles:,} tiles in {len(gzds)} grid zone designators: "
+        + ", ".join(f"[`{g}`](./gzd={g}/catalog.json)" for g in sorted(gzds)),
+        f"- UTM zone {int(zone)}, {year}. Parent collection: "
+        "[FTW Global — Field & Boundary Probabilities "
+        f"{year}](../collection.json)",
+    ]
+    return _group_docs("UTM-zone", f"UTM zone {int(zone)} — {year}", body, [])
+
+
+def gzd_docs(year: int, zone: str, gzd: str, tiles: list[str],
+             ) -> tuple[str, str]:
+    body = [
+        f"- {len(tiles):,} tiles, UTM zone {int(zone)}, latitude band "
+        f"{gzd[2]}, {year}.",
+        "- Each tile directory holds `{tile}.tif` (the COG), "
+        "`{tile}.json` (its STAC item) and `{tile}.thumb.png`.",
+        f"- Tile keys here run from `{tiles[0]}` to `{tiles[-1]}`.",
+        f"- Parent: [UTM zone {int(zone)} — {year}](../catalog.json).",
+    ]
+    sample = tiles[0]
+    queries = [
+        "Read one tile:", "",
+        "```bash",
+        f"gdalinfo /vsicurl/{PUBLIC_BASE}/"
+        f"{item_dir_key(year, sample)}/{sample}.tif",
+        "```", "",
+    ]
+    return _group_docs("grid-zone", f"Grid zone {gzd} — {year}", body,
+                       queries)
+
+
+def group_tiles(tiles: list[str]) -> dict[str, dict[str, list[str]]]:
+    """``{zone: {gzd: [tile, ...]}}`` for one year's tile keys."""
+    out: dict[str, dict[str, list[str]]] = {}
+    for tile in sorted(tiles):
+        out.setdefault(zone_of(tile), {}).setdefault(
+            gzd_of(tile), []).append(tile)
+    return out
+
+
+def write_group_tree(year_dir: Path, year: int,
+                     tiles: list[str]) -> tuple[int, int]:
+    """Write the zone and GZD catalogs (and their docs) for one year.
+
+    Returns (zone catalogs, GZD catalogs).
+    """
+    groups = group_tiles(tiles)
+    for zone, gzds in sorted(groups.items()):
+        zone_dir = year_dir / f"zone={zone}"
+        write_json(zone_dir / "catalog.json",
+                   build_zone_catalog(year, zone, gzds))
+        readme, agents = zone_docs(year, zone, gzds)
+        (zone_dir / "README.md").write_text(readme)
+        (zone_dir / "AGENTS.md").write_text(agents)
+        for gzd, members in sorted(gzds.items()):
+            gzd_dir = zone_dir / f"gzd={gzd}"
+            write_json(gzd_dir / "catalog.json",
+                       build_gzd_catalog(year, zone, gzd, members))
+            readme, agents = gzd_docs(year, zone, gzd, members)
+            (gzd_dir / "README.md").write_text(readme)
+            (gzd_dir / "AGENTS.md").write_text(agents)
+    return len(groups), sum(len(g) for g in groups.values())
 
 
 # ── the COG header pass ──────────────────────────────────────────────────────
@@ -765,17 +1041,15 @@ def cmd_headers(args) -> int:
 
     def one(row: dict) -> dict:
         year, tile = row["year"], row["tile_key"]
-        layouts = ([True, False] if args.layout == "auto"
-                   else [args.layout == "nested"])
+        layouts = LAYOUTS if args.layout == "auto" else (args.layout,)
         last: Exception | None = None
-        for nested in layouts:
+        for layout in layouts:
             try:
-                header = read_header(cog_url(year, tile, nested))
-            except Exception as exc:  # noqa: BLE001 - try the other layout
+                header = read_header(cog_url(year, tile, layout))
+            except Exception as exc:  # noqa: BLE001 - try the next layout
                 last = exc
                 continue
-            header |= {"year": year, "tile_key": tile,
-                       "layout": "nested" if nested else "flat"}
+            header |= {"year": year, "tile_key": tile, "layout": layout}
             return header
         raise last if last else AssertionError("unreachable")
 
@@ -816,62 +1090,30 @@ def cmd_headers(args) -> int:
 
 # ── the mirror ───────────────────────────────────────────────────────────────
 
-def write_mirror_scaffold(out: Path, years: list[int],
-                          tiles: dict[int, list[str]]) -> None:
-    """The minimum tree ``portolan stac-geoparquet`` needs to find the items.
+def build_mirror(out: Path, years: list[int],
+                 mirror_dir: Path = MIRROR_DIR) -> int:
+    """Run ``portolan stac-geoparquet`` over the committed tree, per year.
 
-    Staging only: these files are never uploaded (the uploader below takes
-    only ``{tile}/{tile}.json`` keys, and tools/upload_data.py admits only
-    data suffixes), and they exist so the mirror is built from the same item
-    JSON that is published.
-    """
-    (out / ".portolan").mkdir(parents=True, exist_ok=True)
-    (out / ".portolan" / "config.yaml").write_text("# Portolan configuration\n")
-    for year in sorted(years):
-        source = ROOT / "catalog" / "raster" / str(year) / "collection.json"
-        collection = json.loads(source.read_text())
-        collection["links"] = [
-            {"rel": "root", "href": "../catalog.json",
-             "type": "application/json"},
-            {"rel": "parent", "href": "../catalog.json",
-             "type": "application/json"},
-            *[{"rel": "item", "href": f"./{t}/{t}.json",
-               "type": "application/geo+json"} for t in tiles[year]],
-        ]
-        collection["assets"] = {}
-        write_json(out / str(year) / "collection.json", collection)
-    # Every year directory that has a scaffold, not only the ones built this
-    # run, so the staging root stays a consistent catalog across partial runs.
-    present = sorted(
-        int(p.parent.name) for p in out.glob("*/collection.json")
-        if p.parent.name.isdigit()
-    )
-    write_json(out / "catalog.json", {
-        "type": "Catalog",
-        "stac_version": "1.1.0",
-        "stac_extensions": [PORTOLAN_EXT],
-        "id": "raster-items-staging",
-        "title": "Staging tree for the raster item mirror",
-        "description": "Not published. Exists so `portolan stac-geoparquet` "
-                       "can read the generated items.",
-        "links": [
-            {"rel": "root", "href": "./catalog.json",
-             "type": "application/json"},
-            *[{"rel": "child", "href": f"./{y}/collection.json",
-               "type": "application/json"} for y in present],
-        ],
-    })
+    ``-c`` names the collection by its **directory path from the catalog
+    root**, not by its STAC id (measured: ``-c ftw-raster-2017`` and
+    ``-c 2017`` both report "Collection not found", ``-c raster/2017``
+    works and finds all 7,466 items nested two levels down).
 
+    portolan writes the parquet next to the collection, which would drop a
+    data file into ``catalog/``. The clean publish-directory model does not
+    allow that, so it is moved straight out to ``mirror_dir``, where
+    tools/upload_data.py publishes it from.
 
-def build_mirror(out: Path, years: list[int]) -> int:
-    """Run ``portolan stac-geoparquet`` over the staging tree, per year.
-
-    ``-c`` names the collection by its **directory**, not its STAC id
-    (measured: ``-c ftw-raster-2025`` reports "Collection not found",
-    ``-c 2025`` works), so the year directory is what gets passed.
+    It discovers the items by following the collection's ``child`` links
+    (measured: with the zone links removed it reports "No items found" even
+    though the item files are right there), so ``collections`` has to have
+    run first. It also rewrites the mirror asset's ``file:size`` to the
+    parquet it just wrote; re-running ``collections`` afterwards puts the
+    published object's size back.
     """
     import subprocess
 
+    catalog_root = out.parent  # .../catalog, since out is .../catalog/raster
     portolan = ROOT / ".venv" / "bin" / "portolan"
     if not portolan.is_file():
         import shutil
@@ -884,19 +1126,26 @@ def build_mirror(out: Path, years: list[int]) -> int:
     failures = 0
     for year in sorted(years):
         proc = subprocess.run(
-            [str(portolan), "stac-geoparquet", "--catalog", str(out),
-             "-c", str(year)],
+            [str(portolan), "stac-geoparquet", "--catalog", str(catalog_root),
+             "-c", f"{out.name}/{year}"],
             capture_output=True, text=True,
         )
-        parquet = out / str(year) / "items.parquet"
-        if proc.returncode != 0 or not parquet.is_file():
+        written = out / str(year) / "items.parquet"
+        if proc.returncode != 0 or not written.is_file():
             failures += 1
-            print(f"  mirror {year} FAILED: "
-                  f"{(proc.stderr or proc.stdout).strip()[:400]}",
-                  file=sys.stderr)
+            detail = (proc.stderr or proc.stdout).strip()[:400]
+            print(f"  mirror {year} FAILED: {detail}", file=sys.stderr)
+            if "No items found" in detail:
+                print("    the collection reaches its items through the zone "
+                      "`child` links; run `collections` first.",
+                      file=sys.stderr)
             continue
-        print(f"  mirror {year}: {parquet.stat().st_size / 2**20:.1f} MiB "
-              f"-> {parquet}")
+        destination = mirror_dir / str(year) / "items.parquet"
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        written.replace(destination)
+        print(f"  mirror {year}: "
+              f"{destination.stat().st_size / 2**20:.1f} MiB "
+              f"-> {shown(destination)}")
     return failures
 
 
@@ -906,22 +1155,32 @@ def item_uploads(out: Path, prefix: str) -> list[Upload]:
     """Every generated item JSON, with the object key it publishes to.
 
     One rule, and it is narrow on purpose: a file at
-    ``{out}/{year}/{tile}/{tile}.json`` publishes to
-    ``{prefix}/raster/{year}/{tile}/{tile}.json``. The staging scaffold
-    (``catalog.json``, ``collection.json``) and the mirror parquet are not
-    item JSON and do not match, so this uploader cannot touch them —
-    ``collection.json`` is published from ``catalog/`` by tools/publish.py,
-    and ``items.parquet`` by tools/upload_data.py.
+    ``{out}/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.json`` publishes to
+    ``{prefix}/raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.json``. The
+    file name must equal its directory name, so the group catalogs
+    (``catalog.json`` in a ``gzd=…`` directory) and the year
+    ``collection.json`` cannot match, and the zone/GZD components must carry
+    their hive prefixes. The grouped keys are derived from the tile key, not
+    from the path, so a stray directory cannot smuggle a key through.
+
+    This exists beside tools/publish.py rather than replacing it: publish.py
+    lists each directory non-recursively, which over 67,197 item directories
+    is 67,197 listings, while this uploader lists each year recursively
+    (nine listings) — see :func:`item_remote_index`.
     """
     uploads = []
-    for path in sorted(out.glob("*/*/*.json")):
+    for path in sorted(out.glob("*/zone=*/gzd=*/*/*.json")):
         tile_dir = path.parent
-        if path.stem != tile_dir.name:
+        tile = tile_dir.name
+        if path.stem != tile:
             continue
-        year = tile_dir.parent.name
+        year = tile_dir.parent.parent.parent.name
         if not year.isdigit():
             continue
-        key = f"raster/{year}/{tile_dir.name}/{path.name}"
+        expected = (f"zone={zone_of(tile)}", f"gzd={gzd_of(tile)}")
+        if (tile_dir.parent.parent.name, tile_dir.parent.name) != expected:
+            continue
+        key = f"{item_dir_key(int(year), tile)}/{path.name}"
         uploads.append(Upload(
             path, f"{prefix}/{key}" if prefix else key, content_type_for(path)
         ))
@@ -987,7 +1246,8 @@ def upload_items(out: Path, confirm: bool, force: bool) -> int:
     index = {} if force else item_remote_index(years, config)
     changed = [u for u in uploads if force or not is_unchanged(u, index)]
     print(f"items:  {len(uploads)} generated, {len(changed)} to upload")
-    print(f"target: s3://{bucket}/{prefix}/raster/{{year}}/{{tile}}/")
+    print(f"target: s3://{bucket}/{prefix}/"
+          "raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/")
     print("this never deletes")
     if not confirm:
         for upload in changed[:10]:
@@ -1008,6 +1268,25 @@ def upload_items(out: Path, confirm: bool, force: bool) -> int:
               file=sys.stderr)
         return 1
     print(f"\nuploaded {len(changed)} item(s)")
+    return 0
+
+
+def cmd_mirror(args) -> int:
+    """Rebuild each year's items.parquet from the committed item tree."""
+    years = sorted(args.year) if args.year else [
+        int(p.name) for p in sorted(args.out.iterdir())
+        if p.is_dir() and p.name.isdigit()
+    ]
+    if not years:
+        print(f"no year directories under {shown(args.out)}")
+        return 1
+    failures = build_mirror(args.out, years, args.mirror_dir)
+    if failures:
+        print(f"\n{failures} of {len(years)} mirror(s) failed",
+              file=sys.stderr)
+        return 1
+    print("\nre-run `collections` so each mirror asset carries the published "
+          "object's size, and upload with tools/upload_data.py")
     return 0
 
 
@@ -1032,13 +1311,18 @@ def cmd_items(args) -> int:
             deviating += 1
             continue
         tile = row["tile_key"]
-        write_json(args.out / str(row["year"]) / tile / f"{tile}.json",
-                   build_item(row, header, not args.no_thumbnails))
-        written.setdefault(row["year"], []).append(tile)
+        year = row["year"]
+        write_json(
+            args.out / str(year) / f"zone={zone_of(tile)}"
+            / f"gzd={gzd_of(tile)}" / tile / f"{tile}.json",
+            build_item(row, header, not args.no_thumbnails))
+        written.setdefault(year, []).append(tile)
 
     for year in sorted(written):
-        print(f"{year}: {len(written[year]):,} item(s) -> "
-              f"{args.out / str(year)}")
+        zones, gzds = write_group_tree(args.out / str(year), year,
+                                       written[year])
+        print(f"{year}: {len(written[year]):,} item(s) in {zones} zone / "
+              f"{gzds} GZD catalog(s) -> {args.out / str(year)}")
     if missing:
         print(f"note: {missing:,} tile(s) have no header yet; run the "
               "`headers` subcommand (it is resumable) and re-run this.")
@@ -1048,14 +1332,14 @@ def cmd_items(args) -> int:
               "field, or pass --allow-deviations.", file=sys.stderr)
 
     if written and args.mirror:
-        write_mirror_scaffold(args.out, list(written), written)
-        build_mirror(args.out, list(written))
+        build_mirror(args.out, list(written), args.mirror_dir)
 
     if args.confirm or args.dry_run_upload:
         return upload_items(args.out, args.confirm, args.force)
     if not written:
         return 1
-    print("\nitems are not committed (docs/plan.md Phase 4). Upload them "
+    print("\nitems and group catalogs are committed; run `collections` next "
+          "so each year links the zone catalogs that now exist, then upload "
           "with: build_raster_items.py items --confirm")
     return 0
 
@@ -1103,27 +1387,39 @@ def _collection_query(year: int) -> list[str]:
 
 
 def layout_block(year: int, report: dict) -> list[str]:
-    """The per-item directory, showing only the files that are there."""
-    sample = report.get("sample_tile", "{tile}")
-    rows = [(f"raster/{year}/{{tile}}/{{tile}}.tif", "the COG", "cog"),
-            (f"raster/{year}/{{tile}}/{{tile}}.json", "its STAC item",
-             "item"),
-            (f"raster/{year}/{{tile}}/{{tile}}.thumb.png", "its thumbnail",
+    """The grouped layout, showing only the files that are there."""
+    sample = report.get("sample_tile", "01KFS_0_0")
+    group = f"raster/{year}/zone={zone_of(sample)}/gzd={gzd_of(sample)}"
+    rows = [(f"{group}/{{tile}}/{{tile}}.tif", "the COG", "cog"),
+            (f"{group}/{{tile}}/{{tile}}.json", "its STAC item", "item"),
+            (f"{group}/{{tile}}/{{tile}}.thumb.png", "its thumbnail",
              "thumb")]
     live = [(path, note) for path, note, key in rows
             if report.get(key) == "PRESENT"]
+    head = [
+        "Tiles are grouped by UTM zone and grid zone designator, taken from "
+        f"the tile key — `{sample}` is zone `{zone_of(sample)}`, grid zone "
+        f"`{gzd_of(sample)}` — and each tile's own directory holds its COG, "
+        "its STAC item and its thumbnail:", "",
+    ]
     if not live:
+        answers = (f"`raster/{year}/{{tile}}/{{tile}}.tif`"
+                   if report.get("cog_folder") == "PRESENT"
+                   else f"`raster/{year}/{{tile}}.tif`")
         return [
-            "Each tile will get its own directory "
-            f"(`raster/{year}/{{tile}}/`) holding the COG, its STAC item and "
-            "its thumbnail. The copy into those keys is still running, so "
-            f"the COGs currently answer at `raster/{year}/{{tile}}.tif` "
-            f"(for example `{sample}.tif`).", "",
+            *head,
+            "```",
+            f"{group}/{{tile}}/{{tile}}.tif   the COG",
+            f"{group}/{{tile}}/{{tile}}.json  its STAC item",
+            f"{group}/{{tile}}/{{tile}}.thumb.png  its thumbnail",
+            "```", "",
+            "The server-side copy into those keys is still running, so the "
+            f"COGs currently answer at {answers} (for example "
+            f"`{sample}.tif`).", "",
         ]
     width = max(len(path) for path, _ in live)
     return [
-        "Each tile has its own directory, so the COG and its metadata sit "
-        "together:", "",
+        *head,
         "```",
         *[f"{path:<{width}}  {note}" for path, note in live],
         "```", "",
@@ -1131,12 +1427,14 @@ def layout_block(year: int, report: dict) -> list[str]:
 
 
 def year_readme(year: int, stats: dict, extra: dict[str, dict],
-                report: dict) -> str:
+                report: dict, children: list[dict] | None = None) -> str:
+    children = children or []
     tb = stats["bytes"] / 1e12
     sample = stats["sample_tile"]
-    nested = report.get("cog") == "PRESENT"
-    read_url = (f"{PUBLIC_BASE}/raster/{year}/{sample}/{sample}.tif" if nested
-                else f"{PUBLIC_BASE}/raster/{year}/{sample}.tif")
+    layout = ("grouped" if report.get("cog") == "PRESENT"
+              else "folder" if report.get("cog_folder") == "PRESENT"
+              else "flat")
+    read_url = cog_url(year, sample, layout)
     lines = [
         f"# FTW Global — Field & Boundary Probabilities {year} (COG)", "",
         f"Field and boundary probability rasters for {year}: "
@@ -1164,8 +1462,29 @@ def year_readme(year: int, stats: dict, extra: dict[str, dict],
         "Any COG reader works over HTTP range requests; the overviews make "
         "low-zoom reads cheap.", "",
     ]
-    if "overview" in extra or "mirror" in extra:
+    if children or "overview" in extra or "mirror" in extra:
         lines += ["## Browse it", ""]
+        if children:
+            lines += [
+                f"The {stats['n']:,} items are grouped into "
+                f"{len(children)} UTM-zone subcatalogs, each splitting into "
+                "its grid zone designators, so every tile is reachable by "
+                "`child`/`item` links a few clicks deep instead of through "
+                "one list of thousands:", "",
+                "```",
+                f"{year}/collection.json",
+                f"{year}/zone={{ZZ}}/catalog.json        "
+                f"{len(children)} of these",
+                f"{year}/zone={{ZZ}}/gzd={{GZD}}/catalog.json",
+                f"{year}/zone={{ZZ}}/gzd={{GZD}}/{{tile}}/{{tile}}.json",
+                "```", "",
+                "The UTM zones present this year: "
+                + ", ".join(link["href"].removeprefix("./zone=")
+                            .removesuffix("/catalog.json")
+                            for link in children)
+                + f" — {len(children)} of the 60 UTM zones; the others hold "
+                "no tiles in this collection.", "",
+            ]
         if "overview" in extra:
             lines += [
                 f"One [global overview COG]({PUBLIC_BASE}/raster/{year}/"
@@ -1199,7 +1518,8 @@ def year_readme(year: int, stats: dict, extra: dict[str, dict],
 
 
 def year_agents(year: int, stats: dict, extra: dict[str, dict],
-                report: dict) -> str:
+                report: dict, children: list[dict] | None = None) -> str:
+    children = children or []
     sample = stats["sample_tile"]
     beside = [name for key, name in (("item", "`{tile}.json`, its STAC item"),
                                      ("thumb", "`{tile}.thumb.png`"))
@@ -1221,12 +1541,18 @@ def year_agents(year: int, stats: dict, extra: dict[str, dict],
         f"CRS ({len(stats['epsgs'])} distinct EPSG codes this year; `epsg` "
         "in the index, `proj:code` on each item). No nodata is declared.",
         f"- Enumerate tiles via the [index manifest]({INDEX_URL}) "
-        f"(`year = {year}`), never by listing the bucket. There are no "
-        "`rel: item` links on the collection: with thousands of items per "
-        "year the index manifest"
-        + (" and `items.parquet`"
+        f"(`year = {year}`)"
+        + (" or the `items.parquet` mirror"
            if report.get("items.parquet") == "PRESENT" else "")
-        + " carry the enumeration.",
+        + ", never by listing the bucket. The collection carries no "
+        "`rel: item` link of its own: the items hang off "
+        + (f"{len(children)} `zone={{ZZ}}/catalog.json` subcatalogs, each "
+           "splitting into `gzd={GZD}/catalog.json`, which carry the item "
+           "links. Walking that tree costs ~400 requests per year, so for "
+           "bulk work read the mirror or the manifest instead."
+           if children else
+           "browse subcatalogs that `items` generates; run it and re-run "
+           "`collections`."),
         f"- Measured across {year}: mean field fraction "
         f"{stats['mean_field_frac']}, max {stats['max_field_frac']}.",
         "- Each COG's GDAL metadata names its four source mosaic tiles "
@@ -1268,6 +1594,21 @@ def tree_readme(stats: dict[int, dict]) -> str:
         "All years share the tile grid, so a tile key names the same ground "
         "in every year and per-pixel year-over-year comparison works tile "
         "by tile.", "",
+        "## Browsing", "",
+        "Each year's tiles are grouped by UTM zone and grid zone designator, "
+        "read straight off the tile key, and each tile's directory holds its "
+        "COG, its STAC item and its thumbnail together:", "",
+        "```",
+        "raster/{year}/collection.json",
+        "raster/{year}/zone={ZZ}/catalog.json",
+        "raster/{year}/zone={ZZ}/gzd={GZD}/catalog.json",
+        "raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif",
+        "raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.json",
+        "raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.thumb.png",
+        "```", "",
+        "So `01KFS_0_0` sits under `zone=01/gzd=01K/`. For bulk work, read a "
+        f"year's `items.parquet` mirror or the [index manifest]({INDEX_URL}) "
+        "rather than walking the tree.", "",
     ])
 
 
@@ -1288,7 +1629,8 @@ def tree_agents(stats: dict[int, dict], reports: dict[int, dict]) -> str:
     enumerate_note = (
         f"- Enumerate tiles via the [index manifest]({INDEX_URL})"
         + (" or a year's `items.parquet`" if anywhere("items.parquet") else "")
-        + ", never by listing the bucket; read each year's AGENTS.md for "
+        + ", never by listing the bucket and never by walking the browse "
+          "tree (~400 catalogs per year); read each year's AGENTS.md for "
           "band semantics."
     )
     return "\n".join([
@@ -1301,11 +1643,13 @@ def tree_agents(stats: dict[int, dict], reports: dict[int, dict]) -> str:
         + ").", "",
         "- One collection per year, " + ", ".join(
             f"`{y}/collection.json`" for y in sorted(stats)) + ".",
-        ("- Layout: `raster/{year}/{tile}/` holds " + ", ".join(in_tile)
-         + "; " if in_tile
-         else "- Layout: the COGs answer at `raster/{year}/{tile}.tif` while "
-              "the copy into one directory per item runs; ")
-        + "`raster/{year}/` holds " + ", ".join(beside) + ".",
+        ("- Layout: `raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/` holds "
+         + ", ".join(in_tile) + "; " if in_tile
+         else "- Layout: the COGs answer at `raster/{year}/{tile}/{tile}.tif` "
+              "while the copy into the grouped "
+              "`zone={ZZ}/gzd={GZD}/{tile}/` keys runs; ")
+        + "`raster/{year}/` holds " + ", ".join(beside)
+        + ", and the zone catalogs that group the items.",
         enumerate_note,
         "- Band 1 `field`, band 2 `boundary`; uint8, probability = "
         "value / 255. No nodata is declared.",
@@ -1341,6 +1685,18 @@ def write_json(path: Path, doc: dict) -> None:
     path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
 
 
+def shown(path: Path) -> str:
+    """A path for messages: repo-relative when it is inside the repo.
+
+    ``--out`` can point anywhere (a scratch tree, for a trial run), and a
+    message is not worth a crash.
+    """
+    try:
+        return str(path.relative_to(ROOT))
+    except ValueError:
+        return str(path)
+
+
 STALE = ("llms.txt",)
 
 
@@ -1350,7 +1706,7 @@ def drop_stale(directory: Path) -> None:
         path = directory / name
         if path.is_file():
             path.unlink()
-            print(f"removed {path.relative_to(ROOT)}")
+            print(f"removed {shown(path)}")
 
 
 def cmd_collections(args) -> int:
@@ -1375,13 +1731,18 @@ def cmd_collections(args) -> int:
         extra, report = bucket_assets(year, year_dir, probes,
                                       year_stats["sample_tile"], args.staging)
         reports[year] = report
-        collection = build_collection(year, year_stats, extra, report)
+        children = zone_children(year_dir)
+        if not children:
+            print(f"note: {shown(year_dir)} has no zone catalog, "
+                  "so the collection links no items. Run `items` first.")
+        collection = build_collection(year, year_stats, extra, report,
+                                      children)
         patch_local_assets(year_dir, collection)
         write_json(year_dir / "collection.json", collection)
         (year_dir / "README.md").write_text(
-            year_readme(year, year_stats, extra, report))
+            year_readme(year, year_stats, extra, report, children))
         (year_dir / "AGENTS.md").write_text(
-            year_agents(year, year_stats, extra, report))
+            year_agents(year, year_stats, extra, report, children))
         drop_stale(year_dir)
         # A webp downloaded by an earlier run, whose object has since gone,
         # would otherwise stay in catalog/ unregistered and still publish.
@@ -1389,11 +1750,12 @@ def cmd_collections(args) -> int:
             stale_webp = year_dir / "thumbnail.webp"
             if stale_webp.is_file():
                 stale_webp.unlink()
-                print(f"removed {stale_webp.relative_to(ROOT)} "
+                print(f"removed {shown(stale_webp)} "
                       "(its object is gone)")
         state = " ".join(f"{k}={v}" for k, v in report.items())
         print(f"{year}: {year_stats['n']:,} tiles, "
-              f"{year_stats['bytes'] / 1e12:.2f} TB  [{state}]")
+              f"{year_stats['bytes'] / 1e12:.2f} TB, "
+              f"{len(children)} zone catalog(s)  [{state}]")
 
     write_json(args.out / "catalog.json", build_raster_catalog(stats))
     (args.out / "README.md").write_text(tree_readme(stats))
@@ -1413,8 +1775,8 @@ def main() -> int:
     collections.add_argument(
         "--out", type=Path, default=ROOT / "catalog" / "raster")
     collections.add_argument(
-        "--staging", type=Path, default=ITEMS_DIR,
-        help="generated item tree, read for the mirror's checksum")
+        "--staging", type=Path, default=MIRROR_DIR,
+        help="where the items.parquet mirrors are, for their checksums")
     collections.add_argument(
         "--no-probe", action="store_true",
         help="skip the HTTP probe; registers no bucket-side asset")
@@ -1428,11 +1790,12 @@ def main() -> int:
                          help="read at most this many headers this run")
     headers.add_argument("--workers", type=int, default=16)
     headers.add_argument("--sidecar", type=Path, default=SIDECAR)
-    headers.add_argument("--layout", choices=("auto", "nested", "flat"),
+    headers.add_argument("--layout", choices=("auto", *LAYOUTS),
                          default="auto",
                          help="which COG key to read (auto tries the "
-                              "published nested key, then the flat legacy "
-                              "key still live during the copy)")
+                              "published grouped key, then the per-item "
+                              "folder key, then the original flat key — the "
+                              "older two stay live during a copy)")
 
     items = sub.add_parser(
         "items", help="build the per-tile items from the index + sidecar"
@@ -1440,6 +1803,9 @@ def main() -> int:
     items.add_argument("--year", type=int, action="append")
     items.add_argument("--sidecar", type=Path, default=SIDECAR)
     items.add_argument("--out", type=Path, default=ITEMS_DIR)
+    items.add_argument("--mirror-dir", type=Path, default=MIRROR_DIR,
+                       help="where each year's items.parquet is written "
+                            "(outside catalog/: it is a data file)")
     items.add_argument("--mirror", action="store_true",
                        help="also build each year's items.parquet")
     items.add_argument("--no-thumbnails", action="store_true",
@@ -1454,6 +1820,13 @@ def main() -> int:
     items.add_argument("--force", action="store_true",
                        help="re-upload every item; skip the remote listing")
 
+    mirror = sub.add_parser(
+        "mirror", help="rebuild items.parquet from the committed item tree"
+    )
+    mirror.add_argument("--year", type=int, action="append")
+    mirror.add_argument("--out", type=Path, default=ITEMS_DIR)
+    mirror.add_argument("--mirror-dir", type=Path, default=MIRROR_DIR)
+
     args = parser.parse_args()
     if args.command == "collections":
         return cmd_collections(args)
@@ -1461,6 +1834,8 @@ def main() -> int:
         return cmd_headers(args)
     if args.command == "items":
         return cmd_items(args)
+    if args.command == "mirror":
+        return cmd_mirror(args)
     return 2
 
 

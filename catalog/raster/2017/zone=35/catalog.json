@@ -1,0 +1,120 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2017-zone-35",
+  "title": "UTM zone 35 — 2017",
+  "description": "The 320 field/boundary probability tiles of 2017 that fall in UTM zone 35, grouped by grid zone designator (14 of them: `35H`, `35J`, `35K`, `35L`, `35M`, `35N`, `35P`, `35Q`, `35R`, `35S`, `35T`, `35U`, `35V`, `35W`). Part of [FTW Global — Field & Boundary Probabilities 2017](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2017 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35H/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35H"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35J/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35J"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35K/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35K"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35L/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35L"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35M/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35M"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35N/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35N"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35P/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35P"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35Q/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35Q"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35R"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35U"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35V/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35V"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=35W/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 35W"
+    }
+  ]
+}

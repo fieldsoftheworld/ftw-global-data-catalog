@@ -1,0 +1,60 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2017-40t",
+  "title": "Grid zone 40T — 2017",
+  "description": "The 4 field/boundary probability tiles of 2017 in grid zone designator `40T` — UTM zone 40, latitude band T. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 40 — 2017](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 40 — 2017"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./40TFM_0_0/40TFM_0_0.json",
+      "type": "application/geo+json",
+      "title": "40TFM_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40TFN_0_0/40TFN_0_0.json",
+      "type": "application/geo+json",
+      "title": "40TFN_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40TGM_0_0/40TGM_0_0.json",
+      "type": "application/geo+json",
+      "title": "40TGM_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./40TGN_0_0/40TGN_0_0.json",
+      "type": "application/geo+json",
+      "title": "40TGN_0_0 — 2017"
+    }
+  ]
+}

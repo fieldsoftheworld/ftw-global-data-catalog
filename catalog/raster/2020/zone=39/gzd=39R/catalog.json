@@ -1,0 +1,168 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2020-39r",
+  "title": "Grid zone 39R — 2020",
+  "description": "The 22 field/boundary probability tiles of 2020 in grid zone designator `39R` — UTM zone 39, latitude band R. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 39 — 2020](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 39 — 2020"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./39RTP_0_0/39RTP_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RTP_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RTQ_0_0/39RTQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RTQ_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RUP_0_0/39RUP_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RUP_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RUQ_0_0/39RUQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RUQ_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RVN_0_0/39RVN_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RVN_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RVP_0_0/39RVP_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RVP_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RVQ_0_0/39RVQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RVQ_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RWL_0_0/39RWL_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RWL_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RWM_0_0/39RWM_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RWM_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RWN_0_0/39RWN_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RWN_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RWP_0_0/39RWP_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RWP_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RWQ_0_0/39RWQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RWQ_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RXL_0_0/39RXL_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RXL_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RXM_0_0/39RXM_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RXM_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RXN_0_0/39RXN_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RXN_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RXP_0_0/39RXP_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RXP_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RXQ_0_0/39RXQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RXQ_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RYL_0_0/39RYL_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RYL_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RYM_0_0/39RYM_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RYM_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RYN_0_0/39RYN_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RYN_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RYP_0_0/39RYP_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RYP_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./39RYQ_0_0/39RYQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "39RYQ_0_0 — 2020"
+    }
+  ]
+}

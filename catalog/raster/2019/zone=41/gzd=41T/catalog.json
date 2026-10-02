@@ -1,0 +1,126 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2019-41t",
+  "title": "Grid zone 41T — 2019",
+  "description": "The 15 field/boundary probability tiles of 2019 in grid zone designator `41T` — UTM zone 41, latitude band T. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 41 — 2019](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 41 — 2019"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./41TKF_0_0/41TKF_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TKF_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TKG_0_0/41TKG_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TKG_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TLF_0_0/41TLF_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TLF_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TLG_0_0/41TLG_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TLG_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TME_0_0/41TME_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TME_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TML_0_0/41TML_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TML_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TNE_0_0/41TNE_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TNE_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TNK_0_0/41TNK_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TNK_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TNL_0_0/41TNL_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TNL_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TPE_0_0/41TPE_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TPE_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TPK_0_0/41TPK_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TPK_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TPL_0_0/41TPL_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TPL_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TQE_0_0/41TQE_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TQE_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TQF_0_0/41TQF_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TQF_0_0 — 2019"
+    },
+    {
+      "rel": "item",
+      "href": "./41TQK_0_0/41TQK_0_0.json",
+      "type": "application/geo+json",
+      "title": "41TQK_0_0 — 2019"
+    }
+  ]
+}

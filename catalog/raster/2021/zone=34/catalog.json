@@ -1,0 +1,114 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2021-zone-34",
+  "title": "UTM zone 34 — 2021",
+  "description": "The 185 field/boundary probability tiles of 2021 that fall in UTM zone 34, grouped by grid zone designator (13 of them: `34H`, `34J`, `34K`, `34L`, `34M`, `34P`, `34Q`, `34R`, `34S`, `34T`, `34U`, `34V`, `34W`). Part of [FTW Global — Field & Boundary Probabilities 2021](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2021 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34H/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34H"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34J/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34J"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34K/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34K"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34L/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34L"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34M/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34M"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34P/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34P"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34Q/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34Q"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34R"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34U"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34V/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34V"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=34W/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 34W"
+    }
+  ]
+}

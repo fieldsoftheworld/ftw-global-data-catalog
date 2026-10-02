@@ -1,0 +1,12 @@
+# Grid zone 11S — 2018
+
+- 24 tiles, UTM zone 11, latitude band S, 2018.
+- Each tile directory holds `{tile}.tif` (the COG), `{tile}.json` (its STAC item) and `{tile}.thumb.png`.
+- Tile keys here run from `11SKA_0_0` to `11SQU_0_0`.
+- Parent: [UTM zone 11 — 2018](../catalog.json).
+
+Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/). Produced by Taylor Geospatial from the [Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/).
+
+## Band semantics
+
+Band 1 `field`, band 2 `boundary`; uint8 with scale 1/255, so probability = value × 1/255. 2.5 m, per-tile UTM CRS. The collection's [README](../../README.md) has the full band table.

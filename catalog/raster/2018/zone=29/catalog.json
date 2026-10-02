@@ -1,0 +1,72 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2018-zone-29",
+  "title": "UTM zone 29 — 2018",
+  "description": "The 108 field/boundary probability tiles of 2018 that fall in UTM zone 29, grouped by grid zone designator (6 of them: `29N`, `29P`, `29R`, `29S`, `29T`, `29U`). Part of [FTW Global — Field & Boundary Probabilities 2018](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2018 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=29N/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 29N"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=29P/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 29P"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=29R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 29R"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=29S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 29S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=29T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 29T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=29U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 29U"
+    }
+  ]
+}

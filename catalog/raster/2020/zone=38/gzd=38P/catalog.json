@@ -1,0 +1,162 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2020-38p",
+  "title": "Grid zone 38P — 2020",
+  "description": "The 21 field/boundary probability tiles of 2020 in grid zone designator `38P` — UTM zone 38, latitude band P. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 38 — 2020](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 38 — 2020"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./38PKA_0_0/38PKA_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PKA_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PKB_0_0/38PKB_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PKB_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PKC_0_0/38PKC_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PKC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PKQ_0_0/38PKQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PKQ_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PKR_0_0/38PKR_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PKR_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PKS_0_0/38PKS_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PKS_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PKU_0_0/38PKU_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PKU_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PLA_0_0/38PLA_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PLA_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PLB_0_0/38PLB_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PLB_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PLC_0_0/38PLC_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PLC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PLQ_0_0/38PLQ_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PLQ_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PLR_0_0/38PLR_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PLR_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PLV_0_0/38PLV_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PLV_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PMA_0_0/38PMA_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PMA_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PMB_0_0/38PMB_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PMB_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PMC_0_0/38PMC_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PMC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PMV_0_0/38PMV_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PMV_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PNA_0_0/38PNA_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PNA_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PNC_0_0/38PNC_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PNC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PNV_0_0/38PNV_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PNV_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./38PPV_0_0/38PPV_0_0.json",
+      "type": "application/geo+json",
+      "title": "38PPV_0_0 — 2020"
+    }
+  ]
+}

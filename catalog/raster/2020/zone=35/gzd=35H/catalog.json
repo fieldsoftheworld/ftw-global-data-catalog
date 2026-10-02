@@ -1,0 +1,114 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2020-35h",
+  "title": "Grid zone 35H — 2020",
+  "description": "The 13 field/boundary probability tiles of 2020 in grid zone designator `35H` — UTM zone 35, latitude band H. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 35 — 2020](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 35 — 2020"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./35HKC_0_0/35HKC_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HKC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HKE_0_0/35HKE_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HKE_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HLC_0_0/35HLC_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HLC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HLD_0_0/35HLD_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HLD_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HLE_0_0/35HLE_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HLE_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HMC_0_0/35HMC_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HMC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HMD_0_0/35HMD_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HMD_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HME_0_0/35HME_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HME_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HNC_0_0/35HNC_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HNC_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HND_0_0/35HND_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HND_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HNE_0_0/35HNE_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HNE_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HPD_0_0/35HPD_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HPD_0_0 — 2020"
+    },
+    {
+      "rel": "item",
+      "href": "./35HPE_0_0/35HPE_0_0.json",
+      "type": "application/geo+json",
+      "title": "35HPE_0_0 — 2020"
+    }
+  ]
+}

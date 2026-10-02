@@ -1,0 +1,150 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2023-50n",
+  "title": "Grid zone 50N — 2023",
+  "description": "The 19 field/boundary probability tiles of 2023 in grid zone designator `50N` — UTM zone 50, latitude band N. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 50 — 2023](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 50 — 2023"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./50NLM_0_0/50NLM_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NLM_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NMF_0_0/50NMF_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NMF_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NMG_0_0/50NMG_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NMG_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NMK_0_0/50NMK_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NMK_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NMM_0_0/50NMM_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NMM_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NMN_0_0/50NMN_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NMN_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NNF_0_0/50NNF_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NNF_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NNG_0_0/50NNG_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NNG_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NNH_0_0/50NNH_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NNH_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NNJ_0_0/50NNJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NNJ_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NNK_0_0/50NNK_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NNK_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NNM_0_0/50NNM_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NNM_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NPF_0_0/50NPF_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NPF_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NPH_0_0/50NPH_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NPH_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NPK_0_0/50NPK_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NPK_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NPL_0_0/50NPL_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NPL_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NPM_0_0/50NPM_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NPM_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NQL_0_0/50NQL_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NQL_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./50NRF_0_0/50NRF_0_0.json",
+      "type": "application/geo+json",
+      "title": "50NRF_0_0 — 2023"
+    }
+  ]
+}

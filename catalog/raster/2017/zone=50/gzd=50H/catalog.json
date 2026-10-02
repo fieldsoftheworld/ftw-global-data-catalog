@@ -1,0 +1,156 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2017-50h",
+  "title": "Grid zone 50H — 2017",
+  "description": "The 20 field/boundary probability tiles of 2017 in grid zone designator `50H` — UTM zone 50, latitude band H. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 50 — 2017](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 50 — 2017"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./50HLG_0_0/50HLG_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HLG_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HLH_0_0/50HLH_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HLH_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HLJ_0_0/50HLJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HLJ_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HLK_0_0/50HLK_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HLK_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HMG_0_0/50HMG_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HMG_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HMH_0_0/50HMH_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HMH_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HMJ_0_0/50HMJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HMJ_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HMK_0_0/50HMK_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HMK_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HNG_0_0/50HNG_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HNG_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HNH_0_0/50HNH_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HNH_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HNJ_0_0/50HNJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HNJ_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HNK_0_0/50HNK_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HNK_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HPG_0_0/50HPG_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HPG_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HPH_0_0/50HPH_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HPH_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HPJ_0_0/50HPJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HPJ_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HPK_0_0/50HPK_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HPK_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HQG_0_0/50HQG_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HQG_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HQH_0_0/50HQH_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HQH_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HQJ_0_0/50HQJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HQJ_0_0 — 2017"
+    },
+    {
+      "rel": "item",
+      "href": "./50HQK_0_0/50HQK_0_0.json",
+      "type": "application/geo+json",
+      "title": "50HQK_0_0 — 2017"
+    }
+  ]
+}

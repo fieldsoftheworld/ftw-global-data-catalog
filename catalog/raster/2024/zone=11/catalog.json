@@ -1,0 +1,66 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2024-zone-11",
+  "title": "UTM zone 11 — 2024",
+  "description": "The 91 field/boundary probability tiles of 2024 that fall in UTM zone 11, grouped by grid zone designator (5 of them: `11R`, `11S`, `11T`, `11U`, `11V`). Part of [FTW Global — Field & Boundary Probabilities 2024](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2024 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=11R/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 11R"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=11S/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 11S"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=11T/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 11T"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=11U/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 11U"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=11V/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 11V"
+    }
+  ]
+}

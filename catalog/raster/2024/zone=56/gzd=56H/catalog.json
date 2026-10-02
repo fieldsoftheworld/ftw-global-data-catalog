@@ -1,0 +1,72 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2024-56h",
+  "title": "Grid zone 56H — 2024",
+  "description": "The 6 field/boundary probability tiles of 2024 in grid zone designator `56H` — UTM zone 56, latitude band H. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 56 — 2024](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 56 — 2024"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./56HKG_0_0/56HKG_0_0.json",
+      "type": "application/geo+json",
+      "title": "56HKG_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./56HKH_0_0/56HKH_0_0.json",
+      "type": "application/geo+json",
+      "title": "56HKH_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./56HKK_0_0/56HKK_0_0.json",
+      "type": "application/geo+json",
+      "title": "56HKK_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./56HLG_0_0/56HLG_0_0.json",
+      "type": "application/geo+json",
+      "title": "56HLG_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./56HLJ_0_0/56HLJ_0_0.json",
+      "type": "application/geo+json",
+      "title": "56HLJ_0_0 — 2024"
+    },
+    {
+      "rel": "item",
+      "href": "./56HLK_0_0/56HLK_0_0.json",
+      "type": "application/geo+json",
+      "title": "56HLK_0_0 — 2024"
+    }
+  ]
+}

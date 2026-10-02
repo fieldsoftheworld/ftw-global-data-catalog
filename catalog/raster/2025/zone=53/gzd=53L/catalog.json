@@ -1,0 +1,42 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2025-53l",
+  "title": "Grid zone 53L — 2025",
+  "description": "The 1 field/boundary probability tiles of 2025 in grid zone designator `53L` — UTM zone 53, latitude band L. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 53 — 2025](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 53 — 2025"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./53LKD_0_0/53LKD_0_0.json",
+      "type": "application/geo+json",
+      "title": "53LKD_0_0 — 2025"
+    }
+  ]
+}

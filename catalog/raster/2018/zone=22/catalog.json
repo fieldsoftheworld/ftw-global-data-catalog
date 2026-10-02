@@ -1,0 +1,72 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2018-zone-22",
+  "title": "UTM zone 22 — 2018",
+  "description": "The 199 field/boundary probability tiles of 2018 that fall in UTM zone 22, grouped by grid zone designator (6 of them: `22H`, `22J`, `22K`, `22L`, `22M`, `22N`). Part of [FTW Global — Field & Boundary Probabilities 2018](../collection.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../collection.json",
+      "type": "application/json",
+      "title": "FTW Global — Field & Boundary Probabilities 2018 (COG)"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Zone agent guide"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=22H/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 22H"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=22J/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 22J"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=22K/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 22K"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=22L/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 22L"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=22M/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 22M"
+    },
+    {
+      "rel": "child",
+      "href": "./gzd=22N/catalog.json",
+      "type": "application/json",
+      "title": "Grid zone 22N"
+    }
+  ]
+}

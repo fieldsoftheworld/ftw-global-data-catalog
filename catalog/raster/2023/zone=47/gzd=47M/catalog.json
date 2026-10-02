@@ -1,0 +1,84 @@
+{
+  "type": "Catalog",
+  "stac_version": "1.1.0",
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+  ],
+  "id": "ftw-raster-2023-47m",
+  "title": "Grid zone 47M — 2023",
+  "description": "The 8 field/boundary probability tiles of 2023 in grid zone designator `47M` — UTM zone 47, latitude band M. Each tile's directory holds its COG, its STAC item and its thumbnail. Part of [UTM zone 47 — 2023](../catalog.json).",
+  "links": [
+    {
+      "rel": "root",
+      "href": "../../../../catalog.json",
+      "type": "application/json",
+      "title": "Fields of the World — Global Data (beta)"
+    },
+    {
+      "rel": "parent",
+      "href": "../catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 47 — 2023"
+    },
+    {
+      "rel": "describedby",
+      "href": "./README.md",
+      "type": "text/markdown",
+      "title": "Grid zone README"
+    },
+    {
+      "rel": "agents",
+      "href": "./AGENTS.md",
+      "type": "text/markdown",
+      "title": "Grid zone agent guide"
+    },
+    {
+      "rel": "item",
+      "href": "./47MNV_0_0/47MNV_0_0.json",
+      "type": "application/geo+json",
+      "title": "47MNV_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./47MPU_0_0/47MPU_0_0.json",
+      "type": "application/geo+json",
+      "title": "47MPU_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./47MPV_0_0/47MPV_0_0.json",
+      "type": "application/geo+json",
+      "title": "47MPV_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./47MQT_0_0/47MQT_0_0.json",
+      "type": "application/geo+json",
+      "title": "47MQT_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./47MQU_0_0/47MQU_0_0.json",
+      "type": "application/geo+json",
+      "title": "47MQU_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./47MQV_0_0/47MQV_0_0.json",
+      "type": "application/geo+json",
+      "title": "47MQV_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./47MRU_0_0/47MRU_0_0.json",
+      "type": "application/geo+json",
+      "title": "47MRU_0_0 — 2023"
+    },
+    {
+      "rel": "item",
+      "href": "./47MRV_0_0/47MRV_0_0.json",
+      "type": "application/geo+json",
+      "title": "47MRV_0_0 — 2023"
+    }
+  ]
+}
