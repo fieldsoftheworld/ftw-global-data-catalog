@@ -23,6 +23,10 @@ pipeline/*.out
 pipeline/tmp-*/
 pipeline/staged/
 pipeline/manifest.txt
+# rashid_check.sbatch drops its JSON report and /usr/bin/time log beside the
+# job log. They are run artefacts, one per job id, not catalog metadata.
+pipeline/rashid-check-*.json
+pipeline/rashid-check-*.time
 *.out
 
 # Secrets
