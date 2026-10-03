@@ -41,7 +41,26 @@ PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
 
 MOSAICS_URL = "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/"
 FTW_URL = "https://fieldsofthe.world"
-DATA_BROWSER = "https://source.coop/ftw/global-data-2e"
+REPO_URL = "https://github.com/fieldsoftheworld/ftw-global-data-catalog"
+
+# Three ways in, and they are not interchangeable. The map renders the data;
+# the Portolan browser walks the STAC tree and previews each asset; Source
+# Cooperative lists the files to download. Earlier text called Source
+# Cooperative "the data browser", which sent readers wanting a map to a
+# directory listing.
+VIEWER_URL = "https://research.taylorgeospatial.org/global-ftw-2e/web/"
+BROWSER_BASE = "https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e"
+SOURCE_COOP = "https://source.coop/ftw/global-data-2e"
+
+
+def browser(path: str = "catalog.json") -> str:
+    """The Portolan browser URL for one object in the published catalog."""
+    return f"{BROWSER_BASE}/{path}"
+
+
+def viewer(year: int | None = None) -> str:
+    """The map URL, opened on one year. The app reads `year` from the hash."""
+    return VIEWER_URL if year is None else f"{VIEWER_URL}#year={year}"
 
 PROVIDERS = [
     {
@@ -108,13 +127,18 @@ def build_collection(year: int, stats: dict) -> dict:
             f"Field and boundary probability rasters for {year}: "
             f"{stats['n']:,} Cloud-Optimized GeoTIFFs at 2.5 m "
             f"({tb:.2f} TB), one per Sentinel-2 MGRS-based tile at "
-            f"`raster/{year}/{{tile_key}}.tif`, browsable in the "
-            f"[data browser]({DATA_BROWSER}). {_PROJECT}\n\n"
+            f"`raster/{year}/{{tile_key}}.tif`. Explore the year on the "
+            f"[interactive map]({viewer(year)}), walk its metadata in the "
+            f"[Portolan browser]({browser(f'raster/{year}/collection.json')}), "
+            f"or download the files from "
+            f"[Source Cooperative]({SOURCE_COOP}). {_PROJECT}\n\n"
             f"**The rasters.** {_BANDS}\n\n"
             f"Per-item STAC metadata is generated to the bucket next to "
             f"each COG; the [index manifest]({INDEX_URL}) lists every tile "
             "with href, size, bbox, and per-tile field/boundary/cropland "
-            "pixel fractions."
+            "pixel fractions. The pipeline that produced these COGs is "
+            f"documented in [pipeline/README.md]"
+            f"({REPO_URL}/blob/main/pipeline/README.md)."
         ),
         "license": "CC-BY-4.0",
         "keywords": ["agriculture", "field boundaries", "Fields of the World",
@@ -142,6 +166,10 @@ def build_collection(year: int, stats: dict) -> dict:
              "type": "text/markdown", "title": "Collection README"},
             {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
              "title": "Collection agent guide"},
+            # No rel:"via" for the map: Portolan reserves it for mirrored
+            # source data (PTL-PRO-004), and this collection is the source.
+            {"rel": "vcs", "href": REPO_URL, "type": "text/html",
+             "title": "Catalog source repository (metadata and pipeline)"},
         ],
         "assets": {
             "thumbnail": {
@@ -172,8 +200,11 @@ def build_raster_catalog(stats: dict[int, dict]) -> dict:
         "description": (
             f"Per-year collections of field/boundary probability COGs at "
             f"2.5 m, {min(stats)}–{max(stats)}: {total:,} tiles, "
-            f"{tb:.1f} TB, browsable in the "
-            f"[data browser]({DATA_BROWSER}). {_PROJECT}"
+            f"{tb:.1f} TB. Explore them on the "
+            f"[interactive map]({VIEWER_URL}) or in the "
+            f"[Portolan browser]({browser('raster/catalog.json')}); the "
+            f"files are listed on [Source Cooperative]({SOURCE_COOP}). "
+            f"{_PROJECT}"
         ),
         "links": [
             {"rel": "root", "href": "../catalog.json",
@@ -185,6 +216,8 @@ def build_raster_catalog(stats: dict[int, dict]) -> dict:
              "type": "text/markdown", "title": "Raster tree README"},
             {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
              "title": "Raster tree agent guide"},
+            {"rel": "vcs", "href": REPO_URL, "type": "text/html",
+             "title": "Catalog source repository (metadata and pipeline)"},
             *children,
         ],
     }
@@ -210,12 +243,16 @@ def _index_query(year: int) -> list[str]:
 
 def year_readme(year: int, stats: dict) -> str:
     tb = stats["bytes"] / 1e12
+    browser_year = browser(f"raster/{year}/collection.json")
     return "\n".join([
         f"# FTW Global — Field & Boundary Probabilities {year} (COG)", "",
         f"Field and boundary probability rasters for {year}: "
         f"**{stats['n']:,} Cloud-Optimized GeoTIFFs** at 2.5 m "
         f"({tb:.2f} TB), one per Sentinel-2 MGRS-based tile. {_PROJECT}", "",
-        f"Browse it in the [data browser]({DATA_BROWSER}).", "",
+        f"**[Open {year} on the interactive map]({viewer(year)})** to see the "
+        f"predictions over imagery, or **[open it in the Portolan browser]"
+        f"({browser_year})** to walk the metadata. The files are listed on "
+        f"[Source Cooperative]({SOURCE_COOP}).", "",
         "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## The rasters", "",
         _BANDS, "",
@@ -262,7 +299,10 @@ def tree_readme(stats: dict[int, dict]) -> str:
         "# FTW Global (2nd Edition) — Field & boundary probability rasters", "",
         f"Per-year collections of 2.5 m field/boundary probability COGs, "
         f"{min(stats)}–{max(stats)}: **{total:,} tiles**. {_PROJECT}", "",
-        f"Browse it in the [data browser]({DATA_BROWSER}).", "",
+        f"**[Open the interactive map]({VIEWER_URL})** to explore the "
+        f"predictions, or **[open the catalog in the Portolan browser]"
+        f"({browser('raster/catalog.json')})** to walk the metadata. The "
+        f"files are listed on [Source Cooperative]({SOURCE_COOP}).", "",
         "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## Collections", "",
         *[f"- [{y}](./{y}/collection.json) — {stats[y]['n']:,} tiles, "

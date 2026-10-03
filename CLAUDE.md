@@ -20,18 +20,32 @@ exploration/search subagents; keep Opus (the default) for implementation and rev
 
 ## Layout
 - `catalog/` — the published catalog (STAC JSON, README.md, AGENTS.md,
-  thumbnails, styles). Dotfiles are not published, except `.portolan/metadata.yaml`.
+  thumbnails, styles). Dotfiles are not published. `catalog/.portolan/` was removed
+  on 2026-10-03 (portolan-cli state this catalog does not use; every fact in
+  `metadata.yaml` was already in the STAC). `publish.py` still allows
+  `.portolan/metadata.yaml` through as a general rule. **The bucket copy was not
+  deleted** — publishing never deletes — so ask Chris before removing
+  `.portolan/` objects from the bucket.
 - `tools/` — `publish.py` (metadata, 1:1), `upload_data.py` (staged data, suffix
-  allow-list, never deletes), `make_thumbnails.py` (COG thumbnail core).
-- `pipeline/` — the rails Slurm PMTiles pipeline (alpha port; Phase 3 adapts it — see
-  `pipeline/README.md` for cluster gotchas and measured timings).
+  allow-list, never deletes), `build_vector_items.py` / `build_raster_items.py`
+  (tree generators), `render_thumbnails.py` (vector thumbnails via chiitiler),
+  `make_thumbnails.py` (COG thumbnail core).
+- `pipeline/` — all five processing stages (mosaics, inference, postprocessing,
+  rails Slurm PMTiles, catalog). `pipeline/README.md` is the end-to-end overview;
+  cluster gotchas and measured timings live there too.
 - `staging-data/` — gitignored staging tree read by `upload_data.py`; keys mirror its
-  layout under the write prefix.
+  layout under the write prefix. `checksums/tiles_meta.json` carries the
+  size+multihash for each year's `pmtiles`, `cells` and `mirror` asset, and
+  `--checksums` supplies the per-zone sidecar. Both can be reconstructed from the
+  committed collection/item JSON if the staging tree is missing — without them a
+  regeneration silently drops `file:size`/`file:checksum` and the whole styles
+  subtree.
 - `tests/` — the gates; `docs/conformance.md` — the conformance allow-list record.
 
 ## Publish workflow
 ```
 python3 tests/run_all.py                    # every gate (link check, contracts, stac-check, rashid)
+python3 tools/render_thumbnails.py          # vector thumbnails (needs chiitiler)
 python3 tools/publish.py                    # dry run
 python3 tools/publish.py --confirm          # upload metadata (needs AWS creds)
 python3 tools/upload_data.py [--confirm]    # staged data files

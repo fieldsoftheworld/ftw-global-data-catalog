@@ -12,7 +12,7 @@ Guidance for AI agents. Every claim here is quoted from the dataset's embedded m
   ```
 - Schema: 9 columns (id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method); definitions live in `table:columns` on the collection and every item.
 - Parcel ids are unique within a zone file; zones partition the parcels cleanly (measured: zero shared ids or geometries in the 6°E utm31/utm32 boundary strip).
-- `metrics:area` is m²; the upstream post-processing removed parcels larger than 5 km².
+- `metrics:area` is m². Post-processing kept parcels between 900 m² and 5 km²; nothing was removed on land-cover, water or slope grounds, so non-agricultural ground can carry parcels.
 - Query with DuckDB over https:// URLs (s3:// hangs on some networks); a browser-like User-Agent is needed for bucket listings only, not file reads.
 - The `items.parquet` collection mirror holds all item metadata for bulk spatial lookup of zones.
 
