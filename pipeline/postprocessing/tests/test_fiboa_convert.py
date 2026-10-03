@@ -7,6 +7,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
+import shapely
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
@@ -369,3 +370,42 @@ def test_window_seam_duplicates_join(tmp_path, monkeypatch):
     assert rows[0][1] == 70  # area-weighted mean of the two copies
     assert abs(rows[0][2] - 41.0) < 1e-9
     assert abs(rows[0][3] - 41.0014) < 1e-9
+
+
+def _holed_parcel(root: Path) -> None:
+    """One 0.002 x 0.002 deg parcel (~37,000 m2) with a ~11 m2 hole and a ~1,130 m2 hole."""
+    src = root / "2025" / "zone=30" / "part-0.parquet"
+    src.parent.mkdir(parents=True)
+    wkt = (
+        "POLYGON((-3.0 41.0, -2.998 41.0, -2.998 41.002, -3.0 41.002, -3.0 41.0),"
+        "(-2.9995 41.0005, -2.99995 41.0005, -2.99995 41.00077, -2.9995 41.00077, -2.9995 41.0005),"
+        "(-2.9990 41.001, -2.99896 41.001, -2.99896 41.00103, -2.9990 41.00103, -2.9990 41.001))"
+    )
+    con = duckdb.connect()
+    con.sql("load spatial")
+    con.sql(
+        f"""COPY (SELECT '30TXM_0_0' AS tile_key, 1::BIGINT AS parcel_id,
+          -3.0 AS xmin, 41.0 AS ymin, -2.998 AS xmax, 41.002 AS ymax, 0.6 AS pf_mean,
+          false AS touches_window_edge, ST_GeomFromText('{wkt}') AS geometry)
+        TO '{src}' (FORMAT parquet)"""
+    )
+    con.close()
+
+
+def test_small_interior_holes_are_filled_and_large_ones_kept(tmp_path, monkeypatch):
+    """Polygonizing leaves ~3 m2 pixel holes; they are filled, a 1,100 m2 gap is not."""
+    _holed_parcel(tmp_path / "merged")
+    monkeypatch.setattr(fc, "IN_ROOT", tmp_path / "merged")
+    monkeypatch.setattr(fc, "TMP_ROOT", tmp_path / "duck")
+    dst = fc.convert(2025, "30", 1, "1GB", tmp_path / "out")
+    row = pq.read_table(dst).to_pylist()[0]
+    geom = shapely.from_wkb(row["geometry"])
+    holes = sum(len(p.interiors) for p in getattr(geom, "geoms", [geom]))
+    assert holes == 1, "the ~11 m2 hole is filled, the ~1,130 m2 hole stays"
+    con = duckdb.connect()
+    con.sql("load spatial")
+    full = con.sql(
+        "select ST_Area(ST_Transform(ST_MakeEnvelope(-3.0, 41.0, -2.998, 41.002), "
+        "'EPSG:4326', 'EPSG:32630', true))"
+    ).fetchone()[0]
+    assert 1000 < full - row["metrics:area"] < 1250, "metrics:area excludes only the kept hole"
