@@ -163,6 +163,16 @@ def provenance(files: list[Path]) -> dict:
     return {}
 
 
+def outline_specs(files: list[Path]) -> set[str]:
+    "Every BoundaryVote method id the outline stage stamped on these tiles."
+    out = set()
+    for p in files:
+        raw = _metadata(p).get(OUTLINE_PROVENANCE)
+        if raw and json.loads(raw).get("spec"):
+            out.add(json.loads(raw)["spec"])
+    return out
+
+
 def clear_partition(part: Path) -> None:
     """Remove a zone partition whose rerun retained nothing.
 
@@ -232,6 +242,8 @@ def main() -> None:
         "aux": str(aux),
         "simplify_tolerance_m": None,
         "provenance": {},
+        "spec": None,
+        "specs": [],
         "allow_missing": bool(a.allow_missing),
         "missing": gaps,
         "tiles_expected": len(expected - empty),
@@ -253,6 +265,7 @@ def main() -> None:
                 summary["simplify_tolerance_m"] or simplify_tolerance(files)
             )
             summary["provenance"] = summary["provenance"] or provenance(files)
+            summary["specs"] = sorted(set(summary["specs"]) | outline_specs(files))
             axf = aux_files(aux, tiles)
             if aux and axf:
                 check_aux_unique(con, axf)
@@ -323,6 +336,9 @@ def main() -> None:
         con.close()
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
+    # One method for the whole year is the normal case; a mixed year (e.g. tiles rerun with a
+    # newer method) is stated as such rather than hidden behind one id.
+    summary["spec"] = " / ".join(summary["specs"]) or None
     keys = ("parcels_in", "parcels_out", "km2_in", "km2_out")
     counted = [v for v in summary["zones"].values() if all(k in v for k in keys)]
     tot = {k: sum(v[k] for v in counted) for k in keys}

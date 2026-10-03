@@ -39,8 +39,9 @@ GEOMETRY_METRICS = "https://vecorel.org/geometry-metrics-extension/v0.1.0/schema
 
 #: Band order PR1 stacks and PR2's run.py stamps as ``input_bands``.
 INPUT_BANDS = "B04/B03/B02/B08"
-#: Fallback only; the real spec is ``outlines.SPEC`` and reaches us via _summary.json.
-DEFAULT_SPEC = "nbg-pb-h0.01-t0.3+R35+F10+G2+A900"
+#: Said when merge's ``_summary.json`` carries no method id (outlines written before the
+#: stamp existed): better an admitted unknown than a plausible-looking hardcoded string.
+SPEC_UNRECORDED = "method id not recorded in the run"
 #: Fallback parcel-area cap when merge's ``_summary.json`` is absent, m2.
 MAX_PARCEL_M2 = 5.0e6
 
@@ -78,7 +79,7 @@ def collection_metadata(cid: str, year: int, summary: dict | None = None) -> dic
             "Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics "
             f"(CDSE sentinel-2-global-mosaics, {year} Q1-Q4, 4 quarters x {INPUT_BANDS}), "
             "2.5 m field/boundary probabilities, BoundaryVote instance post-processing "
-            f"({s.get('spec', DEFAULT_SPEC)}), {simplify}parcels > {max_km2:g} km2 removed, "
+            f"({s.get('spec') or SPEC_UNRECORDED}), {simplify}parcels > {max_km2:g} km2 removed, "
             f"parcels and parts under {MIN_PART_M2:g} m2 removed, "
             f"interior holes under {MIN_HOLE_M2:g} m2 filled. "
             "Attributes are for filtering; no land-cover masking was applied." + partial

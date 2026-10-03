@@ -280,3 +280,33 @@ def test_truncated_or_unstamped_output_is_not_current(tmp_path, corrupt):
     _written(tmp_path).write_bytes(corrupt)
     assert "current, skipped" not in _run(tmp_path, *args).stdout
     assert pq.ParquetFile(_written(tmp_path)).metadata.num_rows == 3
+
+
+def test_details_state_the_spec_the_run_used_not_a_hardcoded_one():
+    import fiboa_convert as fc
+
+    spec = "nbg-pb-h0.01-t0.3+R35+F10+G2+A900+q1"
+    details = fc.collection_metadata("ftw-s2-2025", 2025, {"spec": spec})["determination:details"]
+    assert f"({spec})" in details
+    unknown = fc.collection_metadata("ftw-s2-2025", 2025, {})["determination:details"]
+    assert "+A900" not in unknown, "no method id recorded: say so, do not invent one"
+    assert fc.SPEC_UNRECORDED in unknown
+
+
+def test_merge_summary_carries_the_outline_spec(tmp_path):
+    """outlines stamps {spec, backend} in the provenance; merge records it in _summary.json."""
+    import json
+
+    import pyarrow.parquet as pq
+
+    src = tmp_path / "simplified/2025/31UFS.parquet"
+    _tile(src, "31UFS", 3)
+    t = pq.read_table(src)
+    md = dict(t.schema.metadata or {})
+    md[mp.OUTLINE_PROVENANCE] = json.dumps({"spec": "SPEC+q1", "backend": "fast"}).encode()
+    pq.write_table(t.replace_schema_metadata(md), src)
+    r = _run(tmp_path, "--no-aux", *_lists(tmp_path, "31UFS\n"))
+    assert r.returncode == 0, r.stdout + r.stderr
+    s = _summary(tmp_path)
+    assert s["spec"] == "SPEC+q1" and s["specs"] == ["SPEC+q1"]
+    assert s["provenance"]["backend"] == "fast"
