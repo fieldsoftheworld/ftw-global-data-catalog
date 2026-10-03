@@ -60,7 +60,7 @@ tile's UTM zone, with `field` (band 1) and `boundary` (band 2) probabilities as
 uint8 scaled by 1/255, ZSTD, with overviews at 10–160 m. All years share one tile
 grid, so year-over-year comparison works tile by tile. Enumerate tiles from the
 [raster index manifest](https://data.source.coop/ftw/global-data-2e/index/raster.parquet)
-or the slimmer [tile index](#tile-index) below; the
+or the 110 kB [lite index](#index-files); the
 [raster tree README](./raster/README.md) and each year's own README carry the
 band semantics.
 
@@ -115,16 +115,37 @@ returns square degrees; read `metrics:area` (m²) instead. The COGs are each in
 their own tile's UTM zone, so a mosaic across zones needs a warp. The PMTiles
 archives are Web Mercator (EPSG:3857).
 
-## Tile index
+## Index files
 
-[`index/raster.parquet`](https://data.source.coop/ftw/global-data-2e/index/raster.parquet) (1.9 MB)
-lists every tile with href, size, bbox, EPSG code and per-tile pixel fractions.
-[`index/raster-lite.parquet`](https://data.source.coop/ftw/global-data-2e/index/raster-lite.parquet)
-(110 kB) is a slim copy for viewers and quick "which tiles cover this box" lookups. It has one row per
-(year, tile) and six columns: `year` (int16), `tile_key`, `epsg` (int32) and the WGS 84 bbox
-`xmin, ymin, xmax, ymax` as float32, rounded outward so a tile is never missed at its edge. It carries
-no hrefs: build them from the tile key (zone is its first two characters, grid zone designator its
-first three):
+Three manifests under `index/` list every data file, so nothing needs a bucket listing:
+
+- [`index/vector.parquet`](https://data.source.coop/ftw/global-data-2e/index/vector.parquet) — one row
+  per (year, UTM zone) file, 486 rows.
+- [`index/raster.parquet`](https://data.source.coop/ftw/global-data-2e/index/raster.parquet) (1.9 MB) —
+  one row per (year, tile), 67,197 rows.
+- [`index/raster-lite.parquet`](https://data.source.coop/ftw/global-data-2e/index/raster-lite.parquet)
+  (110 kB) — a slim copy of the raster index for viewers and quick "which tiles cover this box"
+  lookups.
+
+| `vector.parquet` column | Meaning |
+|---|---|
+| `year`, `zone` | mosaic year; UTM zone of the file (parcels whose centroid falls in it) |
+| `href`, `s3_href`, `size_bytes` | HTTPS and S3 URLs of the file; its size |
+| `n_parcels`, `area_km2` | parcels in the file; summed parcel area |
+| `xmin, ymin, xmax, ymax`, `geometry` | WGS 84 bbox of the file's parcels, also as a polygon |
+
+| `raster.parquet` column | Meaning |
+|---|---|
+| `year`, `tile_key`, `epsg` | mosaic year; Sentinel-2 MGRS tile id; UTM CRS of the COG |
+| `href`, `s3_href`, `size_bytes` | HTTPS and S3 URLs of the COG; its size |
+| `field_frac`, `boundary_frac` | share of pixels with p(field) > 0.5 and p(boundary) > 0.25, read from the coarsest overview |
+| `cropland_frac` | IO land-cover cropland share of the tile (maximum over 2017, 2020, 2024) |
+| `xmin, ymin, xmax, ymax`, `geometry` | WGS 84 footprint bbox of the tile, also as a polygon |
+
+`raster-lite.parquet` has one row per (year, tile) and six columns: `year` (int16), `tile_key`,
+`epsg` (int32) and the WGS 84 bbox `xmin, ymin, xmax, ymax` as float32, rounded outward so a tile
+is never missed at its edge. It carries no hrefs: build them from the tile key (zone is its first
+two characters, grid zone designator its first three):
 
 ```python
 import duckdb
@@ -141,7 +162,7 @@ con.sql(f"""
 """).show()
 ```
 
-Use the full index when you need sizes or the per-tile field/boundary/cropland fractions.
+Use `raster.parquet` when you need sizes, the per-tile fractions or the footprint polygon.
 
 ## Reading an area across tiles
 

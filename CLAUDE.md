@@ -39,10 +39,12 @@ exploration/search subagents; keep Opus (the default) for implementation and rev
 ## Publish workflow
 ```
 python3 tests/run_all.py                    # every gate (link check, contracts, stac-check, rashid)
-python3 tools/publish.py                    # dry run
+python3 tools/publish.py                    # dry run (lists the prefix; needs read creds, else every file looks new)
 python3 tools/publish.py --confirm          # upload metadata (needs AWS creds)
 python3 tools/upload_data.py [--confirm]    # staged data files
 ```
+- Credentials for the listing and for uploads are per-session STS keys that only work through
+  the proxy: `AWS_PROFILE=source-coop AWS_ENDPOINT_URL=https://data.source.coop`.
 - Change detection: local size+MD5 vs the object's size+ETag; the remote side is listed
   **non-recursively** per catalog directory (a recursive listing of the prefix would walk
   every COG/parquet sharing it). A changed content-type mapping needs `--force`.
