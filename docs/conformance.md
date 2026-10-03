@@ -7,8 +7,8 @@ not claiming to conform, so it runs in CI:
 python3 tests/test_portolan_conformance.py
 ```
 
-That gate fails on any error-severity finding whose rule is not listed below.
-The list starts empty and it must never grow without a row here. A known
+That gate fails on any error-severity finding whose rule is not listed below
+(at the paths listed). It must never grow without a row here. A known
 deviation with an issue number is a debt someone can pay off. A silently
 widened allow-list is a false claim about what this catalog conforms to.
 
@@ -34,7 +34,27 @@ something.
 
 ## Accepted deviations
 
-None.
+| Rule | Where | Why accepted | Tracking |
+|---|---|---|---|
+| PTL-LNK-006 | `raster/{year}/collection.json` (486 `child` links) | the 54 zone catalogs per year exist only in the bucket | none filed yet, see below |
+| PTL-COL-005 | `raster/{year}/collection.json` (`mirror` asset) | the 7,466 item JSONs exist only in the bucket | none filed yet, see below |
+| PTL-VIZ-002 | `raster/{year}/collection.json` (`overview` asset) | the raster tree has no MapLibre style | none filed yet, see below |
+
+### The raster year collections are bucket snapshots
+
+`catalog/raster/{year}/{README.md,AGENTS.md,collection.json,thumbnail.webp}` are copies of the
+published objects. The published raster tree is hive-partitioned
+(`raster/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.{tif,json,thumb.png}`): each year collection links
+54 `zone=ZZ/catalog.json` children, each splitting into `gzd=ZZL/catalog.json` catalogs whose
+`item` links reach the 67,197 tile items. The tooling that generated those catalogs and items
+is not in this repository (the beta tree was copied to 2e by a one-off relay that was not
+committed), and committing ~11,000 catalog files whose items cannot be checked offline would not
+make the gate meaningful. So the three rules above are waived for the nine year collections
+only; the same findings anywhere else, including the vector tree, still fail. The relative
+child links are HEAD-checked against the bucket by `tests/test_links.py` when `CI_LIGHT` is
+unset. Remove these rows when the generator is brought into the repo (see CLAUDE.md) or when
+the raster collections gain a style asset and in-repo items. Open a tracking issue first; there
+is none yet.
 
 <!--
 When you accept one, add a row and a section explaining it, like this:

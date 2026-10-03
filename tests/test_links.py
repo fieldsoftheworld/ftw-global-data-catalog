@@ -20,6 +20,7 @@ Run: python3 tests/test_links.py
 """
 import json
 import os
+import re
 import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -45,6 +46,12 @@ DATA_SUFFIXES = (
     ".parquet", ".pmtiles", ".tif", ".tiff", ".copc.laz", ".laz", ".gpkg",
     ".zarr", ".geojsonl", ".shp", ".zip",
 )
+# The raster year collections link their 54 zone catalogs (./zone=NN/catalog.json). Those
+# catalogs, the 356 gzd catalogs under them and the 67k tile items are generated into the
+# bucket by tooling that is not in this repo (see CLAUDE.md), so they are never on disk.
+# Treated exactly like a data href: skipped under CI_LIGHT, HEAD-checked otherwise. The
+# pattern is anchored to a year collection under raster/, so it widens for nothing else.
+BUCKET_ONLY = re.compile(r"^\./zone=\d{2}/catalog\.json$")
 HEAD_WORKERS = 16
 UA = "Mozilla/5.0 (ftw-global-data-catalog link check)"
 
@@ -55,6 +62,12 @@ def is_remote(href: str) -> bool:
 
 def is_data(href: str) -> bool:
     return href.lower().endswith(DATA_SUFFIXES)
+
+
+def is_bucket_only(path: Path, href: str) -> bool:
+    "A raster year collection's link to a zone catalog that lives only in the bucket."
+    rel = path.relative_to(BASE).parts
+    return len(rel) == 3 and rel[0] == "raster" and bool(BUCKET_ONLY.match(href))
 
 
 def published_url(doc_path: Path, href: str) -> str:
@@ -116,7 +129,7 @@ for path in documents:
             continue
         # A rel:pmtiles (or other data-suffix) link points at bytes that
         # live only in the bucket, exactly like a data asset href.
-        if is_data(href):
+        if is_data(href) or is_bucket_only(path, href):
             if CI_LIGHT:
                 skipped += 1
             else:
