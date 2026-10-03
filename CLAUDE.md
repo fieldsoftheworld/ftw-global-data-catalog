@@ -22,9 +22,16 @@ exploration/search subagents; keep Opus (the default) for implementation and rev
 - `catalog/` — the published catalog (STAC JSON, README.md, AGENTS.md,
   thumbnails, styles). Dotfiles are not published, except `.portolan/metadata.yaml`.
 - `tools/` — `publish.py` (metadata, 1:1), `upload_data.py` (staged data, suffix
-  allow-list, never deletes), `make_thumbnails.py` (COG thumbnail core).
-- `pipeline/` — the rails Slurm PMTiles pipeline (alpha port; Phase 3 adapts it — see
-  `pipeline/README.md` for cluster gotchas and measured timings).
+  allow-list, never deletes), `make_thumbnails.py` (COG thumbnail core), the index builders
+  (`build_raster_index.py` + `merge_raster_index.py` -> `index/raster.parquet`,
+  `build_vector_index.py` -> `index/vector.parquet`, `build_raster_index_lite.py` ->
+  `index/raster-lite.parquet`; all write under `staging-data/index/`, none uploads),
+  `build_vector_items.py` (the vector tree), `known_limitation.py` (the 2017/2024
+  under-detection note, one source for every doc that carries it) and the historical
+  `move_to_hive.py` / `rebuild_index.py` (the flat-to-hive migration, done).
+- `pipeline/` — the rails Slurm pipeline: `pipeline/{mosaics,inference,postprocessing}` (the
+  packaged stages, each with tests) and the PMTiles chain at its top level (see
+  `pipeline/README.md` for cluster gotchas, proxy upload quirks and measured timings).
 - `staging-data/` — gitignored staging tree read by `upload_data.py`; keys mirror its
   layout under the write prefix.
 - `tests/` — the gates; `docs/conformance.md` — the conformance allow-list record.
