@@ -11,7 +11,7 @@
 set -euo pipefail
 : "${YEAR:?}"
 HERE=${SLURM_SUBMIT_DIR:-$PWD}
-REPO=/u/isaaccorley/github/ftw-s2-quarterly
+REPO=/u/isaaccorley/github/global-ftw-2e
 export UV_CACHE_DIR="$HOME/.cache/uv-ftw"
 DST=s3://ftw/global-data-2e/vector/$YEAR
 for kind in pmtiles cells; do
