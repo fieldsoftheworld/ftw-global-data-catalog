@@ -109,7 +109,7 @@
       "file:size": 704655800,
       "alternate": {
         "s3": {
-          "href": "s3://ftw/global-data-beta/vector/2017/zone=44/utm44.parquet",
+          "href": "s3://ftw/global-data-2e/vector/2017/zone=44/utm44.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },

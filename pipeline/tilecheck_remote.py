@@ -9,7 +9,7 @@ def bounds(x,y,z):
     n=2**z; f=lambda yy: math.degrees(math.atan(math.sinh(math.pi*(1-2*yy/n))))
     return x/n*360-180, f(y+1), (x+1)/n*360-180, f(y)
 c=duckdb.connect(); c.execute("install spatial; load spatial")
-URL=f"https://data.source.coop/ftw/global-data-beta/vector/{year}/fields-{year}.pmtiles"
+URL=f"https://data.source.coop/ftw/global-data-2e/vector/{year}/fields-{year}.pmtiles"
 def get_bytes(off,ln):
     rq=urllib.request.Request(URL,headers={"Range":f"bytes={off}-{off+ln-1}","User-Agent":"Mozilla/5.0"})
     return urllib.request.urlopen(rq,timeout=60).read()

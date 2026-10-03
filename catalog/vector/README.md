@@ -1,8 +1,8 @@
-# FTW Global (beta) — Vector field boundaries
+# FTW Global (2nd Edition) — Vector field boundaries
 
 Per-year collections of predicted agricultural field boundaries (2017, 2018, 2019, 2020, 2021, 2022, 2023, 2024, 2025): **1,139,401,371 parcels** total, as per-UTM-zone cloud-native GeoParquet. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
-Browse it in the [data browser](https://source.coop/ftw/global-data-beta).
+Browse it in the [data browser](https://source.coop/ftw/global-data-2e).
 
 Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 

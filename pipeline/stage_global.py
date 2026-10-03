@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage the beta FTW field predictions for one year into merged GeoParquet.
+"""Stage the 2e FTW field predictions for one year into merged GeoParquet.
 
 Reads ``vector/{year}/utm{NN}.parquet`` (54 zone files) from the source.coop
 data proxy and spools each to a local parquet, carrying **all columns except
@@ -49,7 +49,7 @@ def main() -> None:
     staged.mkdir(parents=True, exist_ok=True)
 
     con = duckdb.connect(
-        config={"custom_user_agent": "Mozilla/5.0 (ftw-beta-pipeline)"}
+        config={"custom_user_agent": "Mozilla/5.0 (ftw-2e-pipeline)"}
     )
     con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
     con.execute("SET TimeZone='UTC';")  # year markers are UTC midnights

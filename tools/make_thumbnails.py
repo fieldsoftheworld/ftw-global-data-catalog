@@ -8,7 +8,7 @@ download), mask nodata to transparency, apply a colormap, and composite over
 the FTW app's dark background.
 
 Phase 4 of docs/plan.md extends this with the per-item batch driver: one PNG
-per beta COG (67k renders, an sbatch array on rails, reading the ``field``
+per 2e COG (67k renders, an sbatch array on rails, reading the ``field``
 band from each COG's smallest overview) plus per-year collection mosaics.
 Until then this module carries the rendering core only; PMTiles collection
 thumbnails come from chiitiler (the portolan-thumbnails skill), not from

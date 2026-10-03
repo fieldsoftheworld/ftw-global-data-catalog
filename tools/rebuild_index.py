@@ -19,7 +19,7 @@ import duckdb
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "staging-data" / "index"
-LIVE = "https://data.source.coop/ftw/global-data-beta/index/vector.parquet"
+LIVE = "https://data.source.coop/ftw/global-data-2e/index/vector.parquet"
 GPIO = "/u/cholmes/ftw-us-tiles/venv/bin/gpio"
 
 

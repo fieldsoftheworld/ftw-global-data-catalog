@@ -2,7 +2,7 @@
 
 Field and boundary probability rasters for 2020: **7,466 Cloud-Optimized GeoTIFFs** at 2.5 m (2.85 TB), one per Sentinel-2 MGRS-based tile. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
-Browse it in the [data browser](https://source.coop/ftw/global-data-beta).
+Browse it in the [data browser](https://source.coop/ftw/global-data-2e).
 
 Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
@@ -12,13 +12,13 @@ Each COG is 40,032 × 40,032 pixels at 2.5 m in its tile's UTM zone, with two ui
 
 ## Find tiles
 
-The [index manifest](https://data.source.coop/ftw/global-data-beta/index/raster.parquet) lists every tile with href, size, bbox, and per-tile `field_frac`/`boundary_frac`/`cropland_frac` pixel fractions. The five field-densest tiles of 2020:
+The [index manifest](https://data.source.coop/ftw/global-data-2e/index/raster.parquet) lists every tile with href, size, bbox, and per-tile `field_frac`/`boundary_frac`/`cropland_frac` pixel fractions. The five field-densest tiles of 2020:
 
 ```python
 import duckdb
 con = duckdb.connect()
 con.execute("INSTALL httpfs; LOAD httpfs;")
-idx = "https://data.source.coop/ftw/global-data-beta/index/raster.parquet"
+idx = "https://data.source.coop/ftw/global-data-2e/index/raster.parquet"
 con.sql(f"""
     SELECT tile_key, href, round(field_frac, 3) AS field_frac
     FROM read_parquet('{idx}') WHERE year = 2020
@@ -29,7 +29,7 @@ con.sql(f"""
 ## Read a tile
 
 ```bash
-gdalinfo /vsicurl/https://data.source.coop/ftw/global-data-beta/raster/2020/01KFS_0_0.tif
+gdalinfo /vsicurl/https://data.source.coop/ftw/global-data-2e/raster/2020/01KFS_0_0.tif
 ```
 
 Any COG reader works over HTTP range requests; the overviews make low-zoom reads cheap.

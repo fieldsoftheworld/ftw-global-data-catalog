@@ -4,9 +4,9 @@
   "stac_extensions": [
     "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
   ],
-  "id": "ftw-global-data-beta",
-  "title": "Fields of the World — Global Data (beta)",
-  "description": "Beta release of the Fields of the World (FTW) global field-boundary predictions: per-UTM-zone GeoParquet field polygons for 2017–2025, and 2.5 m field/boundary-probability Cloud-Optimized GeoTIFFs for 2017–2025, hosted on [Source Cooperative](https://source.coop/ftw/global-data-beta). Predictions derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/).",
+  "id": "ftw-global-data-2e",
+  "title": "Fields of the World — Global Data (2nd Edition)",
+  "description": "2nd Edition of the Fields of the World (FTW) global field-boundary predictions: per-UTM-zone GeoParquet field polygons for 2017–2025, and 2.5 m field/boundary-probability Cloud-Optimized GeoTIFFs for 2017–2025, hosted on [Source Cooperative](https://source.coop/ftw/global-data-2e). Predictions derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/).",
   "git:repository": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
   "git:ref": "main",
   "git:provider": "github",
@@ -15,11 +15,11 @@
       "rel": "root",
       "href": "./catalog.json",
       "type": "application/json",
-      "title": "Fields of the World — Global Data (beta)"
+      "title": "Fields of the World — Global Data (2nd Edition)"
     },
     {
       "rel": "self",
-      "href": "https://data.source.coop/ftw/global-data-beta/catalog.json",
+      "href": "https://data.source.coop/ftw/global-data-2e/catalog.json",
       "type": "application/json"
     },
     {
@@ -35,28 +35,22 @@
       "title": "Catalog agent guide"
     },
     {
-      "rel": "llms",
-      "href": "./llms.txt",
-      "type": "text/markdown",
-      "title": "Agent/LLM usage guide"
-    },
-    {
       "rel": "child",
       "href": "./vector/catalog.json",
       "type": "application/json",
-      "title": "FTW Global (beta) — Vector field boundaries"
+      "title": "FTW Global (2nd Edition) — Vector field boundaries"
     },
     {
       "rel": "child",
       "href": "./raster/catalog.json",
       "type": "application/json",
-      "title": "FTW Global (beta) — Field & boundary probability rasters"
+      "title": "FTW Global (2nd Edition) — Field & boundary probability rasters"
     },
     {
       "rel": "about",
-      "href": "https://source.coop/ftw/global-data-beta",
+      "href": "https://source.coop/ftw/global-data-2e",
       "type": "text/html",
-      "title": "FTW Global Data (beta) on Source Cooperative"
+      "title": "FTW Global Data (2nd Edition) on Source Cooperative"
     },
     {
       "rel": "vcs",

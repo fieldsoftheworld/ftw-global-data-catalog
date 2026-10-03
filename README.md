@@ -1,16 +1,16 @@
 # ftw-global-data-catalog
 
 Git-backed [Portolan](https://www.portolan-sdi.org/)/STAC catalog for the
-**Fields of the World (FTW) Global Data beta release** on
-[Source Cooperative](https://source.coop/ftw/global-data-beta).
+**Fields of the World (FTW) Global Data 2nd Edition** on
+[Source Cooperative](https://source.coop/ftw/global-data-2e).
 
 This repository is the source of truth for the catalog **metadata only**. The
 data — per-UTM-zone GeoParquet field polygons for 2024–2025 and ~67k
 field/boundary-probability COGs for 2017–2025 — lives in the
-`ftw/global-data-beta` bucket and is never committed here.
+`ftw/global-data-2e` bucket and is never committed here.
 
-- Published catalog root: <https://data.source.coop/ftw/global-data-beta/catalog.json>
-- Data browser: <https://source.coop/ftw/global-data-beta>
+- Published catalog root: <https://data.source.coop/ftw/global-data-2e/catalog.json>
+- Data browser: <https://source.coop/ftw/global-data-2e>
 
 ## Layout
 

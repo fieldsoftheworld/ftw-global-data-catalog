@@ -1,10 +1,10 @@
-# AGENTS.md — Fields of the World — Global Data (beta)
+# AGENTS.md — Fields of the World — Global Data (2nd Edition)
 
 Guidance for AI agents and automated clients working with this Portolan/STAC
 catalog. Every claim in this file is quoted from a source or measured from the
 data.
 
-- Public URL base: `https://data.source.coop/ftw/global-data-beta/`
+- Public URL base: `https://data.source.coop/ftw/global-data-2e/`
   (anonymous read). Data files (GeoParquet, COG, PMTiles) are hosted on
   Source Cooperative and referenced in place; the git repository carries
   metadata only.

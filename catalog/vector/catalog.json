@@ -5,14 +5,14 @@
     "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
   ],
   "id": "vector",
-  "title": "FTW Global (beta) — Vector field boundaries",
-  "description": "Per-year collections of predicted agricultural field boundaries as per-UTM-zone cloud-native GeoParquet, browsable in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
+  "title": "FTW Global (2nd Edition) — Vector field boundaries",
+  "description": "Per-year collections of predicted agricultural field boundaries as per-UTM-zone cloud-native GeoParquet, browsable in the [data browser](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
   "links": [
     {
       "rel": "root",
       "href": "../catalog.json",
       "type": "application/json",
-      "title": "Fields of the World — Global Data (beta)"
+      "title": "Fields of the World — Global Data (2nd Edition)"
     },
     {
       "rel": "parent",
@@ -30,12 +30,6 @@
       "href": "./AGENTS.md",
       "type": "text/markdown",
       "title": "Vector tree agent guide"
-    },
-    {
-      "rel": "llms",
-      "href": "./llms.txt",
-      "type": "text/markdown",
-      "title": "Agent/LLM usage guide"
     },
     {
       "rel": "child",

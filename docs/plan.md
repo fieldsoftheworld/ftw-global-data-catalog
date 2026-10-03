@@ -1,9 +1,9 @@
-# ftw-global-data-catalog — Portolan catalog for the FTW Global Data **beta** release
+# ftw-global-data-catalog — Portolan catalog for the FTW Global Data **2nd Edition** (2e) release
 
 ## Context
 
-FTW's global field-boundary predictions have a new **beta** release on Source Cooperative at
-`ftw/global-data-beta`. The bucket holds data only, no metadata: `vector/{2024,2025}/utm{NN}.parquet`
+FTW's global field-boundary predictions have a new **2nd Edition** (2e) release (first published as "beta") on Source Cooperative at
+`ftw/global-data-2e`. The bucket holds data only, no metadata: `vector/{2024,2025}/utm{NN}.parquet`
 (54 UTM zones/year, 227.5 GiB, 120M+134M parcels, fiboa/vecorel schema), `raster/{2017..2025}/`
 (67,197 two-band uint8 field/boundary-probability COGs, 2.5 m, ~26 TB), and `index/{raster,vector}.parquet`
 manifests (hrefs, sizes, bboxes, per-tile stats — the basis for STAC generation).
@@ -51,9 +51,9 @@ aws CLI `/u/cholmes/micromamba/envs/ftw/bin`; DuckDB needs `https://data.source.
 Alpha's clean publish-directory model + the template's refinements:
 
 ```
-catalog/                    # THE published catalog — synced 1:1 to ftw/global-data-beta
-catalog.publish.yaml        # write_prefix: s3://us-west-2.opendata.source.coop/ftw/global-data-beta/
-                            # public_base: https://data.source.coop/ftw/global-data-beta
+catalog/                    # THE published catalog — synced 1:1 to ftw/global-data-2e
+catalog.publish.yaml        # write_prefix: s3://us-west-2.opendata.source.coop/ftw/global-data-2e/
+                            # public_base: https://data.source.coop/ftw/global-data-2e
                             # region: us-west-2, publish_dir: catalog, data_dir: staging-data
 tools/                      # template naming (not scripts/catalog/)
   publish.py                # port alpha's (non-recursive listing, content-types, size+MD5 skip); fix its ROOT-path bug
@@ -71,14 +71,14 @@ CLAUDE.md, README.md
 
 Portolan v0.2.0 schema URI on catalogs+collections; `file:size` + multihash `1220…` `file:checksum`
 on every asset; every catalog/collection dir carries README.md (`rel: describedby`), AGENTS.md
-(`rel: agents`), llms.txt, thumbnail.png; root carries `vcs`/`issues` links (absolute GitHub URLs)
+(`rel: agents`), thumbnail.png; root carries `vcs`/`issues` links (absolute GitHub URLs)
 + alpha's `git:*` fields; relative structural links, absolute `self` on published root.
 
 ## Phase 2 — Catalog skeleton (committed metadata)
 
 ```
 catalog/
-  catalog.json  README.md  AGENTS.md  llms.txt  thumbnail.png  .portolan/metadata.yaml
+  catalog.json  README.md  AGENTS.md  thumbnail.png  .portolan/metadata.yaml
   vector/
     catalog.json                    # children: 2024, 2025, fields-yearly
     2024/collection.json + 54 items (utm01…utm60) + items.parquet ref   # committed (small)
@@ -161,7 +161,7 @@ Adapt `alpha:scripts/tiles/` (README there has measured timings). Beta is ~12× 
 - Browser QC per collection: default style renders at full extent, legends match measured values,
   tight bboxes, first tile load small (pmtiles.io), thumbnails show data not basemap
 - `tools/publish.py` dry-run → `--confirm`; then `rashid`/`portolan check --live --url
-  https://data.source.coop/ftw/global-data-beta`
+  https://data.source.coop/ftw/global-data-2e`
 - Rerun every AGENTS.md query against published data
 - Register later via `register-catalog` skill (ask user first)
 
@@ -173,7 +173,7 @@ without asking).
 
 ## Verification
 
-End-to-end: open `https://source.coop/ftw/global-data-beta` in the data browser — root catalog with
+End-to-end: open `https://source.coop/ftw/global-data-2e` in the data browser — root catalog with
 vector + raster trees, fields-yearly renders the 2025 handover (cells→fields at z9) with legends,
 COG items open with thumbnails; DuckDB queries from AGENTS.md run as written; CI green on GitHub.
 

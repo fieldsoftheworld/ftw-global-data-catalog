@@ -1,6 +1,6 @@
 # ftw-global-data-catalog — developer guide
 
-Git-backed Portolan/STAC catalog for the Fields of the World (FTW) Global **beta** release.
+Git-backed Portolan/STAC catalog for the Fields of the World (FTW) Global **2nd Edition** (2e) release (formerly "beta"; bucket prefix `global-data-2e`).
 The build plan is in [docs/plan.md](docs/plan.md) — read it first.
 
 ## Models
@@ -13,13 +13,13 @@ exploration/search subagents; keep Opus (the default) for implementation and rev
 `catalog/` is published; everything outside it never is. Data files are never placed in
 `catalog/`, so they cannot be published by accident.
 
-- Write target (uploads): `s3://us-west-2.opendata.source.coop/ftw/global-data-beta/`
-- Public href base (all STAC hrefs): `https://data.source.coop/ftw/global-data-beta/`
+- Write target (uploads): `s3://us-west-2.opendata.source.coop/ftw/global-data-2e/`
+- Public href base (all STAC hrefs): `https://data.source.coop/ftw/global-data-2e/`
 - Config lives in `catalog.publish.yaml`; this catalog uses `tools/publish.py`
   (stateless size+MD5 change detection), not `portolan push`.
 
 ## Layout
-- `catalog/` — the published catalog (STAC JSON, README.md, AGENTS.md, llms.txt,
+- `catalog/` — the published catalog (STAC JSON, README.md, AGENTS.md,
   thumbnails, styles). Dotfiles are not published, except `.portolan/metadata.yaml`.
 - `tools/` — `publish.py` (metadata, 1:1), `upload_data.py` (staged data, suffix
   allow-list, never deletes), `make_thumbnails.py` (COG thumbnail core).

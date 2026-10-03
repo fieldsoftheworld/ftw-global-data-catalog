@@ -2,7 +2,7 @@
 
 Predicted agricultural field boundaries for 2017: **113,556,951 parcels** in 54 per-UTM-zone GeoParquet files (80.1 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
-Browse it in the [data browser](https://source.coop/ftw/global-data-beta).
+Browse it in the [data browser](https://source.coop/ftw/global-data-2e).
 
 Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
@@ -12,7 +12,7 @@ Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE 
 
 ## Files
 
-One file per UTM zone at `vector/2017/zone=NN/utm{NN}.parquet` (hive-partitioned by `zone`) (e.g. [utm48](https://data.source.coop/ftw/global-data-beta/vector/2017/utm48.parquet) is the largest, 18,298,288 parcels). Zone numbers with no land coverage are absent.
+One file per UTM zone at `vector/2017/zone=NN/utm{NN}.parquet` (hive-partitioned by `zone`) (e.g. [utm48](https://data.source.coop/ftw/global-data-2e/vector/2017/utm48.parquet) is the largest, 18,298,288 parcels). Zone numbers with no land coverage are absent.
 
 ## Columns
 
@@ -32,7 +32,7 @@ The schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.y
 
 ## Browse it
 
-One [PMTiles archive](https://data.source.coop/ftw/global-data-beta/vector/2017/fields-2017.pmtiles) renders the whole year with a zoom handover: A5 r7 cell aggregates (`cells` layer, z0–8: `count`, `area_ha`, `avg_score`, `pct_covered`) switching to the full field polygons (`fields` layer, z9–13: `id`, `metrics:area`, `metrics:perimeter`, `score`). Four styles — count, coverage (default), avg-size, field-prob — live beside it in `styles/`; the per-cell aggregates are also published as [GeoParquet](https://data.source.coop/ftw/global-data-beta/vector/2017/cells_a5r7_2017.parquet).
+One [PMTiles archive](https://data.source.coop/ftw/global-data-2e/vector/2017/fields-2017.pmtiles) renders the whole year with a zoom handover: A5 r7 cell aggregates (`cells` layer, z0–8: `count`, `area_ha`, `avg_score`, `pct_covered`) switching to the full field polygons (`fields` layer, z9–13: `id`, `metrics:area`, `metrics:perimeter`, `score`). Four styles — count, coverage (default), avg-size, field-prob — live beside it in `styles/`; the per-cell aggregates are also published as [GeoParquet](https://data.source.coop/ftw/global-data-2e/vector/2017/cells_a5r7_2017.parquet).
 
 ## Query it
 
@@ -40,7 +40,7 @@ One [PMTiles archive](https://data.source.coop/ftw/global-data-beta/vector/2017/
 import duckdb
 con = duckdb.connect()
 con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
-url = "https://data.source.coop/ftw/global-data-beta/vector/2017/zone=31/utm31.parquet"
+url = "https://data.source.coop/ftw/global-data-2e/vector/2017/zone=31/utm31.parquet"
 con.sql(f"""
     SELECT count(*) AS parcels,
            round(sum("metrics:area") / 1e6, 1) AS km2,

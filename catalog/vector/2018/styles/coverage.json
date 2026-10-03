@@ -7,7 +7,7 @@
   "sources": {
     "data": {
       "type": "vector",
-      "url": "pmtiles://https://data.source.coop/ftw/global-data-beta/vector/2018/fields-2018.pmtiles"
+      "url": "pmtiles://https://data.source.coop/ftw/global-data-2e/vector/2018/fields-2018.pmtiles"
     }
   },
   "layers": [

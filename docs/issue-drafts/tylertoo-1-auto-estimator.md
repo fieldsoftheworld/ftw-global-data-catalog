@@ -57,7 +57,7 @@ measured, so the estimate is wrong in both directions on real catalogs:
 
 ## Evidence
 
-FTW Global beta, 134,259,417 features, 17 exported properties, tylertoo
+FTW Global 2nd Edition, 134,259,417 features, 17 exported properties, tylertoo
 0.11.0 @ 6b9c3ff, `tiles --shard coarse --save-plan` (full monolithic
 convert, pre-#541): MaxRSS 201,321,784 K on a 192 GiB Slurm job — the run
 was saved from `auto`'s mis-estimate only because we passed

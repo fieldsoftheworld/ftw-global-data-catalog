@@ -32,7 +32,7 @@ from matplotlib.collections import PolyCollection  # noqa: E402
 from matplotlib.colors import LinearSegmentedColormap, Normalize  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-PUBLIC_BASE = "https://data.source.coop/ftw/global-data-beta"
+PUBLIC_BASE = "https://data.source.coop/ftw/global-data-2e"
 BG = "#0b1414"  # the FTW inference app's dark background
 
 # Dark teal -> FTW green ramp, readable on the dark card.

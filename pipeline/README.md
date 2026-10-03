@@ -1,6 +1,6 @@
-# Beta PMTiles pipeline (rails)
+# 2e PMTiles pipeline (rails)
 
-GeoParquet → PMTiles for the beta field predictions, run on the TGI RAILS
+GeoParquet → PMTiles for the FTW 2nd Edition (2e) field predictions, run on the TGI RAILS
 Slurm cluster with gpio + tylertoo. One archive per year with a zoom
 handover:
 
@@ -12,27 +12,27 @@ handover:
 These scripts are the proven alpha pipeline, copied verbatim from
 `fieldsoftheworld/ftw-data-catalog@fd844c4` (`scripts/tiles/`), which built
 `predictions/vectors-test/fields-yearly` from the 1.58 B-feature alpha
-release. They are the starting point, not yet the beta pipeline. Adapting
-them to the beta source (Phase 3 of [docs/plan.md](../docs/plan.md)) changes:
+release. They are the starting point, not yet the 2e pipeline. Adapting
+them to the 2e source (Phase 3 of [docs/plan.md](../docs/plan.md)) changes:
 
 - **Stage** (`stage_global.py`): read `vector/{year}/utm{NN}.parquet` from
-  `ftw/global-data-beta` instead of the alpha `results-by-admin-conf`
+  `ftw/global-data-2e` instead of the alpha `results-by-admin-conf`
   partitions; carry **all** parquet columns (drop only the `bbox` struct and
   constant columns from tiles); measure cross-zone duplicates before deciding
-  to dedupe (beta ids are tile-scoped; the alpha `(id, area)` dedupe targeted
+  to dedupe (2e ids are tile-scoped; the alpha `(id, area)` dedupe targeted
   a different defect); no year split (the source is already per-year); no
   `SET TimeZone` need expected (no datetime column — verify).
 - **Aggregate** (`aggregate_cells.sbatch` + `add_coverage.py`): metrics from
-  the beta schema — `count`, `area_ha` from `metrics:area`, `avg_field_prob`,
+  the 2e schema — `count`, `area_ha` from `metrics:area`, `avg_field_prob`,
   `avg_boundary_prob`, `pct_covered`. The 350 km² giant-field cutoff should
-  be unnecessary (beta post-processing already removes >5 km² parcels —
+  be unnecessary (2e post-processing already removes >5 km² parcels —
   verify the max first).
-- **Tile/shard** (`tile_cells.sbatch`, `tile_fields.sbatch`): beta is ~12×
+- **Tile/shard** (`tile_cells.sbatch`, `tile_fields.sbatch`): 2e is ~12×
   smaller than alpha (134 M vs 1.58 B features for 2025), so expect hours,
   not days, possibly fewer shards, and maybe no 360 G coarse node.
 
 The measured reference points below are from the alpha run and bound the
-beta run from above.
+2e run from above.
 
 ## Running it (alpha shape, for reference)
 

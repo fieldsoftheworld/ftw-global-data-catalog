@@ -1,7 +1,7 @@
-# Fields of the World — Global Data (beta)
+# Fields of the World — Global Data (2nd Edition)
 
-Beta release of the Fields of the World (FTW) global field-boundary
-predictions on [Source Cooperative](https://source.coop/ftw/global-data-beta).
+2nd Edition of the Fields of the World (FTW) global field-boundary
+predictions on [Source Cooperative](https://source.coop/ftw/global-data-2e).
 
 The bucket holds two product families, structured per year so new years drop
 in incrementally:
