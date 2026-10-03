@@ -2,7 +2,7 @@
 
 Guidance for AI agents. Every claim here is quoted from a verified COG header or measured from the index manifest.
 
-Related guides: the [raster tree](../AGENTS.md), the [catalog root](../../AGENTS.md), and this collection's [README](./README.md).
+Related guides: the [raster tree](https://data.source.coop/ftw/global-data-2e/raster/AGENTS.md), the [catalog root](https://data.source.coop/ftw/global-data-2e/AGENTS.md), and this collection's [README](https://data.source.coop/ftw/global-data-2e/raster/2017/README.md).
 
 <!-- known-limitation:begin -->
 **Known limitation, under investigation: the 2017 and 2024 predictions are under-detected in some regions.**

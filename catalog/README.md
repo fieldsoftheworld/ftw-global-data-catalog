@@ -1,14 +1,33 @@
 # Fields of the World — Global Data (2nd Edition)
 
 2nd Edition of the Fields of the World (FTW) global field-boundary
-predictions on [Source Cooperative](https://source.coop/ftw/global-data-2e):
-**1,139,401,371 predicted field polygons** over nine years as cloud-native
-GeoParquet, and **67,197 field/boundary-probability tiles** (26.0 TB) over nine
-years as Cloud-Optimized GeoTIFFs. Both derive from the
-[TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/).
+predictions: **1,139,401,371 predicted field polygons** over nine years as
+cloud-native GeoParquet, and **67,197 field/boundary-probability tiles**
+(26.0 TB) over the same nine years as Cloud-Optimized GeoTIFFs. Both derive
+from the
+[TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/),
+and both are part of [Fields of the World](https://fieldsofthe.world).
 
-Agents: [AGENTS.md](./AGENTS.md) beside this file is the agent guide. Read
-[Limitations](#limitations) below before drawing conclusions from any of these
+## Three ways in
+
+**[Open the interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/)**
+to see the fields themselves. It streams the PMTiles archives and the
+Sentinel-2 quarterly mosaics straight from Source Cooperative, so you can pan
+to a region, switch between years, and compare predictions against the imagery
+they came from without downloading anything.
+
+**[Open the catalog in the Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/catalog.json)**
+to walk the STAC tree. The browser renders each collection with its own
+published style, previews the GeoParquet schema, and gives the download link
+for every asset. It is the fastest way to find out what a given year actually
+contains.
+
+**[Browse the files on Source Cooperative](https://source.coop/ftw/global-data-2e)**
+to download them directly, or read them in place over HTTP range requests from
+`https://data.source.coop/ftw/global-data-2e/`.
+
+Agents: [AGENTS.md](https://data.source.coop/ftw/global-data-2e/AGENTS.md) beside this file is the agent guide. Read
+[Limitations](#limitations) before drawing conclusions from any of these
 numbers.
 
 Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
@@ -16,92 +35,102 @@ Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 ## Collections
 
 Two product families, one collection per year, so new years drop in
-incrementally without reorganizing anything.
+incrementally without reorganizing anything. Every year has both products on
+the same footprint.
 
-### [Vector](./vector/catalog.json) — field boundaries (GeoParquet)
+| Year | Parcels | Vector (GeoParquet) | Tiles | Raster (COG) | Map |
+|---|---|---|---|---|---|
+| 2017 | 113,556,951 | [files](https://source.coop/ftw/global-data-2e/vector/2017) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2017/collection.json) | 7,466 (2.95 TB) | [files](https://source.coop/ftw/global-data-2e/raster/2017) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2017/collection.json) | [open](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2017) |
+| 2018 | 120,266,836 | [files](https://source.coop/ftw/global-data-2e/vector/2018) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2018/collection.json) | 7,466 (2.84 TB) | [files](https://source.coop/ftw/global-data-2e/raster/2018) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2018/collection.json) | [open](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2018) |
+| 2019 | 122,156,582 | [files](https://source.coop/ftw/global-data-2e/vector/2019) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2019/collection.json) | 7,466 (2.84 TB) | [files](https://source.coop/ftw/global-data-2e/raster/2019) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2019/collection.json) | [open](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2019) |
+| 2020 | 129,366,600 | [files](https://source.coop/ftw/global-data-2e/vector/2020) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2020/collection.json) | 7,466 (2.85 TB) | [files](https://source.coop/ftw/global-data-2e/raster/2020) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2020/collection.json) | [open](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2020) |
+| 2021 | 136,149,304 | [files](https://source.coop/ftw/global-data-2e/vector/2021) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2021/collection.json) | 7,466 (2.88 TB) | [files](https://source.coop/ftw/global-data-2e/raster/2021) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2021/collection.json) | [open](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2021) |
+| 2022 | 130,296,544 | [files](https://source.coop/ftw/global-data-2e/vector/2022) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2022/collection.json) | 7,466 (2.91 TB) | [files](https://source.coop/ftw/global-data-2e/raster/2022) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2022/collection.json) | [open](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2022) |
+| 2023 | 133,227,819 | [files](https://source.coop/ftw/global-data-2e/vector/2023) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2023/collection.json) | 7,467 (2.94 TB) | [files](https://source.coop/ftw/global-data-2e/raster/2023) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2023/collection.json) | [open](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2023) |
+| 2024 | 120,295,636 | [files](https://source.coop/ftw/global-data-2e/vector/2024) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2024/collection.json) | 7,467 (2.90 TB) | [files](https://source.coop/ftw/global-data-2e/raster/2024) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2024/collection.json) | [open](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2024) |
+| 2025 | 134,085,099 | [files](https://source.coop/ftw/global-data-2e/vector/2025) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2025/collection.json) | 7,467 (2.88 TB) | [files](https://source.coop/ftw/global-data-2e/raster/2025) · [browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2025/collection.json) | [open](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2025) |
 
-| Collection | Parcels | Items | Formats |
-|---|---|---|---|
-| [2017](./vector/2017/collection.json) | 113,556,951 | 54 UTM zones | GeoParquet (hive `zone=NN`, EPSG:4326), PMTiles, 4 styles |
-| [2018](./vector/2018/collection.json) | 120,266,836 | 54 UTM zones | GeoParquet (hive `zone=NN`, EPSG:4326), PMTiles, 4 styles |
-| [2019](./vector/2019/collection.json) | 122,156,582 | 54 UTM zones | GeoParquet (hive `zone=NN`, EPSG:4326), PMTiles, 4 styles |
-| [2020](./vector/2020/collection.json) | 129,366,600 | 54 UTM zones | GeoParquet (hive `zone=NN`, EPSG:4326), PMTiles, 4 styles |
-| [2021](./vector/2021/collection.json) | 136,149,304 | 54 UTM zones | GeoParquet (hive `zone=NN`, EPSG:4326), PMTiles, 4 styles |
-| [2022](./vector/2022/collection.json) | 130,296,544 | 54 UTM zones | GeoParquet (hive `zone=NN`, EPSG:4326), PMTiles, 4 styles |
-| [2023](./vector/2023/collection.json) | 133,227,819 | 54 UTM zones | GeoParquet (hive `zone=NN`, EPSG:4326), PMTiles, 4 styles |
-| [2024](./vector/2024/collection.json) | 120,295,636 | 54 UTM zones | GeoParquet (hive `zone=NN`, EPSG:4326), PMTiles, 4 styles |
-| [2025](./vector/2025/collection.json) | 134,085,099 | 54 UTM zones | GeoParquet (hive `zone=NN`, EPSG:4326), PMTiles, 4 styles |
+The **vector** product is one GeoParquet file per UTM zone at
+`vector/{year}/zone=NN/utm{NN}.parquet`, 54 zones per year, hive-partitioned
+so a whole year reads as one dataset. Its nine-column schema follows
+[fiboa](https://fiboa.org) and [vecorel](https://vecorel.org). A per-year
+PMTiles archive hands over from A5 r7 cell aggregates to the field polygons at
+z9, and four MapLibre styles ship beside it. The
+[vector README](https://source.coop/ftw/global-data-2e/vector) has a runnable whole-collection query.
 
-One GeoParquet file per UTM zone at `vector/{year}/zone=NN/utm{NN}.parquet`,
-plus a per-year PMTiles archive that hands over from A5 r7 cell aggregates to
-the field polygons at z9. The nine-column schema follows
-[fiboa](https://fiboa.org) and [vecorel](https://vecorel.org). Start at the
-[vector README](./vector/README.md) for a runnable whole-collection query.
-
-### [Raster](./raster/catalog.json) — field & boundary probability (COG)
-
-| Collection | Tiles | Size | Formats |
-|---|---|---|---|
-| [2017](./raster/2017/collection.json) | 7,466 | 2.95 TB | two-band uint8 COG, 2.5 m, per-tile UTM |
-| [2018](./raster/2018/collection.json) | 7,466 | 2.84 TB | two-band uint8 COG, 2.5 m, per-tile UTM |
-| [2019](./raster/2019/collection.json) | 7,466 | 2.84 TB | two-band uint8 COG, 2.5 m, per-tile UTM |
-| [2020](./raster/2020/collection.json) | 7,466 | 2.85 TB | two-band uint8 COG, 2.5 m, per-tile UTM |
-| [2021](./raster/2021/collection.json) | 7,466 | 2.88 TB | two-band uint8 COG, 2.5 m, per-tile UTM |
-| [2022](./raster/2022/collection.json) | 7,466 | 2.91 TB | two-band uint8 COG, 2.5 m, per-tile UTM |
-| [2023](./raster/2023/collection.json) | 7,467 | 2.94 TB | two-band uint8 COG, 2.5 m, per-tile UTM |
-| [2024](./raster/2024/collection.json) | 7,467 | 2.90 TB | two-band uint8 COG, 2.5 m, per-tile UTM |
-| [2025](./raster/2025/collection.json) | 7,467 | 2.88 TB | two-band uint8 COG, 2.5 m, per-tile UTM |
-
-One COG per Sentinel-2 MGRS-based tile at
+The **raster** product is one COG per Sentinel-2 MGRS-based tile at
 `raster/{year}/zone={ZZ}/gzd={ZZL}/{tile_key}/{tile_key}.tif` (zone and grid zone
 designator are the first two and three characters of the tile key; the tile's
-STAC item and thumbnail sit beside it), each 40,032 × 40,032 pixels in its own
-tile's UTM zone, with `field` (band 1) and `boundary` (band 2) probabilities as
-uint8 scaled by 1/255, ZSTD, with overviews at 10–160 m. All years share one tile
-grid, so year-over-year comparison works tile by tile. Enumerate tiles from the
-[raster index manifest](https://data.source.coop/ftw/global-data-2e/index/raster.parquet)
-or the 110 kB [lite index](#index-files); the
-[raster tree README](./raster/README.md) and each year's own README carry the
-band semantics.
+STAC item and thumbnail sit beside it), each 40,032 × 40,032 pixels at 2.5 m in
+its own tile's UTM zone, with `field` (band 1) and `boundary` (band 2)
+probabilities as uint8 scaled by 1/255, ZSTD, with overviews at 10–160 m. All
+years share one tile grid, so year-over-year comparison works tile by tile.
+Enumerate tiles from the
+[raster index manifest](https://data.source.coop/ftw/global-data-2e/index/raster.parquet),
+which lists every tile with href, size, bbox and per-tile
+field/boundary/cropland pixel fractions, or from the 110 kB
+[lite index](#index-files). The
+[raster README](https://source.coop/ftw/global-data-2e/raster) and each year's own README carry the band
+semantics.
 
-Both trees come from the same model on the same mosaics: the vectors are
+Both trees come from the same model on the same mosaics. The vectors are
 instance polygons derived from 2.5 m field/boundary probabilities of the kind
-the rasters publish. Treat them as two shapes of one prediction, not two
-independent measurements.
+the rasters publish, so treat them as two shapes of one prediction rather than
+two independent measurements.
+
+## How this was made
+
+The FTW `unet_balanced_fp32.onnx` model runs on Sentinel-2 quarterly cloudless
+mosaics, taking 16 input bands per tile from B04, B03, B02 and B08 across
+quarters Q1 to Q4 at 10 m. It emits field and boundary probabilities at 2.5 m,
+which are published directly as the raster product. BoundaryVote instance
+post-processing then turns those probabilities into polygons, which are
+simplified at 5 m across the whole coverage in one pass, filtered to parcels
+between 900 m² and 5 km², joined across tile seams, and written as the vector
+product.
+
+The whole chain lives in this catalog's own repository, and
+[pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md)
+documents every stage, from the mosaic download through inference and
+post-processing to the map tiles and this metadata.
 
 ## Limitations
 
-These are **model predictions**, not a survey. In the FTW project's own words, a
-field here is a *remote-sensing field unit* (a connected component of predicted
-field-interior pixels), **not** a cadastral/legal parcel, and
-[this is not a land-tenure product](https://source.coop/ftw/global-data); one
-legal parcel may map to many polygons or to none. Parcel counts, areas and
-perimeters are predicted quantities that carry the model's errors.
+These are **model predictions**, not a survey. A field here is a
+*remote-sensing field unit*, a connected component of predicted field-interior
+pixels, and **not** a cadastral or legal parcel. This is not a land-tenure
+product, and one legal parcel may map to many polygons or to none. Parcel
+counts, areas and perimeters are predicted quantities that carry the model's
+errors. See [Fields of the World](https://fieldsofthe.world) for the project
+and its definitions.
 
-- **Model provenance.** The FTW `unet_balanced_fp32.onnx` model, run on the
-  Sentinel-2 quarterly cloudless mosaics (B02/B03/B04/B08 × Q1–Q4, 10 m) to
-  2.5 m field/boundary probabilities, then vectorized by BoundaryVote instance
-  post-processing. Each collection's `description` records the exact chain; the
-  checkpoint and its model card are released by the
-  [FTW project](https://fieldsofthe.world) separately from this data.
-- **`score` is a model probability, not a validated confidence.** The vector
-  `score` column is the mean field probability the model assigned to the
-  pixels inside the parcel, × 100 and rounded into a `uint8` (0–100). Use it to
-  rank and filter; no calibration against ground truth is published for this
-  2nd Edition, so a score of 80 is not an 80% chance that the parcel is real.
-- **Weaker outside the training distribution.** FTW describes the confidence on
-  its earlier global release as "conservative outside the FTW training
-  distribution (e.g. smallholder systems): real fields there may receive low
-  confidence" ([FTW](https://source.coop/ftw/global-data)). Expect the same
-  shape of error here, and prefer a continuous `score` over a hard threshold in
-  smallholder regions.
-- **No land-cover masking.** Nothing upstream removed non-agricultural ground,
-  so water, scrub and built-up land can appear as parcels. Parcels larger than
-  5 km² were dropped in post-processing, and interior holes under 20 m²
-  (pixel-scale polygonization artifacts) were filled.
-- **Each year is an independent prediction.** Parcel `id` carries no meaning
-  across years, so year-over-year comparison of the vectors needs a spatial
-  join, not an id join. The rasters share one grid and compare per pixel.
+- The `score` column is a model probability, not a validated confidence. It is
+  the mean field probability the model assigned to the pixels inside the
+  parcel, multiplied by 100 and rounded into a `uint8` from 0 to 100. Use it to
+  rank and filter, but no calibration against ground truth is published for
+  this 2nd Edition, so a score of 80 is not an 80% chance that the parcel is
+  real.
+- Predictions are weaker outside the training distribution. FTW describes the
+  confidence on its earlier global release as "conservative outside the FTW
+  training distribution (e.g. smallholder systems): real fields there may
+  receive low confidence". Expect the same shape of error here, and prefer a
+  continuous `score` over a hard threshold in smallholder regions.
+- Coverage is cropland-gated, so it is not global. Only MGRS tiles with at
+  least 1% cropland were processed: every year's minimum `cropland_frac` in
+  the raster index is 0.010006, with no tile below it. Open desert, ice, dense
+  forest and purely urban tiles are therefore absent by construction, and an
+  empty region means the pipeline never ran there rather than that it found no
+  fields.
+- Inside a processed tile, nothing is filtered out by land cover. Water, scrub
+  and built-up ground can carry predicted parcels, so mask them downstream if
+  your analysis needs them gone. A parcel is removed only for being smaller
+  than 900 m², larger than 5 km², or owned by a neighboring tile; interior holes
+  under 20 m² (pixel-scale polygonization artifacts) were filled. Land cover
+  and terrain are read per parcel, but only into quality attributes that stay
+  in the intermediate files and are not published.
+- Each year is an independent prediction. A parcel `id` carries no meaning
+  across years, so comparing years in the vectors needs a spatial join rather
+  than an id join. The rasters share one grid and compare per pixel.
 
 <!-- known-limitation:begin -->
 **Known limitation, under investigation: the 2017 and 2024 predictions are under-detected in some regions.**
@@ -109,11 +138,11 @@ perimeters are predicted quantities that carry the model's errors.
 
 ## Coordinate systems
 
-The vector GeoParquet is WGS 84 lon/lat (EPSG:4326) in **every** zone file —
-the UTM zone is a partition key, not a CRS — so `ST_Area` on `geometry`
-returns square degrees; read `metrics:area` (m²) instead. The COGs are each in
-their own tile's UTM zone, so a mosaic across zones needs a warp. The PMTiles
-archives are Web Mercator (EPSG:3857).
+The vector GeoParquet is WGS 84 lon/lat (EPSG:4326) in **every** zone file,
+because the UTM zone is a partition key and not a CRS. `ST_Area` on `geometry`
+therefore returns square degrees, so read `metrics:area` (m²) instead. The COGs
+are each in their own tile's UTM zone, so a mosaic across zones needs a warp.
+The PMTiles archives are Web Mercator (EPSG:3857).
 
 ## Index files
 
@@ -166,9 +195,10 @@ Use `raster.parquet` when you need sizes, the per-tile fractions or the footprin
 
 ## Reading an area across tiles
 
-The COGs are one file per tile, so an area that crosses a tile edge needs a mosaic.
-This reads the field and boundary probabilities for a lon/lat box at 20 m. `rasterio`
-fetches the overview closest to `res`, not the 2.5 m data. Find the tiles in
+The COGs are one file per tile, so an area that crosses a tile edge needs a
+mosaic. This reads the field and boundary probabilities for a lon/lat box at
+20 m. `rasterio` fetches the overview closest to `res`, not the 2.5 m data.
+Find the tiles in
 [`index/raster.parquet`](https://data.source.coop/ftw/global-data-2e/index/raster.parquet):
 
 ```python
@@ -205,9 +235,10 @@ mosaic, transform = read_area((-93.06, 41.90, -92.94, 42.00), 2024, 20, "EPSG:32
 
 `catalog/` in
 [fieldsoftheworld/ftw-global-data-catalog](https://github.com/fieldsoftheworld/ftw-global-data-catalog)
-**is** this catalog: it syncs 1:1 to the bucket through `tools/publish.py`, so
-a merged change lands here on the next publish. Publishing never deletes, and
-no data bytes live in git — the repository carries only the metadata that
+**is** this catalog. It syncs 1:1 to the bucket through `tools/publish.py`, so
+a merged change lands here on the next publish. That repository also holds the
+processing pipeline that produced the data. Publishing never deletes, and no
+data bytes live in git, so the repository carries only the metadata that
 describes them. The vector tree is generated by `tools/build_vector_items.py`:
 edit the generator and re-run it, never the generated output. The raster year
 files are snapshots of the published objects, and the tile items and per-zone

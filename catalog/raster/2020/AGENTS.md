@@ -2,7 +2,7 @@
 
 Guidance for AI agents. Every claim here is quoted from a verified COG header or measured from the index manifest.
 
-Related guides: the [raster tree](../AGENTS.md), the [catalog root](../../AGENTS.md), and this collection's [README](./README.md).
+Related guides: the [raster tree](https://data.source.coop/ftw/global-data-2e/raster/AGENTS.md), the [catalog root](https://data.source.coop/ftw/global-data-2e/AGENTS.md), and this collection's [README](https://data.source.coop/ftw/global-data-2e/raster/2020/README.md).
 
 - 7,466 COGs at `https://data.source.coop/ftw/global-data-2e/raster/2020/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif` (anonymous read), tile keys like `01KFS_0_0`. Each tile's directory also holds `{tile}.json`, its STAC item and `{tile}.thumb.png`.
 - Band 1 `field`, band 2 `boundary`; uint8, probability = value / 255 (the files carry scale 1/255). 2.5 m, per-tile UTM CRS (79 distinct EPSG codes this year; `epsg` in the index, `proj:code` on each item). No nodata is declared.

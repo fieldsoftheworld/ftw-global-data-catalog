@@ -6,7 +6,7 @@
   ],
   "id": "vector",
   "title": "FTW Global (2nd Edition) — Vector field boundaries",
-  "description": "Per-year collections of predicted agricultural field boundaries as per-UTM-zone cloud-native GeoParquet, browsable in the [data browser](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
+  "description": "Per-year collections of predicted agricultural field boundaries as per-UTM-zone cloud-native GeoParquet, 2017–2025. Explore them on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/) or in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/catalog.json); the files are listed on [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
   "links": [
     {
       "rel": "root",
@@ -18,6 +18,12 @@
       "rel": "parent",
       "href": "../catalog.json",
       "type": "application/json"
+    },
+    {
+      "rel": "vcs",
+      "href": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
+      "type": "text/html",
+      "title": "Catalog source repository (metadata and pipeline)"
     },
     {
       "rel": "describedby",

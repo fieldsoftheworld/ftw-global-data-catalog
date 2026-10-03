@@ -20,25 +20,38 @@ exploration/search subagents; keep Opus (the default) for implementation and rev
 
 ## Layout
 - `catalog/` — the published catalog (STAC JSON, README.md, AGENTS.md,
-  thumbnails, styles). Dotfiles are not published, except `.portolan/metadata.yaml`.
+  thumbnails, styles). Dotfiles are not published. `catalog/.portolan/` was removed
+  on 2026-10-03 (portolan-cli state this catalog does not use; every fact in
+  `metadata.yaml` was already in the STAC). `publish.py` still allows
+  `.portolan/metadata.yaml` through as a general rule. **The bucket copy was not
+  deleted** — publishing never deletes — so ask Chris before removing
+  `.portolan/` objects from the bucket.
 - `tools/` — `publish.py` (metadata, 1:1), `upload_data.py` (staged data, suffix
-  allow-list, never deletes), `make_thumbnails.py` (COG thumbnail core), the index builders
+  allow-list, never deletes), `build_vector_items.py` / `build_raster_items.py`
+  (tree generators; the raster one is legacy, see below), `render_thumbnails.py` (vector
+  thumbnails via chiitiler), `make_thumbnails.py` (COG thumbnail core), the index builders
   (`build_raster_index.py` + `merge_raster_index.py` -> `index/raster.parquet`,
   `build_vector_index.py` -> `index/vector.parquet`, `build_raster_index_lite.py` ->
   `index/raster-lite.parquet`; all write under `staging-data/index/`, none uploads),
-  `build_vector_items.py` (the vector tree), `known_limitation.py` (the 2017/2024
-  under-detection note, one source for every doc that carries it) and the historical
-  `move_to_hive.py` / `rebuild_index.py` (the flat-to-hive migration, done).
-- `pipeline/` — the rails Slurm pipeline: `pipeline/{mosaics,inference,postprocessing}` (the
-  packaged stages, each with tests) and the PMTiles chain at its top level (see
-  `pipeline/README.md` for cluster gotchas, proxy upload quirks and measured timings).
+  `known_limitation.py` (the 2017/2024 under-detection note, one source for every doc that
+  carries it) and the historical `move_to_hive.py` / `rebuild_index.py` (the flat-to-hive
+  migration, done).
+- `pipeline/` — all five processing stages (mosaics, inference, postprocessing,
+  rails Slurm PMTiles, catalog). `pipeline/README.md` is the end-to-end overview;
+  cluster gotchas, proxy upload quirks and measured timings live there too.
 - `staging-data/` — gitignored staging tree read by `upload_data.py`; keys mirror its
-  layout under the write prefix.
+  layout under the write prefix. `checksums/tiles_meta.json` carries the
+  size+multihash for each year's `pmtiles`, `cells` and `mirror` asset, and
+  `--checksums` supplies the per-zone sidecar. Both can be reconstructed from the
+  committed collection/item JSON if the staging tree is missing — without them a
+  regeneration silently drops `file:size`/`file:checksum` and the whole styles
+  subtree.
 - `tests/` — the gates; `docs/conformance.md` — the conformance allow-list record.
 
 ## Publish workflow
 ```
 python3 tests/run_all.py                    # every gate (link check, contracts, stac-check, rashid)
+python3 tools/render_thumbnails.py          # vector thumbnails (needs chiitiler)
 python3 tools/publish.py                    # dry run (lists the prefix; needs read creds, else every file looks new)
 python3 tools/publish.py --confirm          # upload metadata (needs AWS creds)
 python3 tools/upload_data.py [--confirm]    # staged data files

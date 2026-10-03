@@ -2,7 +2,7 @@
 
 Field and boundary probability rasters for 2025: **7,467 Cloud-Optimized GeoTIFFs** at 2.5 m (2.88 TB), one per Sentinel-2 MGRS-based tile. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
-Browse it in the [data browser](https://source.coop/ftw/global-data-2e).
+**[Open 2025 on the interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2025)** to see the predictions over imagery, or **[open it in the Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2025/collection.json)** to walk the metadata. The files are listed on [Source Cooperative](https://source.coop/ftw/global-data-2e).
 
 Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 

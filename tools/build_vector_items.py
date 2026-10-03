@@ -43,6 +43,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import known_limitation  # noqa: E402
+from render_thumbnails import STYLE_BY_YEAR as THUMBNAIL_STYLE  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 BINS_FILE = ROOT / "pipeline" / "style_bins.json"
@@ -71,7 +72,42 @@ VECOREL_SPEC = "https://vecorel.org/specification/v0.1.0/schema.yaml"
 FIBOA_README = "https://github.com/fiboa/specification"
 MOSAICS_URL = "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/"
 FTW_URL = "https://fieldsofthe.world"
-DATA_BROWSER = "https://source.coop/ftw/global-data-2e"
+REPO_URL = "https://github.com/fieldsoftheworld/ftw-global-data-catalog"
+
+# Three ways in, and they are not interchangeable. The map renders the data;
+# the Portolan browser walks the STAC tree and previews each asset; Source
+# Cooperative lists the files to download. Earlier text called Source
+# Cooperative "the data browser", which sent readers wanting a map to a
+# directory listing.
+VIEWER_URL = "https://research.taylorgeospatial.org/global-ftw-2e/web/"
+BROWSER_BASE = "https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e"
+SOURCE_COOP = "https://source.coop/ftw/global-data-2e"
+
+
+def browser(path: str = "catalog.json") -> str:
+    """The Portolan browser URL for one object in the published catalog."""
+    return f"{BROWSER_BASE}/{path}"
+
+
+def viewer(year: int | None = None) -> str:
+    """The map URL, opened on one year. The app reads `year` from the hash."""
+    return VIEWER_URL if year is None else f"{VIEWER_URL}#year={year}"
+
+
+def folder(path: str = "") -> str:
+    """The Source Cooperative page listing one directory of the catalog."""
+    return f"{SOURCE_COOP}/{path}".rstrip("/")
+
+
+def doc(path: str) -> str:
+    """The raw URL of one published markdown file."""
+    return f"{PUBLIC_BASE}/{path}"
+
+
+# Prose links in these READMEs are absolute on purpose. Source Cooperative
+# renders the markdown at /ftw/global-data-2e, where a relative `./vector/...`
+# resolves to /ftw/vector/... and 404s, which is what readers reported. STAC
+# `links` stay relative, as Portolan requires; only markdown prose changes.
 
 PROVIDERS = [
     {
@@ -90,6 +126,38 @@ _PROJECT = (
 # fetched live per year by fetch_year_meta and asserted to still match.
 _FIBOA = f"[fiboa 0.3.0]({FIBOA_SPEC})"
 _VECOREL = f"[vecorel 0.1.0]({VECOREL_SPEC})"
+
+# The published parquet footers carry this sentence, and it misleads twice.
+# "Attributes are for filtering" describes columns this data does not have:
+# `pipeline/postprocessing/context.py` warps IO 10 m annual land cover and
+# the Copernicus GLO-30 DEM over every window, and `outlines.py` turns them
+# into five per-parcel attributes (`frac_water`, `frac_crops_ever`,
+# `slope_mean`, `frac_slope_gt30`, `elev_mean`), none of which survive into
+# the released nine columns. "No land-cover masking" is true of individual
+# parcels, since the only retention test is `in_utm_zone AND in_mgrs_square
+# AND area_m2 <= 5e6` (`merge_polygons.py:222`), but it hides the bigger
+# fact that land cover chose which tiles ran at all. Measured against the
+# published index on 2026-10-03: every year's minimum `cropland_frac` is
+# exactly 0.010006 with no tile below 1%, which is a threshold rather than a
+# distribution. `fiboa_convert.py` no longer emits the sentence; this
+# rewrite is for the parquet already in the bucket.
+_STALE_DETAIL = (
+    "Attributes are for filtering; no land-cover masking was applied."
+)
+_TRUE_DETAIL = (
+    "Within a processed tile no parcel is removed on land-cover, water or "
+    "terrain grounds, the retention test being UTM-zone and MGRS-square "
+    "ownership plus the size bounds above. Land cover did decide which "
+    "tiles ran: only MGRS tiles with at least 1% cropland were processed, "
+    "so regions below that threshold are absent entirely."
+)
+
+
+def fix_details(details: str) -> str:
+    """Correct the land-cover sentence the published parquet footers carry."""
+    if _STALE_DETAIL not in details:
+        return details
+    return details.replace(_STALE_DETAIL, _TRUE_DETAIL)
 
 # The 9 columns of every zone parquet (second bucket revision, 2026-09-28).
 # The `score` description is the dataset's own, from the parquet's embedded
@@ -348,6 +416,10 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
          "title": "Collection agent guide"},
         {"rel": "describedby", "href": FIBOA_README, "type": "text/html",
          "title": "fiboa specification (core parcel fields)"},
+        # No rel:"via" for the map: Portolan reserves it for mirrored source
+        # data (PTL-PRO-004), and this collection is the source.
+        {"rel": "vcs", "href": REPO_URL, "type": "text/html",
+         "title": "Catalog source repository (metadata and pipeline)"},
     ]
     if has_tiles:
         links.append({
@@ -364,17 +436,31 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             "title": f"UTM zone {row['zone']}",
         })
     specs = style_specs()
+    # Absolute, because a glob is the one href a reader pastes straight into
+    # DuckDB. Relative `./zone=*/utm*.parquet` told them the shape of the
+    # layout and nothing about where it is.
+    https_glob = f"{PUBLIC_BASE}/vector/{year}/zone=*/utm*.parquet"
+    s3_glob = (f"s3://us-west-2.opendata.source.coop/ftw/global-data-2e/"
+               f"vector/{year}/zone=*/utm*.parquet")
     assets: dict[str, dict] = {
         "data": {
-            "href": "./zone=*/utm*.parquet",
+            "href": https_glob,
             "type": "application/vnd.apache.parquet",
             "title": f"All {year} field boundaries "
                      "(GeoParquet glob, hive-partitioned by zone)",
-            "description": "One glob over every zone partition. Read it "
-                           "with hive partitioning on to get `zone` as a "
-                           "column; per-file sizes and checksums live on "
-                           "the items.",
+            "description": "One glob over every zone partition. Read it with "
+                           "`hive_partitioning=1` to get `zone` as a column. "
+                           "Expanding the wildcard needs the `s3` alternate "
+                           "below, because an HTTP URL cannot be globbed; "
+                           "per-file sizes and checksums live on the items.",
             "roles": ["data"],
+            "alternate": {
+                "s3": {
+                    "href": s3_glob,
+                    "title": "S3 glob (us-west-2, anonymous read) — the form "
+                             "DuckDB can expand",
+                }
+            },
         },
     }
     if has_tiles:
@@ -394,11 +480,6 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
                            "also useful for analysis.",
             "roles": ["data"],
       }
-    for kind, key in (("pmtiles", "pmtiles"), ("cells", "cells")):
-        entry = tiles_meta.get(f"{kind}_{year}")
-        if entry:
-            assets[key]["file:size"] = entry["size"]
-            assets[key]["file:checksum"] = entry["checksum"]
     for name, spec in (specs.items() if has_tiles else ()):
         roles = ["style", "default"] if name == "coverage" else ["style"]
         assets[f"styles/{name}"] = {
@@ -410,10 +491,12 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
         }
     if has_tiles or (ROOT / "catalog" / "vector" / str(year)
                      / "thumbnail.png").is_file():
+        style_name = THUMBNAIL_STYLE.get(year, "coverage")
         assets["thumbnail"] = {
             "href": "./thumbnail.png", "type": "image/png",
-            "title": f"Fields {year} rendered with the default (coverage) "
-                     "style",
+            "title": f"Fields {year} rendered with the "
+                     f"{specs[style_name]['title'].split(' (')[0].lower()} "
+                     f"style",
             "roles": ["thumbnail"],
         }
     assets["mirror"] = {
@@ -425,6 +508,13 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
                        "items; the item JSON stays normative.",
         "roles": ["collection-mirror", "metadata"],
     }
+    # Sizes and checksums for the assets whose bytes live only in the bucket.
+    # Stamped last, so every asset above is in place to receive them.
+    for key in ("pmtiles", "cells", "mirror"):
+        entry = tiles_meta.get(f"{key}_{year}")
+        if entry and key in assets:
+            assets[key]["file:size"] = entry["size"]
+            assets[key]["file:checksum"] = entry["checksum"]
     return {
         "type": "Collection",
         "stac_version": "1.1.0",
@@ -436,11 +526,18 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             f"Predicted agricultural field boundaries for {year}: "
             f"{n:,} parcels ({area:,.0f} km² of field area) in "
             f"{len(rows)} per-UTM-zone GeoParquet files, {gib:,.1f} GiB "
-            f"total, browsable in the [data browser]({DATA_BROWSER}). "
-            f"{_PROJECT}\n\n**How this was made.** "
-            f"{meta['determination:details']} {HOLE_NOTE} Source imagery: the "
+            f"total. Explore the year on the "
+            f"[interactive map]({viewer(year)}), walk its metadata in the "
+            f"[Portolan browser]({browser(f'vector/{year}/collection.json')}), "
+            f"or download the files from "
+            f"[Source Cooperative]({SOURCE_COOP}). {_PROJECT}\n\n"
+            f"**How this was made.** {fix_details(meta['determination:details'])} {HOLE_NOTE} "
+            f"Source imagery: the "
             f"[TGE Labs Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}) "
-            f"(CDSE mirror).\n\nThe schema follows {_FIBOA} and {_VECOREL}: "
+            f"(CDSE mirror). The full pipeline, from mosaic download to this "
+            f"file, is documented in "
+            f"[pipeline/README.md]({REPO_URL}/blob/main/pipeline/README.md)."
+            f"\n\nThe schema follows {_FIBOA} and {_VECOREL}: "
             f"columns {_COLS_SHORT} — see `table:columns` for definitions."
             f"{known_limitation.description_note(year)}"
         ),
@@ -482,8 +579,11 @@ def build_vector_catalog(per_year: dict[int, dict], out: Path) -> dict:
         "title": "FTW Global (2nd Edition) — Vector field boundaries",
         "description": (
             "Per-year collections of predicted agricultural field boundaries "
-            "as per-UTM-zone cloud-native GeoParquet, browsable in the "
-            f"[data browser]({DATA_BROWSER}). {_PROJECT}"
+            "as per-UTM-zone cloud-native GeoParquet, 2017–2025. Explore "
+            f"them on the [interactive map]({VIEWER_URL}) or in the "
+            f"[Portolan browser]({browser('vector/catalog.json')}); the "
+            f"files are listed on [Source Cooperative]({SOURCE_COOP}). "
+            f"{_PROJECT}"
         ),
         "links": [
             {"rel": "root", "href": "../catalog.json",
@@ -491,6 +591,8 @@ def build_vector_catalog(per_year: dict[int, dict], out: Path) -> dict:
              "title": "Fields of the World — Global Data (2nd Edition)"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json"},
+            {"rel": "vcs", "href": REPO_URL, "type": "text/html",
+             "title": "Catalog source repository (metadata and pipeline)"},
             {"rel": "describedby", "href": "./README.md",
              "type": "text/markdown", "title": "Vector tree README"},
             {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
@@ -530,26 +632,35 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
     n = sum(r["n_parcels"] for r in rows)
     gib = sum(r["size_bytes"] for r in rows) / 2**30
     biggest = max(rows, key=lambda r: r["n_parcels"])
+    browser_year = browser(f"vector/{year}/collection.json")
     lines = [
         f"# FTW Global — Field Boundaries {year} (GeoParquet)", "",
         f"Predicted agricultural field boundaries for {year}: **{n:,} "
         f"parcels** in {len(rows)} per-UTM-zone GeoParquet files "
         f"({gib:,.1f} GiB). {_PROJECT}", "",
-        f"Browse it in the [data browser]({DATA_BROWSER}).", "",
+        f"**[Open {year} on the interactive map]({viewer(year)})** to see the "
+        f"fields over imagery, or **[open it in the Portolan browser]"
+        f"({browser_year})** to walk the metadata and preview each asset. "
+        f"The files themselves are listed on "
+        f"[Source Cooperative]({SOURCE_COOP}).", "",
+        f"Agents: [AGENTS.md]({doc(f'vector/{year}/AGENTS.md')}) beside "
+        f"this file is the agent guide.", "",
         "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## How it was made", "",
-        f"{meta['determination:details']} {HOLE_NOTE} Source imagery: the "
-        f"[TGE Labs Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}).",
+        f"{fix_details(meta['determination:details'])} {HOLE_NOTE} Source imagery: the "
+        f"[TGE Labs Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}). "
+        f"[pipeline/README.md]({REPO_URL}/blob/main/pipeline/README.md) "
+        f"documents every stage, from mosaic download to this file.",
         "",
         *_limitation_block(year),
         "## Files", "",
-        f"One file per UTM zone at `vector/{year}/zone=NN/utm{{NN}}.parquet` "
-        "(hive-partitioned by `zone`) "
-        f"(e.g. [utm{biggest['zone']:02d}]"
-        f"({PUBLIC_BASE}/vector/{year}/zone={biggest['zone']:02d}/"
-        f"{zone_stem(biggest['zone'])}.parquet) "
-        f"is the largest, {biggest['n_parcels']:,} parcels). Zone numbers "
-        "with no land coverage are absent.", "",
+        f"One file per UTM zone at `vector/{year}/zone=NN/utm{{NN}}.parquet`, "
+        "hive-partitioned by `zone`. The largest is "
+        f"[utm{biggest['zone']:02d}]"
+        f"({PUBLIC_BASE}/vector/{year}/zone={biggest['zone']:02d}"
+        f"/{zone_stem(biggest['zone'])}.parquet), with "
+        f"{biggest['n_parcels']:,} parcels. Zone numbers with no land "
+        "coverage are absent.", "",
         "## Columns", "",
         f"The schema follows {_FIBOA} and {_VECOREL} "
         "(also machine-readable in each item's `table:columns`):", "",
@@ -569,8 +680,15 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         "",
         "## Query it", "",
         *_query_block(year), "",
-        "No land-cover masking was applied upstream: filter on `score` (the "
-        "model's field probability × 100) to trade precision against "
+        "Read the whole year at once by globbing the partitions over `s3://` "
+        "with `hive_partitioning=1`; an HTTP URL cannot expand a wildcard. "
+        "The collection's `data` asset carries both forms.", "",
+        "Coverage is not global. Only MGRS tiles with at least 1% cropland "
+        "were processed, so a region below that threshold has no parcels "
+        "here and an absence is not a prediction of absence. Inside a "
+        "processed tile nothing is filtered by land cover, so water, scrub "
+        "and built-up ground can carry predicted parcels. Filter on `score` "
+        "(the model's field probability × 100) to trade precision against "
         "recall.", "",
     ]
     return "\n".join(lines)
@@ -604,9 +722,14 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         "- Parcel ids are unique within a zone file; zones partition the "
         "parcels cleanly (measured: zero shared ids or geometries in the "
         "6°E utm31/utm32 boundary strip).",
-        "- `metrics:area` is m²; the upstream post-processing removed "
-        "parcels larger than 5 km² and filled interior holes under 20 m² "
-        "(larger holes are kept).",
+        "- `metrics:area` is m². Post-processing kept parcels between "
+        "900 m² and 5 km² and filled interior holes under 20 m² (larger "
+        "holes are kept). Inside a processed tile nothing was removed on "
+        "land-cover, water or slope grounds, so non-agricultural ground can "
+        "carry parcels.",
+        "- Coverage is cropland-gated: only MGRS tiles with at least 1% "
+        "cropland were processed. Treat an empty region as unprocessed, not "
+        "as a prediction that no fields exist there.",
         "- Query with DuckDB over https:// URLs (s3:// hangs on some "
         "networks); a browser-like User-Agent is needed for bucket "
         "listings only, not file reads.",
@@ -628,13 +751,27 @@ def vector_readme(per_year: dict[int, list[dict]]) -> str:
         f"Per-year collections of predicted agricultural field boundaries "
         f"({years}): **{total:,} parcels** total, as per-UTM-zone "
         f"cloud-native GeoParquet. {_PROJECT}", "",
-        f"Browse it in the [data browser]({DATA_BROWSER}).", "",
+        f"**[Open the interactive map]({VIEWER_URL})** to explore the fields "
+        f"over imagery, or **[open the catalog in the Portolan browser]"
+        f"({browser('vector/catalog.json')})** to walk the metadata. The "
+        f"files are listed on [Source Cooperative]({SOURCE_COOP}).", "",
         "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## Collections", "",
-        *[f"- [{y}](./{y}/collection.json) — "
-          f"{sum(r['n_parcels'] for r in per_year[y]):,} parcels"
+        "| Year | Parcels | Files | Browse |",
+        "|---|---|---|---|",
+        *[f"| {y} "
+          f"| {sum(r['n_parcels'] for r in per_year[y]):,} "
+          f"| [{len(per_year[y])} UTM zones]({folder(f'vector/{y}')}) "
+          f"| [map]({viewer(y)}) · "
+          f"[browser]({browser(f'vector/{y}/collection.json')}) |"
           for y in sorted(per_year)], "",
         known_limitation.block(), "",
+        "Each year is an independent prediction, so a parcel `id` carries no "
+        "meaning across years; comparing years needs a spatial join.", "",
+        f"The pipeline that built these files is documented in "
+        f"[pipeline/README.md]({REPO_URL}/blob/main/pipeline/README.md), and "
+        f"the catalog itself is maintained at [{REPO_URL.split('//')[1]}]"
+        f"({REPO_URL}).", "",
     ])
 
 
@@ -649,7 +786,17 @@ def vector_agents(per_year: dict[int, list[dict]]) -> str:
         "own AGENTS.md; read those before querying.",
         "- Data layout: `vector/{year}/zone=NN/utm{NN}.parquet` — hive-"
         "partitioned by zone, each parquet colocated with its item "
-        "metadata; whole-year reads glob `zone=*/utm*.parquet`.", "",
+        "metadata. A whole-year read globs "
+        "`s3://us-west-2.opendata.source.coop/ftw/global-data-2e/"
+        "vector/{year}/zone=*/utm*.parquet` with `hive_partitioning=1`; "
+        "the https form cannot expand a wildcard.",
+        "- Coverage is cropland-gated: only MGRS tiles with at least 1% "
+        "cropland were processed, so an empty region is unprocessed rather "
+        "than predicted empty. Inside a processed tile nothing is filtered "
+        "by land cover, water or slope, so non-agricultural ground can "
+        "carry parcels. The only size bounds are a 900 m² floor and a "
+        "5 km² cap.",
+        f"- Pipeline and catalog source: {REPO_URL}", "",
         known_limitation.block(), "",
     ])
 
