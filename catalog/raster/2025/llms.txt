@@ -1,9 +1,0 @@
-# FTW Global (beta) — probability rasters 2025
-
-> 7,467 two-band (field, boundary) uint8 probability COGs at 2.5 m for 2025. CC-BY-4.0.
-
-Data: `https://data.source.coop/ftw/global-data-beta/raster/2025/{tile_key}.tif`
-Index: https://data.source.coop/ftw/global-data-beta/index/raster.parquet
-Collection: https://data.source.coop/ftw/global-data-beta/raster/2025/collection.json
-
-Probability = pixel value / 255. See AGENTS.md beside this file.
