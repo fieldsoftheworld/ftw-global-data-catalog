@@ -1,0 +1,22 @@
+name: Mosaic pipeline
+on:
+  pull_request:
+    paths: ['pipeline/mosaics/**', '.github/workflows/mosaic-pipeline.yml']
+  push:
+    branches: [main]
+    paths: ['pipeline/mosaics/**']
+permissions:
+  contents: read
+jobs:
+  tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          # 3.13 is deliberately newer than root ci.yml's 3.12: the pipeline
+          # wheels were verified against cp313 (incl. rasterio's bundled GDAL).
+          python-version: '3.13'
+      - run: python -m pip install -r pipeline/mosaics/requirements.txt pytest pyflakes
+      - run: pyflakes pipeline/mosaics/*.py
+      - run: python -m pytest -q pipeline/mosaics/test_mosaics.py

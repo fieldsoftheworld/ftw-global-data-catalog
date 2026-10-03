@@ -1,0 +1,13 @@
+Fields of the World — Global Data (beta) catalog
+Copyright 2026 Taylor Geospatial and contributors
+
+This repository's code is licensed under the Apache License, Version 2.0
+(see LICENSE). The published catalog metadata under catalog/ and the data
+it describes on Source Cooperative are licensed under CC-BY-4.0
+(https://creativecommons.org/licenses/by/4.0/).
+
+This product depends at runtime on the following third-party software with
+licenses other than Apache-2.0:
+
+- coarsen (https://pypi.org/project/coarsen/) — LGPL-2.1-or-later, used as
+  an unmodified library dependency by pipeline/postprocessing/.
