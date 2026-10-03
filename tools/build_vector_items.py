@@ -103,24 +103,29 @@ _PROJECT = (
 _FIBOA = f"[fiboa 0.3.0]({FIBOA_SPEC})"
 _VECOREL = f"[vecorel 0.1.0]({VECOREL_SPEC})"
 
-# The published parquet footers carry this sentence, and it is wrong in both
-# halves. Land cover is read: `pipeline/postprocessing/context.py` warps IO
-# 10 m annual land cover and the Copernicus GLO-30 DEM over every window, and
-# `outlines.py` turns them into the per-parcel `frac_water`,
-# `frac_crops_ever`, `slope_mean` and `frac_slope_gt30` attributes. Those
-# attributes also never reach the release, so "attributes are for filtering"
-# describes columns this data does not have. What the sentence was reaching
-# for is that none of it removes a parcel: the only retention test is
-# `in_utm_zone AND in_mgrs_square AND area_m2 <= 5e6`
-# (`merge_polygons.py:222`). `fiboa_convert.py` no longer emits the sentence;
-# this rewrite is for the parquet already in the bucket.
+# The published parquet footers carry this sentence, and it misleads twice.
+# "Attributes are for filtering" describes columns this data does not have:
+# `pipeline/postprocessing/context.py` warps IO 10 m annual land cover and
+# the Copernicus GLO-30 DEM over every window, and `outlines.py` turns them
+# into five per-parcel attributes (`frac_water`, `frac_crops_ever`,
+# `slope_mean`, `frac_slope_gt30`, `elev_mean`), none of which survive into
+# the released nine columns. "No land-cover masking" is true of individual
+# parcels, since the only retention test is `in_utm_zone AND in_mgrs_square
+# AND area_m2 <= 5e6` (`merge_polygons.py:222`), but it hides the bigger
+# fact that land cover chose which tiles ran at all. Measured against the
+# published index on 2026-10-03: every year's minimum `cropland_frac` is
+# exactly 0.010006 with no tile below 1%, which is a threshold rather than a
+# distribution. `fiboa_convert.py` no longer emits the sentence; this
+# rewrite is for the parquet already in the bucket.
 _STALE_DETAIL = (
     "Attributes are for filtering; no land-cover masking was applied."
 )
 _TRUE_DETAIL = (
-    "No parcel is removed on land-cover, water or terrain grounds: the "
-    "retention test is UTM-zone and MGRS-square ownership plus the size "
-    "bounds above."
+    "Within a processed tile no parcel is removed on land-cover, water or "
+    "terrain grounds, the retention test being UTM-zone and MGRS-square "
+    "ownership plus the size bounds above. Land cover did decide which "
+    "tiles ran: only MGRS tiles with at least 1% cropland were processed, "
+    "so regions below that threshold are absent entirely."
 )
 
 
@@ -647,9 +652,13 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         "Read the whole year at once by globbing the partitions over `s3://` "
         "with `hive_partitioning=1`; an HTTP URL cannot expand a wildcard. "
         "The collection's `data` asset carries both forms.", "",
-        "Nothing is filtered out by land cover, so water, scrub and built-up "
-        "ground can carry predicted parcels. Filter on `score` (the model's "
-        "field probability × 100) to trade precision against recall.", "",
+        "Coverage is not global. Only MGRS tiles with at least 1% cropland "
+        "were processed, so a region below that threshold has no parcels "
+        "here and an absence is not a prediction of absence. Inside a "
+        "processed tile nothing is filtered by land cover, so water, scrub "
+        "and built-up ground can carry predicted parcels. Filter on `score` "
+        "(the model's field probability × 100) to trade precision against "
+        "recall.", "",
     ]
     return "\n".join(lines)
 
@@ -683,8 +692,12 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         "parcels cleanly (measured: zero shared ids or geometries in the "
         "6°E utm31/utm32 boundary strip).",
         "- `metrics:area` is m². Post-processing kept parcels between "
-        "900 m² and 5 km²; nothing was removed on land-cover, water or "
-        "slope grounds, so non-agricultural ground can carry parcels.",
+        "900 m² and 5 km². Inside a processed tile nothing was removed on "
+        "land-cover, water or slope grounds, so non-agricultural ground can "
+        "carry parcels.",
+        "- Coverage is cropland-gated: only MGRS tiles with at least 1% "
+        "cropland were processed. Treat an empty region as unprocessed, not "
+        "as a prediction that no fields exist there.",
         "- Query with DuckDB over https:// URLs (s3:// hangs on some "
         "networks); a browser-like User-Agent is needed for bucket "
         "listings only, not file reads.",
@@ -743,9 +756,12 @@ def vector_agents(per_year: dict[int, list[dict]]) -> str:
         "`s3://us-west-2.opendata.source.coop/ftw/global-data-2e/"
         "vector/{year}/zone=*/utm*.parquet` with `hive_partitioning=1`; "
         "the https form cannot expand a wildcard.",
-        "- Nothing is filtered by land cover, water or slope, so "
-        "non-agricultural ground can carry parcels. The only size bounds "
-        "are a 900 m² floor and a 5 km² cap.",
+        "- Coverage is cropland-gated: only MGRS tiles with at least 1% "
+        "cropland were processed, so an empty region is unprocessed rather "
+        "than predicted empty. Inside a processed tile nothing is filtered "
+        "by land cover, water or slope, so non-agricultural ground can "
+        "carry parcels. The only size bounds are a 900 m² floor and a "
+        "5 km² cap.",
         f"- Pipeline and catalog source: {REPO_URL}", "",
     ])
 

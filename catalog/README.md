@@ -111,10 +111,18 @@ and its definitions.
   training distribution (e.g. smallholder systems): real fields there may
   receive low confidence". Expect the same shape of error here, and prefer a
   continuous `score` over a hard threshold in smallholder regions.
-- Nothing is filtered out by land cover. Water, scrub and built-up ground can
-  carry predicted parcels, so mask them downstream if your analysis needs them
-  gone. Parcels are removed only for being smaller than 900 m², larger than
-  5 km², or owned by a neighboring tile.
+- Coverage is cropland-gated, so it is not global. Only MGRS tiles with at
+  least 1% cropland were processed: every year's minimum `cropland_frac` in
+  the raster index is 0.010006, with no tile below it. Open desert, ice, dense
+  forest and purely urban tiles are therefore absent by construction, and an
+  empty region means the pipeline never ran there rather than that it found no
+  fields.
+- Inside a processed tile, nothing is filtered out by land cover. Water, scrub
+  and built-up ground can carry predicted parcels, so mask them downstream if
+  your analysis needs them gone. A parcel is removed only for being smaller
+  than 900 m², larger than 5 km², or owned by a neighboring tile. Land cover
+  and terrain are read per parcel, but only into quality attributes that stay
+  in the intermediate files and are not published.
 - Each year is an independent prediction. A parcel `id` carries no meaning
   across years, so comparing years in the vectors needs a spatial join rather
   than an id join. The rasters share one grid and compare per pixel.

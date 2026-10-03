@@ -60,9 +60,14 @@ it carries the measured numbers and the quirks this file does not repeat.
   parcel. This is not a land-tenure product, so do not answer ownership,
   tenure or legal-boundary questions from it. See
   [Fields of the World](https://fieldsofthe.world).
-- Nothing is filtered out by land cover, water or slope, so non-agricultural
-  ground can carry predicted parcels. Parcels are removed only for falling
-  below 900 m², exceeding 5 km², or being owned by a neighboring tile.
+- Coverage is cropland-gated and therefore not global. Only MGRS tiles with
+  at least 1% cropland were processed, so an empty region means the pipeline
+  never ran there. Never report absence of parcels as absence of fields;
+  check `index/raster.parquet` for whether a tile exists at all.
+- Inside a processed tile, nothing is filtered out by land cover, water or
+  slope, so non-agricultural ground can carry predicted parcels. Parcels are
+  removed only for falling below 900 m², exceeding 5 km², or being owned by a
+  neighboring tile.
 - The vector `score` (uint8 0–100) is the mean model field probability inside
   the parcel × 100 — a ranking for filtering, not a calibrated probability.
   No calibration against ground truth is published for this 2nd Edition.
