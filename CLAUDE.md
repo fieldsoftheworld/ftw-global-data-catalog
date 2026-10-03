@@ -61,6 +61,14 @@ python3 tools/upload_data.py [--confirm]    # staged data files
 - Change detection: local size+MD5 vs the object's size+ETag; the remote side is listed
   **non-recursively** per catalog directory (a recursive listing of the prefix would walk
   every COG/parquet sharing it). A changed content-type mapping needs `--force`.
+- `--confirm` refuses to guess. It aborts if ANY directory listing fails (or the aws CLI is
+  missing): a failed listing is not proof that objects are absent. A dry run still works and
+  shows every file as changed. It also refuses to overwrite a `raster/{year}/*` object whose
+  bucket ETag differs from the one recorded in `tools/raster_snapshot.json` (someone published
+  since the snapshot); the dry run lists those too. `--force` lifts both guards, so use it only
+  on purpose. After inspecting the bucket's copies and folding changes into `catalog/raster`,
+  re-record with `AWS_PROFILE=source-coop AWS_ENDPOINT_URL=https://data.source.coop python3
+  tools/raster_snapshot.py` (read-only). `upload_data.py` aborts on a failed listing the same way.
 - Publishing **never deletes**, and never delete bucket objects without asking Chris.
 - **Raster year files are bucket snapshots:** `catalog/raster/{year}/{README.md,AGENTS.md,
   collection.json,thumbnail.webp}` are copies of the published objects (refreshed 2026-10-03; a

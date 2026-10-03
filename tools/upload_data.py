@@ -40,6 +40,7 @@ from publish import (  # noqa: E402
     aws_cli,
     content_type_for,
     is_publishable,
+    ListingError,
     is_unchanged,
     load_config,
     remote_index,
@@ -152,7 +153,14 @@ def main() -> int:
         print(f"nothing under {base}/ to upload", file=sys.stderr)
         return 1
 
-    index = {} if args.force else remote_index(uploads, config)
+    try:
+        index = {} if args.force else remote_index(
+            uploads, config, strict=args.confirm)
+    except ListingError as exc:
+        print(f"refusing to upload: {exc}. A failed listing is not proof "
+              "that nothing exists; pass --force to upload without looking.",
+              file=sys.stderr)
+        return 1
     changed = [
         u for u in uploads
         if args.force

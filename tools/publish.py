@@ -28,6 +28,20 @@ listing can tell you:
   object predates this publisher: it re-uploads to be safe.
 - ``--force`` skips the listing entirely.
 
+Two guards make ``--confirm`` refuse rather than guess (both lifted by ``--force``):
+
+- **A failed listing aborts.** A dry run without credentials still works and
+  shows every file as changed, but ``--confirm`` stops if ANY directory listing
+  failed (or the aws CLI is missing). A failed listing is not evidence that the
+  objects are absent.
+- **Raster year files are bucket snapshots.** ``catalog/raster/{year}/*`` copies
+  published objects whose per-zone catalogs are generated outside this repo
+  (see CLAUDE.md). Each is overwritten only if the object currently in the
+  bucket still has the ETag recorded in ``tools/raster_snapshot.json`` when the
+  snapshot was taken; a bucket object that changed since (or a new local file
+  that would replace an existing remote one) is refused. Re-record the snapshot
+  with ``python3 tools/raster_snapshot.py`` after inspecting the bucket's copy.
+
 **It never deletes.** Removing a file from the published directory does not
 unpublish it. Delete the object yourself if that is what you meant.
 
@@ -42,6 +56,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -262,19 +277,27 @@ def _list_dir(aws: str, bucket: str, prefix: str, region: str) -> list:
     return json.loads(out) or []
 
 
+class ListingError(RuntimeError):
+    """A remote listing failed, so what exists in the bucket is unknown."""
+
+
 def remote_index(
     uploads: list[Upload], config: dict[str, str],
-    workers: int = MAX_UPLOAD_WORKERS,
+    workers: int = MAX_UPLOAD_WORKERS, strict: bool = False,
 ) -> dict[str, tuple[int, str]]:
     """Size and ETag for every published object, or {} when unreadable.
 
     Lists each directory the catalog occupies non-recursively, concurrently.
     Returns {} if any listing fails, so a dry run still works without
     credentials; every file then simply looks new, which errs toward
-    uploading. It never silently skips.
+    uploading. It never silently skips. With ``strict`` (used for
+    ``--confirm``) a failed listing or a missing aws CLI raises ListingError
+    instead: an unreadable bucket must not be read as an empty one.
     """
     aws = aws_cli()
     if aws is None:
+        if strict:
+            raise ListingError("aws CLI not found; cannot list the bucket")
         print("note: aws CLI not found; treating every file as changed")
         return {}
     bucket, _ = split_s3_uri(config["write_prefix"])
@@ -290,6 +313,11 @@ def remote_index(
                 rows = future.result()
             except (subprocess.CalledProcessError, OSError) as exc:
                 detail = (getattr(exc, "stderr", "") or str(exc)).strip()
+                if strict:
+                    raise ListingError(
+                        f"could not list s3://{bucket}/{futures[future]} "
+                        f"({detail})"
+                    ) from exc
                 print(
                     f"note: could not list s3://{bucket}/{futures[future]} "
                     f"({detail}); treating every file as changed"
@@ -357,6 +385,38 @@ def upload_all(
     return failures
 
 
+SNAPSHOT_FILE = ROOT / "tools" / "raster_snapshot.json"
+RASTER_YEAR_FILE = re.compile(r"^raster/\d{4}/[^/]+$")
+
+
+def load_snapshot(path: Path = SNAPSHOT_FILE) -> dict[str, str]:
+    """{key relative to write_prefix: MD5 the bucket object had when snapshotted}."""
+    return json.loads(path.read_text()) if path.is_file() else {}
+
+
+def snapshot_conflicts(
+    changed: list[Upload], index: dict[str, tuple[int, str]], prefix: str,
+    snapshot: dict[str, str],
+) -> list[str]:
+    """Keys under raster/{year}/ that would overwrite a bucket object we did not snapshot.
+
+    Local files there are copies of published objects. Overwriting is fine
+    while the bucket still holds the version that was copied (its ETag equals
+    the recorded MD5). If it holds anything else, someone published since, and
+    uploading would silently revert that. Keys absent from the bucket are new
+    and fine.
+    """
+    out = []
+    for upload in changed:
+        rel = upload.key[len(prefix) + 1:] if prefix else upload.key
+        if not RASTER_YEAR_FILE.match(rel) or upload.key not in index:
+            continue
+        remote_etag = index[upload.key][1].strip('"')
+        if snapshot.get(rel) != remote_etag:
+            out.append(upload.key)
+    return sorted(out)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Sync the published directory to object storage, 1:1.",
@@ -391,13 +451,35 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
-    index = {} if args.force else remote_index(uploads, config)
+    try:
+        index = {} if args.force else remote_index(
+            uploads, config, strict=args.confirm)
+    except ListingError as exc:
+        print(f"refusing to upload: {exc}. A failed listing is not proof "
+              "that nothing exists. Fix access and retry, or pass --force "
+              "to upload without looking.", file=sys.stderr)
+        return 1
     changed = [u for u in uploads if args.force or not is_unchanged(u, index)]
+    conflicts = [] if args.force else snapshot_conflicts(
+        changed, index, prefix, load_snapshot())
 
     print(f"publish_dir: {config['publish_dir']}/")
     print(f"target:      s3://{bucket}/{prefix}")
     print(f"{len(uploads)} file(s) published, {len(changed)} to upload")
     print("this never deletes; removing a file here does not unpublish it")
+
+    if conflicts:
+        print(f"{len(conflicts)} raster year file(s) differ in the bucket from "
+              "the recorded snapshot and would NOT be overwritten:",
+              file=sys.stderr)
+        for key in conflicts:
+            print(f"  {key}", file=sys.stderr)
+        if args.confirm:
+            print("refusing to upload. Inspect the bucket's copies, merge "
+                  "them into catalog/raster, re-record the snapshot "
+                  "(tools/raster_snapshot.py), or pass --force.",
+                  file=sys.stderr)
+            return 1
 
     if not args.confirm:
         for upload in changed[:20]:

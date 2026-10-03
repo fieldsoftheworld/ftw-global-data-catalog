@@ -318,6 +318,142 @@ try:
 finally:
     publish._list_dir, publish.aws_cli = real_list, real_cli
 
+# --- --confirm never guesses: failed listings and changed snapshots ----
+real_list, real_cli = publish._list_dir, publish.aws_cli
+try:
+    publish.aws_cli = lambda: "aws"
+
+    def denied(aws, bucket, prefix, region):
+        raise subprocess.CalledProcessError(1, "aws", stderr="denied")
+
+    publish._list_dir = denied
+    try:
+        remote_index(uploads, config, strict=True)
+        check(False, "strict remote_index must raise on a failed listing")
+    except publish.ListingError as exc:
+        check("denied" in str(exc), "the strict error names the failure")
+
+    def half_broken(aws, bucket, prefix, region):
+        if prefix.endswith("vector/2025/"):
+            raise subprocess.CalledProcessError(1, "aws", stderr="throttled")
+        return [[f"{prefix}some.json", 5, '"abc"']]
+
+    publish._list_dir = half_broken
+    try:
+        remote_index(uploads, config, strict=True)
+        check(False, "ANY failed directory listing must abort a strict index")
+    except publish.ListingError:
+        pass
+
+    publish.aws_cli = lambda: None
+    try:
+        remote_index(uploads, config, strict=True)
+        check(False, "a missing aws CLI must abort a strict index")
+    except publish.ListingError:
+        pass
+finally:
+    publish._list_dir, publish.aws_cli = real_list, real_cli
+
+PREFIX = "pre"
+snap = {"raster/2025/collection.json": "aaa", "raster/2025/README.md": "bbb"}
+changed = [
+    Upload(Path("x"), "pre/raster/2025/collection.json", "application/json"),
+    Upload(Path("x"), "pre/raster/2025/README.md", "text/markdown"),
+    Upload(Path("x"), "pre/raster/2025/new.png", "image/png"),
+    Upload(Path("x"), "pre/raster/2024/AGENTS.md", "text/markdown"),
+    Upload(Path("x"), "pre/vector/2025/collection.json", "application/json"),
+    Upload(Path("x"), "pre/raster/README.md", "text/markdown"),
+]
+remote = {
+    "pre/raster/2025/collection.json": (9, "aaa"),   # still the snapshotted version
+    "pre/raster/2025/README.md": (9, '"zzz"'),       # changed in the bucket since
+    "pre/raster/2025/new.png": (9, "ccc"),           # exists remotely, never snapshotted
+    "pre/vector/2025/collection.json": (9, "zzz"),   # not a raster year file
+    "pre/raster/README.md": (9, "zzz"),              # raster tree file, not a year file
+}                                                    # raster/2024/AGENTS.md is absent remotely
+check(publish.snapshot_conflicts(changed, remote, PREFIX, snap)
+      == ["pre/raster/2025/README.md", "pre/raster/2025/new.png"],
+      "only changed or unrecorded remote raster year objects conflict")
+check(publish.snapshot_conflicts(changed, {}, PREFIX, snap) == [],
+      "nothing remote, nothing to overwrite")
+check(publish.RASTER_YEAR_FILE.match("raster/2025/x.json")
+      and not publish.RASTER_YEAR_FILE.match("raster/2025/zone=15/catalog.json")
+      and not publish.RASTER_YEAR_FILE.match("vector/2025/x.json"),
+      "the guard covers raster/{year}/ files only")
+
+# main(): drive it with a fake lister and a recording uploader
+with tempfile.TemporaryDirectory() as tmp:
+    root = Path(tmp)
+    local_a = write(root / "collection.json", "new")
+    local_b = write(root / "other.json", "other")
+    ups = [
+        Upload(local_a, "pre/raster/2025/collection.json", "application/json"),
+        Upload(local_b, "pre/vector/2025/collection.json", "application/json"),
+    ]
+    saved = (publish.load_config, publish.collect_uploads, publish._list_dir,
+             publish.aws_cli, publish.upload_all, publish.load_snapshot,
+             sys.argv)
+    uploaded: list[list[str]] = []
+
+    def run(argv, lister, snapshot):
+        uploaded.clear()
+        publish.load_config = lambda: dict(config)
+        publish.collect_uploads = lambda c: list(ups)
+        publish._list_dir = lister
+        publish.aws_cli = lambda: "aws"
+        publish.load_snapshot = lambda: snapshot
+        publish.upload_all = lambda ch, *a, **k: (uploaded.append(
+            [u.key for u in ch]) or [])
+        sys.argv = ["publish.py", *argv]
+        out, err = io.StringIO(), io.StringIO()
+        with redirect_stdout(out), redirect_stderr(err):
+            code = publish.main()
+        return code, out.getvalue(), err.getvalue()
+
+    try:
+        def listing(remote_etags):
+            def lister(aws, bucket, prefix, region):
+                return [[k, 5, f'"{e}"'] for k, e in remote_etags.items()
+                        if k.rsplit("/", 1)[0] + "/" == prefix]
+            return lister
+
+        code, out, err = run(["--confirm"], denied, {})
+        check(code == 1 and not uploaded,
+              "--confirm aborts and uploads nothing when a listing fails")
+        check("refusing to upload" in err, "the abort says why")
+
+        code, out, err = run([], denied, {})
+        check(code == 0 and not uploaded and "2 to upload" in out,
+              "a dry run with a failed listing still works (everything changed)")
+
+        code, out, err = run(["--confirm", "--force"], denied, {})
+        check(code == 0 and uploaded == [[u.key for u in ups]],
+              "--force uploads without listing")
+
+        bucket_state = {"pre/raster/2025/collection.json": "newer-in-bucket"}
+        code, out, err = run(["--confirm"], listing(bucket_state),
+                             {"raster/2025/collection.json": "snapshot-md5"})
+        check(code == 1 and not uploaded
+              and "pre/raster/2025/collection.json" in err,
+              "--confirm refuses to overwrite a raster object that changed "
+              "since the snapshot")
+        code, out, err = run([], listing(bucket_state),
+                             {"raster/2025/collection.json": "snapshot-md5"})
+        check(code == 0 and not uploaded and "would NOT be overwritten" in err,
+              "the dry run reports the conflict too")
+        code, out, err = run(["--confirm", "--force"], listing(bucket_state),
+                             {"raster/2025/collection.json": "snapshot-md5"})
+        check(code == 0 and uploaded, "--force overrides the snapshot guard")
+
+        code, out, err = run(["--confirm"], listing(bucket_state),
+                             {"raster/2025/collection.json": "newer-in-bucket"})
+        check(code == 0 and uploaded == [[u.key for u in ups]],
+              "an object still at its snapshotted version may be overwritten")
+    finally:
+        (publish.load_config, publish.collect_uploads, publish._list_dir,
+         publish.aws_cli, publish.upload_all, publish.load_snapshot,
+         sys.argv) = saved
+
 if errors:
     print("\n".join(f"error  {e}" for e in errors))
     raise SystemExit(1)
