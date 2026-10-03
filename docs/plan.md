@@ -1,5 +1,15 @@
 # ftw-global-data-catalog — Portolan catalog for the FTW Global Data **2nd Edition** (2e) release
 
+> **Status (2026-10-03): historical plan, kept for the reasoning.** As built, the release is the
+> **2nd Edition (2e)** at `ftw/global-data-2e`: vectors and rasters cover **2017-2025** (9 years,
+> 1.139 B parcels, 67,197 tiles), the vector tree is hive-partitioned
+> (`vector/{year}/zone=NN/utm{NN}.parquet`, nine columns, Hilbert-sorted, 8,192-row groups, zstd 19,
+> interior holes under 20 m² filled) and so is the raster tree
+> (`raster/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif`), and `index/raster-lite.parquet` (110 kB)
+> sits beside the two full indexes. The text below still says "2024 and 2025" and flat
+> `raster/{year}/{tile_key}.tif` paths in places; [CLAUDE.md](../CLAUDE.md) and
+> [pipeline/README.md](../pipeline/README.md) describe the current state.
+
 ## Context
 
 FTW's global field-boundary predictions have a new **2nd Edition** (2e) release on Source Cooperative at

@@ -84,7 +84,9 @@ the per-zone temp is `part-0.parquet.tmp-<pid>`, which no `*.parquet` glob match
 Empty outline tiles write readable empty Parquet files.
 
 Conversion repairs geometry, joins seams, then — on the unioned geometry — drops
-parts and parcels below 900 m², re-applies merge's km² cap, computes
+parts and parcels below 900 m², fills interior holes under 20 m² (`MIN_HOLE_M2`:
+polygonizing 2.5 m rasters leaves half-pixel, 3.125 m² holes inside ~40% of parcels;
+larger holes such as farm buildings are kept), re-applies merge's km² cap, computes
 area/perimeter, and derives the bbox covering. The order matters: filtering before
 the union deleted fields cut by a seam into two sub-minimum halves, and a cap
 applied to merge's pre-union pixel area let a union over the cap through. Two
@@ -103,6 +105,43 @@ reports the real spec, tolerance and cap read from merge's `_summary.json`, and
 says INCOMPLETE when the merge ran with `--allow-missing`. It releases the
 documented nine-column schema; QA fields remain in intermediate files. These
 geometric operations do not guarantee defect-free coverage.
+
+`fill_small_holes.py` applies the same hole rule to zone files converted before it existed
+(exterior rings, row order, bbox and metadata unchanged; `metrics:area`/`metrics:perimeter` move
+by the filled rings; rows without small holes keep their WKB bytes), and `validate_vector.py`
+checks finished zone files (nine columns, ZSTD, row-group size, geo CRS, sampled validity, area
+and score ranges, hive layout, zone count) before they are published:
+
+```sh
+.venv/bin/python pipeline/postprocessing/fill_small_holes.py --in-root fiboa \
+  --out-root fiboa-filled --year 2024 --zone 43
+.venv/bin/python pipeline/postprocessing/validate_vector.py --root fiboa 2024 2025
+```
+
+## How the 2e release was built, where it differs from this package
+
+The published 2017-2025 files came from the production scripts this package was extracted from.
+Known differences, so nobody expects byte-identical output from a rerun:
+
+- **Outline backend.** The release used `--backend fast` (`+q1`, the integer bucket-queue
+  watershed) on windows cropped to their foreground (blocks of 64 px separated by background,
+  so crops cannot interact), with a float16 lookup-table probability build that needs ~2 GB less
+  transient memory per window. This package defaults to `exact` on the whole window; the cropped
+  fast path is not ported because it depends on fbp internals that cannot be tested here.
+- **Simplification.** The release used the Rust coverage simplifier (identical to GEOS 3.13.1
+  coverage simplify) with 5 m tolerance; the few parcels per tile that GEOS reports as
+  coverage-invalid got per-polygon Douglas-Peucker at 1.2 m. This package keeps every polygon in
+  one whole-coverage pass after repairing validity (see `polygons.py` for why), so output differs
+  only around those parcels.
+- **Release-time defects fixed here, not there.** The release's tile ownership used a nominal 6°
+  zone test without the 31V/32V exception and rounded the MGRS square from the origin, so a
+  sub-pixel offset moved a square by 100 km, and its fiboa conversion used a per-row hemisphere
+  CRS and filtered at 900 m² before the seam union. `outlines.py` and `fiboa_convert.py` here
+  carry the corrected rules (see above); reconverting with them can change which parcels exist
+  near zone/square edges, tile seams and the equator.
+- **Provenance string.** The released files' `determination:details` reads
+  `(nbg-pb-h0.01-t0.3+A900)` and does not mention the hole fill; this package writes the real
+  method read from merge's `_summary.json`.
 
 ```sh
 uv pip install pytest
