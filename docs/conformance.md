@@ -47,7 +47,7 @@ published objects. The published raster tree is hive-partitioned
 (`raster/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.{tif,json,thumb.png}`): each year collection links
 54 `zone=ZZ/catalog.json` children, each splitting into `gzd=ZZL/catalog.json` catalogs whose
 `item` links reach the 67,197 tile items. The tooling that generated those catalogs and items
-is not in this repository (the beta tree was copied to 2e by a one-off relay that was not
+is not in this repository (the earlier release tree was copied to 2e by a one-off relay that was not
 committed), and committing ~11,000 catalog files whose items cannot be checked offline would not
 make the gate meaningful. So the three rules above are waived for the nine year collections
 only; the same findings anywhere else, including the vector tree, still fail. The relative
