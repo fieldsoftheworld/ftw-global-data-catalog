@@ -4,9 +4,9 @@
   "stac_extensions": [
     "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
   ],
-  "id": "ftw-global-data-beta",
-  "title": "Fields of the World — Global Data (beta)",
-  "description": "Beta release of the Fields of the World (FTW) global field-boundary predictions: 383,570,287 predicted field polygons as per-UTM-zone GeoParquet for 2020, 2024 and 2025, and 67,197 two-band field/boundary-probability Cloud-Optimized GeoTIFFs at 2.5 m (26.0 TB) for 2017–2025, hosted on [Source Cooperative](https://source.coop/ftw/global-data-beta). Predictions derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/). One collection per year in each tree, so new years drop in incrementally. These are model predictions: a field here is a remote-sensing field unit, not a cadastral/legal parcel, and this is not a land-tenure product — see the catalog README for the limitations in full.",
+  "id": "ftw-global-data-2e",
+  "title": "Fields of the World — Global Data (2nd Edition)",
+  "description": "2nd Edition of the Fields of the World (FTW) global field-boundary predictions: 1,139,401,371 predicted field polygons as per-UTM-zone GeoParquet for 2017–2025, and 67,197 two-band field/boundary-probability Cloud-Optimized GeoTIFFs at 2.5 m (26.0 TB) for the same years. Explore the fields on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/), walk this catalog in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/catalog.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Predictions derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/), and the pipeline that produced them is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md). One collection per year in each tree, so new years drop in incrementally. These are model predictions. A field here is a remote-sensing field unit, not a cadastral or legal parcel, and this is not a land-tenure product; see the catalog README for the limitations in full.",
   "git:repository": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
   "git:ref": "main",
   "git:provider": "github",
@@ -15,11 +15,11 @@
       "rel": "root",
       "href": "./catalog.json",
       "type": "application/json",
-      "title": "Fields of the World — Global Data (beta)"
+      "title": "Fields of the World — Global Data (2nd Edition)"
     },
     {
       "rel": "self",
-      "href": "https://data.source.coop/ftw/global-data-beta/catalog.json",
+      "href": "https://data.source.coop/ftw/global-data-2e/catalog.json",
       "type": "application/json"
     },
     {
@@ -38,24 +38,30 @@
       "rel": "child",
       "href": "./vector/catalog.json",
       "type": "application/json",
-      "title": "FTW Global (beta) — Vector field boundaries"
+      "title": "FTW Global (2nd Edition) — Vector field boundaries"
     },
     {
       "rel": "child",
       "href": "./raster/catalog.json",
       "type": "application/json",
-      "title": "FTW Global (beta) — Field & boundary probability rasters"
+      "title": "FTW Global (2nd Edition) — Field & boundary probability rasters"
     },
     {
       "rel": "about",
-      "href": "https://source.coop/ftw/global-data-beta",
+      "href": "https://source.coop/ftw/global-data-2e",
       "type": "text/html",
-      "title": "FTW Global Data (beta) on Source Cooperative"
+      "title": "Source Cooperative repository (file listing and downloads)"
+    },
+    {
+      "rel": "icon",
+      "href": "./ftw-logo.svg",
+      "type": "image/svg+xml",
+      "title": "Fields of the World"
     },
     {
       "rel": "vcs",
       "href": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
-      "title": "Source repository"
+      "title": "Catalog source repository (metadata and pipeline)"
     },
     {
       "rel": "issues",

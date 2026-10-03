@@ -22,6 +22,7 @@ message gives the one command that installs a usable rashid.
 Run: python3 tests/test_portolan_conformance.py
 """
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -79,6 +80,28 @@ def rashid_version() -> tuple[int, ...]:
         fail(f"rashid --version printed no readable version: {text!r}")
     return tuple(int(part) for part in match.groups())
 
+
+# The raster item tree (zone=/gzd= catalogs + 67k items) is generated and
+# gitignored, not committed: a checkout without it would hand rashid a
+# catalog whose year collections point at children that are not on disk —
+# hundreds of findings about files that exist in the published bucket.
+# Validating a half-tree proves nothing, so the gate refuses it instead:
+# in CI (CI_LIGHT=1) that is a documented skip — the full conformance run
+# happens pre-publish via pipeline/rashid_check.sbatch — and locally it
+# says how to regenerate. See "generated item tree" in docs/conformance.md
+# and portolan-sdi/rashid (bucket-resident item trees) linked there.
+if not list((target / "raster").glob("*/zone=*/catalog.json")):
+    message = (
+        "the generated raster item tree is absent "
+        "(catalog/raster/*/zone=*/); regenerate it with: "
+        "python3 tools/build_raster_items.py items"
+    )
+    if os.environ.get("CI_LIGHT") == "1":
+        print(f"note   {message}")
+        print("note   conformance of the full tree runs pre-publish "
+              "(pipeline/rashid_check.sbatch); nothing validated here")
+        raise SystemExit(0)
+    fail(message)
 
 if shutil.which("rashid") is None:
     fail("rashid is not installed, so this gate checks nothing")

@@ -128,7 +128,7 @@ ALT_EXT = "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json
 
 MOSAICS_URL = "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/"
 FTW_URL = "https://fieldsofthe.world"
-DATA_BROWSER = "https://source.coop/ftw/global-data-beta"
+DATA_BROWSER = "https://source.coop/ftw/global-data-2e"
 
 COG_TYPE = "image/tiff; application=geotiff; profile=cloud-optimized"
 GEOTIFF_TYPE = "image/tiff; application=geotiff"

@@ -2,7 +2,7 @@
 
 Field and boundary probability rasters for 2024: **7,467 Cloud-Optimized GeoTIFFs** at 2.5 m (2.90 TB), one per Sentinel-2 MGRS-based tile. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
-Browse it in the [data browser](https://source.coop/ftw/global-data-beta).
+Browse it in the [data browser](https://source.coop/ftw/global-data-2e).
 
 Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
@@ -25,13 +25,13 @@ raster/2024/zone=01/gzd=01K/{tile}/{tile}.thumb.png  its thumbnail
 
 ## Find tiles
 
-The [index manifest](https://data.source.coop/ftw/global-data-beta/index/raster.parquet) lists every tile with href, size, bbox, `epsg`, and per-tile `field_frac`/`boundary_frac`/`cropland_frac` pixel fractions. The five field-densest tiles of 2024:
+The [index manifest](https://data.source.coop/ftw/global-data-2e/index/raster.parquet) lists every tile with href, size, bbox, `epsg`, and per-tile `field_frac`/`boundary_frac`/`cropland_frac` pixel fractions. The five field-densest tiles of 2024:
 
 ```python
 import duckdb
 con = duckdb.connect()
 con.execute("INSTALL httpfs; LOAD httpfs;")
-idx = "https://data.source.coop/ftw/global-data-beta/index/raster.parquet"
+idx = "https://data.source.coop/ftw/global-data-2e/index/raster.parquet"
 con.sql(f"""
     SELECT tile_key, epsg, round(field_frac, 3) AS field_frac
     FROM read_parquet('{idx}') WHERE year = 2024
@@ -45,7 +45,7 @@ Summarising the whole 2024 collection from the same manifest (no raster reads):
 import duckdb
 con = duckdb.connect()
 con.execute("INSTALL httpfs; LOAD httpfs;")
-idx = "https://data.source.coop/ftw/global-data-beta/index/raster.parquet"
+idx = "https://data.source.coop/ftw/global-data-2e/index/raster.parquet"
 con.sql(f"""
     SELECT count(*) AS tiles,
            count(DISTINCT epsg) AS utm_crs,
@@ -62,7 +62,7 @@ con.sql(f"""
 ## Read a tile
 
 ```bash
-gdalinfo /vsicurl/https://data.source.coop/ftw/global-data-beta/raster/2024/zone=01/gzd=01K/01KFS_0_0/01KFS_0_0.tif
+gdalinfo /vsicurl/https://data.source.coop/ftw/global-data-2e/raster/2024/zone=01/gzd=01K/01KFS_0_0/01KFS_0_0.tif
 ```
 
 Any COG reader works over HTTP range requests; the overviews make low-zoom reads cheap.
@@ -80,15 +80,15 @@ The 7,467 items are grouped into 54 UTM-zone subcatalogs, each splitting into it
 
 The UTM zones present this year: 01, 04, 05, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60 — 54 of the 60 UTM zones; the others hold no tiles in this collection.
 
-One [global overview COG](https://data.source.coop/ftw/global-data-beta/raster/2024/overview.tif) renders the whole year at global scale (the collection's `overview` asset). Every tile's own thumbnail sits beside its COG.
+One [global overview COG](https://data.source.coop/ftw/global-data-2e/raster/2024/overview.tif) renders the whole year at global scale (the collection's `overview` asset). Every tile's own thumbnail sits beside its COG.
 
-The [items.parquet mirror](https://data.source.coop/ftw/global-data-beta/raster/2024/items.parquet) holds every item's metadata in one stac-geoparquet file, so a spatial lookup over 7,467 tiles is one query rather than 7,467 HTTP requests:
+The [items.parquet mirror](https://data.source.coop/ftw/global-data-2e/raster/2024/items.parquet) holds every item's metadata in one stac-geoparquet file, so a spatial lookup over 7,467 tiles is one query rather than 7,467 HTTP requests:
 
 ```python
 import duckdb
 con = duckdb.connect()
 con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
-url = "https://data.source.coop/ftw/global-data-beta/raster/2024/items.parquet"
+url = "https://data.source.coop/ftw/global-data-2e/raster/2024/items.parquet"
 con.sql(f"""
     SELECT id, assets['data']['href'] AS cog
     FROM read_parquet('{url}')

@@ -78,6 +78,16 @@ def is_data(href: str) -> bool:
     return href.lower().endswith(DATA_SUFFIXES)
 
 
+def in_generated_tree(doc_path: Path, href: str) -> bool:
+    """True when href resolves into the gitignored raster item tree."""
+    target = (doc_path.parent / href).resolve()
+    try:
+        rel = target.relative_to(ROOT / "catalog" / "raster")
+    except ValueError:
+        return False
+    return len(rel.parts) >= 2 and rel.parts[1].startswith("zone=")
+
+
 def published_url(doc_path: Path, href: str) -> str:
     """The public URL a relative href resolves to when published."""
     rel = PurePosixPath(
@@ -172,7 +182,13 @@ for path, doc in documents:
             continue
         # A rel:pmtiles (or other data-suffix) link points at bytes that
         # live only in the bucket, exactly like a data asset href.
-        if is_data(href):
+        # The generated raster item tree (zone=/gzd= catalogs and items) is
+        # gitignored and rebuilt by `build_raster_items.py items`: a fresh
+        # clone has the links but not the files, while the published bucket
+        # has both. Treat a link into the absent generated tree like a data
+        # href — HEAD-checked live, exempt under CI_LIGHT. See the
+        # "generated item tree" section of docs/conformance.md.
+        if is_data(href) or in_generated_tree(path, href):
             if CI_LIGHT:
                 skipped += 1
             else:

@@ -91,13 +91,48 @@ item JSON remains the normative representation
 The finding was correct, not a validator artifact: PORTO-CORE-032 wants "a
 `child` or `item` link for every object it contains", and 67,197 published
 items had none. It is closed by publishing the connectivity, not by waiving
-the rule — the items are committed and grouped under browse subcatalogs
-(user ruling 2026-10-02; docs/plan.md Phase 4 has the layout). Verified:
-`rashid check catalog --no-data` over the full nine-year tree reports **no
-PTL-COL-005 at all**, and the only error-severity rule left is PTL-VIZ-002
-(9×, the waiver above), so the gate passes with `ACCEPTED` exactly
-`{"PTL-VIZ-002"}`. The measurements that chose that shape are kept below,
-because they also bound what may and may not be changed about it later.
+the rule — the items are grouped under browse subcatalogs (user ruling
+2026-10-02; docs/plan.md Phase 4 has the layout). Verified: `rashid check
+catalog --no-data` over the full nine-year tree reports **no PTL-COL-005 at
+all**, and the only error-severity rule left is PTL-VIZ-002 (9×, the waiver
+above), so the gate passes with `ACCEPTED` exactly `{"PTL-VIZ-002"}`. The
+measurements that chose that shape are kept below, because they also bound
+what may and may not be changed about it later.
+
+### The generated item tree is not committed (user ruling 2026-10-03)
+
+The tree is **generated, not authored**: `tools/build_raster_items.py items`
+rebuilds all 78,267 files (67,197 items + 3,690 zone/GZD catalogs) from
+`index/raster.parquet` plus the header sidecar, deterministically, and
+`tools/publish.py` walks the filesystem rather than the git index, so what
+publishes is unchanged. The 2026-10-02 ruling above was about the *bucket
+layout*; committing the files was never the point, and they are gitignored
+(`catalog/raster/*/zone=*/`).
+
+What that costs, and how each gate carries it:
+
+- **A fresh checkout cannot pass `rashid check` as-is**: the year
+  collections' 54 `child` links per year point at zone catalogs that exist
+  in the published bucket but not on disk, and rashid derives containment
+  from directory nesting over the files it can walk (measured above), so a
+  clean clone reports PTL-LNK findings for every such link and PTL-COL-005
+  returns. Validating that half-tree would prove nothing about the
+  published catalog, so `tests/test_portolan_conformance.py` **refuses to
+  run on a checkout without the generated tree**: under `CI_LIGHT=1` it is
+  a documented skip, and locally it fails with the regenerate command.
+  `ACCEPTED` stays exactly `{"PTL-VIZ-002"}` — no finding is waived,
+  because no run that could produce those findings is accepted as valid.
+- **The real conformance gate is pre-publish**: `pipeline/rashid_check.sbatch`
+  runs the full nine-year tree (2 h 20 m measured, login nodes CPU-kill it)
+  after regeneration, before `tools/publish.py --confirm`.
+- **`tests/test_links.py`** treats a link into the absent generated tree
+  like a data href: HEAD-checked against the published base in a full run,
+  exempt under `CI_LIGHT`. With the tree on disk the links are checked on
+  disk as before.
+- **Upstream**: a catalog whose item tree is generated and bucket-resident
+  cannot satisfy PTL-COL-005 from a clean checkout at all; filed as a
+  validator feature request (validate against the published tree, or
+  declare items bucket-resident): [rashid#205](https://github.com/portolan-sdi/rashid/issues/205).
 
 ### Containment is directory nesting, so the group must be in the key
 

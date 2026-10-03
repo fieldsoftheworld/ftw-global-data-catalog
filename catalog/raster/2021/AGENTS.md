@@ -4,14 +4,14 @@ Guidance for AI agents. Every claim here is quoted from a verified COG header or
 
 Related guides: the [raster tree](../AGENTS.md), the [catalog root](../../AGENTS.md), and this collection's [README](./README.md).
 
-- 7,466 COGs at `https://data.source.coop/ftw/global-data-beta/raster/2021/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif` (anonymous read), tile keys like `01KFS_0_0`. Each tile's directory also holds `{tile}.json`, its STAC item and `{tile}.thumb.png`.
+- 7,466 COGs at `https://data.source.coop/ftw/global-data-2e/raster/2021/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif` (anonymous read), tile keys like `01KFS_0_0`. Each tile's directory also holds `{tile}.json`, its STAC item and `{tile}.thumb.png`.
 - Band 1 `field`, band 2 `boundary`; uint8, probability = value / 255 (the files carry scale 1/255). 2.5 m, per-tile UTM CRS (79 distinct EPSG codes this year; `epsg` in the index, `proj:code` on each item). No nodata is declared.
-- Enumerate tiles via the [index manifest](https://data.source.coop/ftw/global-data-beta/index/raster.parquet) (`year = 2021`) or the `items.parquet` mirror, never by listing the bucket. The collection carries no `rel: item` link of its own: the items hang off 54 `zone={ZZ}/catalog.json` subcatalogs, each splitting into `gzd={GZD}/catalog.json`, which carry the item links. Walking that tree costs ~400 requests per year, so for bulk work read the mirror or the manifest instead.
+- Enumerate tiles via the [index manifest](https://data.source.coop/ftw/global-data-2e/index/raster.parquet) (`year = 2021`) or the `items.parquet` mirror, never by listing the bucket. The collection carries no `rel: item` link of its own: the items hang off 54 `zone={ZZ}/catalog.json` subcatalogs, each splitting into `gzd={GZD}/catalog.json`, which carry the item links. Walking that tree costs ~400 requests per year, so for bulk work read the mirror or the manifest instead.
 - Measured across 2021: mean field fraction 0.1216, max 0.9595.
 - Each COG's GDAL metadata names its four source mosaic tiles (`source_items`, mirrored into each item's `ftw:source_items`) and the model (`unet_balanced_fp32.onnx`).
 - Tile origins are not derivable from the tile key (measured: `01KFS_0_0` starts at (600000, 7700020), `33UUU_0_0` at (300000, 5900040)). Read `proj:transform` from the item, or the COG header.
 
-- `https://data.source.coop/ftw/global-data-beta/raster/2021/items.parquet` mirrors every item for bulk and spatial queries.
+- `https://data.source.coop/ftw/global-data-2e/raster/2021/items.parquet` mirrors every item for bulk and spatial queries.
 
 Runnable example — the five field-densest tiles:
 
@@ -19,7 +19,7 @@ Runnable example — the five field-densest tiles:
 import duckdb
 con = duckdb.connect()
 con.execute("INSTALL httpfs; LOAD httpfs;")
-idx = "https://data.source.coop/ftw/global-data-beta/index/raster.parquet"
+idx = "https://data.source.coop/ftw/global-data-2e/index/raster.parquet"
 con.sql(f"""
     SELECT tile_key, epsg, round(field_frac, 3) AS field_frac
     FROM read_parquet('{idx}') WHERE year = 2021
@@ -33,7 +33,7 @@ Whole-collection summary from the index:
 import duckdb
 con = duckdb.connect()
 con.execute("INSTALL httpfs; LOAD httpfs;")
-idx = "https://data.source.coop/ftw/global-data-beta/index/raster.parquet"
+idx = "https://data.source.coop/ftw/global-data-2e/index/raster.parquet"
 con.sql(f"""
     SELECT count(*) AS tiles,
            count(DISTINCT epsg) AS utm_crs,

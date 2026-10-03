@@ -425,6 +425,13 @@ def main() -> int:
         "--retries", type=int, default=4,
         help="retries per object on a transient S3 failure (default: 4)",
     )
+    parser.add_argument(
+        "--only", action="append", metavar="SUBDIR",
+        help="publish only files under this publish_dir subdirectory "
+             "(repeatable). For a staged rollout where part of the tracked "
+             "tree is known to be behind the published catalog — e.g. "
+             "publishing raster/ while the vector tree awaits a merge.",
+    )
     args = parser.parse_args()
 
     config = load_config()
@@ -439,6 +446,13 @@ def main() -> int:
     bucket, prefix = split_s3_uri(config["write_prefix"])
     region = config.get("region", "us-west-2")
     uploads = collect_uploads(config)
+    if args.only:
+        heads = tuple(
+            f"{prefix}/{sub.strip('/')}/" if prefix else f"{sub.strip('/')}/"
+            for sub in args.only
+        )
+        uploads = [u for u in uploads if u.key.startswith(heads)]
+        print(f"scoped to: {', '.join(s.strip('/') + '/' for s in args.only)}")
     if not uploads:
         print(f"nothing under {config['publish_dir']}/ to publish",
               file=sys.stderr)
