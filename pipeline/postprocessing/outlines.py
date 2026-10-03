@@ -84,10 +84,11 @@ IO_RETRY_WAIT_S = 60
 REPORT_EVERY = 50
 
 
-#: Half-width of a Sentinel-2 tile's overlap with its neighbours, metres: the 110 km
-#: raster carries a 100 km MGRS square centred in it.
+#: Side of an MGRS grid square, metres.
 MGRS_SQUARE_M = 100_000.0
-MGRS_PAD_M = 5_000.0
+#: A tile's square must sit inside its raster; allow this much slack (the published rasters
+#: overhang the square by 0-80 m, and a padded raster by its pad).
+MGRS_FIT_TOLERANCE_M = 250.0
 
 
 def lon_in_zone(zn: int, band: str, lon: float) -> bool:
@@ -113,20 +114,31 @@ def lon_in_zone(zn: int, band: str, lon: float) -> bool:
 
 
 def mgrs_square(tr, height: int, width: int) -> tuple[float, float, float, float]:
-    """The tile's own 100 km square as (x0, y0, x1, y1), from the raster's bounds.
+    """The tile's own 100 km MGRS square as (x0, y0, x1, y1), from the raster's actual extent.
 
-    Rounding the nominal square off the origin -- ``floor((tr.c + 5000) / 1e5)``
-    -- is unstable at the exact boundary it always lands on: a sub-pixel origin
-    offset moves the claimed square by a WHOLE 100 km. Two live CDSE tiles have
-    such offsets (59GQQ_0_1 dy = -80 m, 60GTU_0_1 dy = -40 m), and measured, a
-    -80 m easting offset turns sq_x0 = 400000 into 300000, so the tile claims its
-    western neighbour's square and owns none of its own parcels. Deriving the
-    square from the raster's actual bounds removes the rounding step entirely.
+    The published score rasters are 100.08 km (40,032 px x 2.5 m) with their origin 0-80 m
+    off the square, so the square is the 100 km grid cell that the raster's north-west corner
+    snaps to: ``round(origin / 100 km)``. Rounding to the *nearest* cell is stable for any
+    offset or padding under 50 km, which a floor/ceil of ``origin +/- pad`` is not (a sub-pixel
+    offset flips floor/ceil by a whole 100 km at the exact boundary the origin sits on).
+
+    An earlier version took ``origin + 5 km`` and ``extent - 5 km`` as the square, which
+    assumes a 110 km raster with a 5 km pad. On the real 100.08 km rasters that claims a
+    90.08 km square (81% of the true area): the outer ~5 km frame of every tile is owned by
+    nobody and silently dropped. The square is checked against the raster extent so a
+    raster that cannot contain it fails loudly instead of owning a wrong square.
     """
-    x0 = tr.c + MGRS_PAD_M
-    y1 = tr.f - MGRS_PAD_M
-    x1 = tr.c + width * abs(tr.a) - MGRS_PAD_M
-    y0 = tr.f - height * abs(tr.e) + MGRS_PAD_M
+    x0 = round(tr.c / MGRS_SQUARE_M) * MGRS_SQUARE_M
+    y1 = round(tr.f / MGRS_SQUARE_M) * MGRS_SQUARE_M
+    x1, y0 = x0 + MGRS_SQUARE_M, y1 - MGRS_SQUARE_M
+    west, north = tr.c, tr.f
+    east, south = tr.c + width * abs(tr.a), tr.f - height * abs(tr.e)
+    tol = MGRS_FIT_TOLERANCE_M
+    if x0 < west - tol or y1 > north + tol or x1 > east + tol or y0 < south - tol:
+        raise ValueError(
+            f"raster extent x {west:.0f}-{east:.0f}, y {south:.0f}-{north:.0f} does not contain "
+            f"the 100 km MGRS square x {x0:.0f}-{x1:.0f}, y {y0:.0f}-{y1:.0f} its origin snaps to"
+        )
     return x0, y0, x1, y1
 
 

@@ -47,35 +47,84 @@ def test_band_x_is_rejected_not_guessed():
         ol.lon_in_zone(32, "X", 9.0)
 
 
-def _square(dx: float = 0.0, dy: float = 0.0):
-    "A 110 km / 2.5 m tile whose 100 km square is 400000-500000 E, 5300000-5400000 N."
-    h = w = int(110_000 / 2.5)
-    tr = A(2.5, 0, 400_000 - 5_000 + dx, 0, -2.5, 5_400_000 + 5_000 + dy)
-    return ol.mgrs_square(tr, h, w)
+#: Real published score rasters (2025): tile, west edge, north edge, expected 100 km square.
+#: Every one is 40,032 px x 2.5 m = 100,080 m wide, with the origin 0-80 m off its square.
+REAL_TILES = [
+    ("15TVG_0_0", 399_960.0, 4_700_040.0, (400_000.0, 4_600_000.0, 500_000.0, 4_700_000.0)),
+    ("01KFS_0_0", 600_000.0, 7_700_020.0, (600_000.0, 7_600_000.0, 700_000.0, 7_700_000.0)),
+    # southern hemisphere, the two tiles the origin rounding was suspected of mis-owning
+    ("59GQQ_0_1", 699_960.0, 5_399_920.0, (700_000.0, 5_300_000.0, 800_000.0, 5_400_000.0)),
+    ("60GTU_0_0", 199_980.0, 5_400_040.0, (200_000.0, 5_300_000.0, 300_000.0, 5_400_000.0)),
+    # Norway, band 32V (the tiles the 31V/32V exception exists for)
+    ("32VKL_0_0", 199_980.0, 6_600_000.0, (200_000.0, 6_500_000.0, 300_000.0, 6_600_000.0)),
+    ("32VLL_0_0", 300_000.0, 6_600_000.0, (300_000.0, 6_500_000.0, 400_000.0, 6_600_000.0)),
+    # the equator, in both hemispheres' false-northing conventions
+    ("17MNV_0_0", 499_980.0, 10_000_000.0, (500_000.0, 9_900_000.0, 600_000.0, 10_000_000.0)),
+    ("17NPA_0_0", 600_000.0, 100_020.0, (600_000.0, 0.0, 700_000.0, 100_000.0)),
+]
+SIDE = 40_032
 
 
-def test_mgrs_square_matches_the_nominal_square_when_the_origin_is_exact():
-    assert _square() == (400_000.0, 5_300_000.0, 500_000.0, 5_400_000.0)
+def _real(c: float, f: float):
+    return ol.mgrs_square(A(2.5, 0, c, 0, -2.5, f), SIDE, SIDE)
 
 
-@pytest.mark.parametrize("dx,dy", [(-80.0, 0.0), (-40.0, 0.0), (0.0, 80.0), (0.0, -80.0)])
-def test_mgrs_square_tracks_a_sub_pixel_origin_offset(dx, dy):
-    """A tiny origin offset must move the square by that offset, not by 100 km.
+def _old_square(c: float, f: float) -> tuple[float, float, float, float]:
+    "The previous formula: origin + 5 km, extent - 5 km (assumes a 110 km raster)."
+    return c + 5_000, f - SIDE * 2.5 + 5_000, c + SIDE * 2.5 - 5_000, f - 5_000
 
-    Two live CDSE tiles are offset (59GQQ_0_1 dy = -80 m, 60GTU_0_1 dy = -40 m).
-    The nominal ``floor((tr.c + 5000) / 1e5)`` rounding measured sq_x0 = 300000
-    for dx = -80, so the tile claimed its western neighbour's square and owned
-    none of its own parcels.
-    """
-    x0, y0, x1, y1 = _square(dx, dy)
-    assert (x0, y1) == (400_000.0 + dx, 5_400_000.0 + dy)
-    assert x1 - x0 == pytest.approx(ol.MGRS_SQUARE_M)
-    assert y1 - y0 == pytest.approx(ol.MGRS_SQUARE_M)
+
+@pytest.mark.parametrize("tile,c,f,expected", REAL_TILES, ids=[t[0] for t in REAL_TILES])
+def test_mgrs_square_is_the_true_100km_square_on_real_rasters(tile, c, f, expected):
+    assert _real(c, f) == expected, tile
+
+
+@pytest.mark.parametrize("tile,c,f,expected", REAL_TILES, ids=[t[0] for t in REAL_TILES])
+def test_no_tile_loses_area_to_a_shrunken_square(tile, c, f, expected):
+    """The old formula claimed 90.08 x 90.08 km (81%): a 5 km frame owned by nobody."""
+    x0, y0, x1, y1 = _real(c, f)
+    assert (x1 - x0) * (y1 - y0) == pytest.approx(ol.MGRS_SQUARE_M**2)
+    ox0, oy0, ox1, oy1 = _old_square(c, f)
+    assert (ox1 - ox0) * (oy1 - oy0) < 0.82 * ol.MGRS_SQUARE_M**2  # the bug this guards
+    # a parcel 2 km inside the true edge was dropped by the old square, and is owned now
+    px, py = x0 + 2_000, y1 - 2_000
+    assert x0 <= px < x1 and y0 < py <= y1
+    assert not (ox0 <= px < ox1 and oy0 < py <= oy1)
+
+
+def test_neighbouring_tiles_own_exactly_abutting_squares():
+    "The frame between two neighbours belongs to one of them, never to neither."
+    west = _real(300_000.0, 6_600_000.0)   # 32VLL
+    east = _real(399_960.0, 6_600_000.0)   # a tile one square east, origin 40 m off
+    south = _real(300_000.0, 6_500_040.0)  # 32VLK-like, one square south
+    assert west[2] == east[0]
+    assert west[1] == south[3]
+
+
+@pytest.mark.parametrize("dx,dy", [(-80.0, 0.0), (-40.0, 0.0), (0.0, 80.0), (0.0, -80.0), (40.0, 40.0)])
+def test_mgrs_square_tracks_a_sub_pixel_origin_offset_without_moving_100km(dx, dy):
+    """A tiny origin offset must not change which 100 km cell is claimed."""
+    x0, y0, x1, y1 = _real(400_000.0 + dx, 4_700_000.0 + dy)
+    assert (x0, y1) == (400_000.0, 4_700_000.0)
+
+
+@pytest.mark.parametrize("pad", [0.0, 5_000.0, 10_000.0])
+def test_mgrs_square_is_independent_of_halo_padding(pad):
+    "A raster padded by `pad` on every side (110 km for 5 km) owns the same square."
+    side = int((100_000 + 2 * pad) / 2.5)
+    tr = A(2.5, 0, 400_000 - pad, 0, -2.5, 4_700_000 + pad)
+    assert ol.mgrs_square(tr, side, side) == (400_000.0, 4_600_000.0, 500_000.0, 4_700_000.0)
+
+
+def test_a_raster_that_cannot_contain_its_square_is_rejected():
+    tr = A(2.5, 0, 400_000, 0, -2.5, 4_700_000)
+    with pytest.raises(ValueError, match="does not contain"):
+        ol.mgrs_square(tr, 30_000, 30_000)  # 75 km: too small
 
 
 def test_mgrs_square_is_half_open_so_no_parcel_has_two_owners():
-    x0, y0, x1, y1 = _square()
-    north = _square(dy=100_000.0)
+    x0, y0, x1, y1 = _real(399_960.0, 4_700_040.0)
+    north = _real(399_960.0, 4_800_040.0)
     inside = lambda sq, x, y: sq[0] <= x < sq[2] and sq[1] < y <= sq[3]  # noqa: E731
     assert inside((x0, y0, x1, y1), x0, y1)
     assert not inside((x0, y0, x1, y1), x1, y1)
