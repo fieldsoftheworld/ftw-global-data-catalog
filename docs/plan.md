@@ -1,9 +1,9 @@
-# ftw-global-data-catalog — Portolan catalog for the FTW Global Data **beta** release
+# ftw-global-data-catalog — Portolan catalog for the FTW Global Data **2nd Edition** (2e) release
 
 ## Context
 
-FTW's global field-boundary predictions have a new **beta** release on Source Cooperative at
-`ftw/global-data-beta`. The bucket holds data only, no metadata: `vector/{2024,2025}/utm{NN}.parquet`
+FTW's global field-boundary predictions have a new **2nd Edition** (2e) release on Source Cooperative at
+`ftw/global-data-2e`. The bucket holds data only, no metadata: `vector/{2024,2025}/utm{NN}.parquet`
 (54 UTM zones/year, 227.5 GiB, 120M+134M parcels, fiboa/vecorel schema), `raster/{2017..2025}/`
 (67,197 two-band uint8 field/boundary-probability COGs, 2.5 m, ~26 TB), and `index/{raster,vector}.parquet`
 manifests (hrefs, sizes, bboxes, per-tile stats — the basis for STAC generation).
@@ -51,9 +51,9 @@ aws CLI `/u/cholmes/micromamba/envs/ftw/bin`; DuckDB needs `https://data.source.
 Alpha's clean publish-directory model + the template's refinements:
 
 ```
-catalog/                    # THE published catalog — synced 1:1 to ftw/global-data-beta
-catalog.publish.yaml        # write_prefix: s3://us-west-2.opendata.source.coop/ftw/global-data-beta/
-                            # public_base: https://data.source.coop/ftw/global-data-beta
+catalog/                    # THE published catalog — synced 1:1 to ftw/global-data-2e
+catalog.publish.yaml        # write_prefix: s3://us-west-2.opendata.source.coop/ftw/global-data-2e/
+                            # public_base: https://data.source.coop/ftw/global-data-2e
                             # region: us-west-2, publish_dir: catalog, data_dir: staging-data
 tools/                      # template naming (not scripts/catalog/)
   publish.py                # port alpha's (non-recursive listing, content-types, size+MD5 skip); fix its ROOT-path bug
@@ -71,14 +71,14 @@ CLAUDE.md, README.md
 
 Portolan v0.2.0 schema URI on catalogs+collections; `file:size` + multihash `1220…` `file:checksum`
 on every asset; every catalog/collection dir carries README.md (`rel: describedby`), AGENTS.md
-(`rel: agents`), llms.txt, thumbnail.png; root carries `vcs`/`issues` links (absolute GitHub URLs)
+(`rel: agents`), thumbnail.png; root carries `vcs`/`issues` links (absolute GitHub URLs)
 + alpha's `git:*` fields; relative structural links, absolute `self` on published root.
 
 ## Phase 2 — Catalog skeleton (committed metadata)
 
 ```
 catalog/
-  catalog.json  README.md  AGENTS.md  llms.txt  thumbnail.png  .portolan/metadata.yaml
+  catalog.json  README.md  AGENTS.md  thumbnail.png  .portolan/metadata.yaml
   vector/
     catalog.json                    # children: 2024, 2025, fields-yearly
     2024/collection.json + 54 items (utm01…utm60) + items.parquet ref   # committed (small)
@@ -103,7 +103,7 @@ catalog/
 
 ## Phase 3 — 2025 fields PMTiles (first deliverable; on rails)
 
-Adapt `alpha:scripts/tiles/` (README there has measured timings). Beta is ~12× smaller than alpha
+Adapt `alpha:scripts/tiles/` (README there has measured timings). 2e is ~12× smaller than alpha
 (134M vs 1.58B features) so expect hours, not days:
 
 1. **Stage**: read `vector/2025/utm*.parquet` (https URLs), **carry all columns** (drop only
@@ -111,17 +111,17 @@ Adapt `alpha:scripts/tiles/` (README there has measured timings). Beta is ~12× 
    keep in parquet). Check for cross-zone duplicates first (ids are tile-scoped; query
    `ftw:touches_window_edge` overlap) — dedupe only if measured. `SET TimeZone='UTC'` moot (no
    datetime col) — verify. `gpio` merge → GeoParquet 2.0 (row-group pruning).
-2. **A5 aggregate**: `gpio process aggregate a5 --resolution 7`; metrics adapted to beta schema:
+2. **A5 aggregate**: `gpio process aggregate a5 --resolution 7`; metrics adapted to the 2e schema:
    `count`, `area_ha` (from `metrics:area`), `avg_field_prob`, `avg_boundary_prob`, `pct_covered`
    via ported `add_coverage.py` (geodesic constant r7 ≈ 2,075.5 km², antimeridian wrap, rounding).
-   No 350 km² cutoff needed (beta already caps at 5 km²) — verify max area first.
+   No 350 km² cutoff needed (2e already caps at 5 km²) — verify max area first.
 3. **Cells archive**: `tylertoo tiles … --min-zoom 0 --max-zoom 8 --layer-name cells --verbatim
    --exclude-property a5_cell --profile bounded`; `tile_weights.py` report (≤600 KB gzipped from z2).
 4. **Fields shards + handover merge**: shard-plan → coarse (plan-writer only) → shards z9–13
    (`--row-group-size 100000`) → `tylertoo merge` with the cells archive as COARSE. At 134M
    features, possibly fewer shards / no 360G node needed — size from the staged parquet.
 5. **Styles**: per-year handover styles (cells `maxzoom: 9` / fields `minzoom: 9`, same PMTiles
-   source), all `step`/`match` expressions (browser legend rule). Proposed set for beta:
+   source), all `step`/`match` expressions (browser legend rule). Proposed set for 2e:
    count, coverage, avg-size, **field-prob** (replacing alpha's confidence); *style-plan checkpoint
    with measured distributions before tiling*.
 6. **Publish**: `fields-2025.pmtiles` + `cells_a5r7_2025.parquet` → `vector/fields-yearly/` via
@@ -131,18 +131,55 @@ Adapt `alpha:scripts/tiles/` (README there has measured timings). Beta is ~12× 
 
 ## Phase 4 — Raster (COG) catalog + thumbnails (on rails)
 
+**Layout ruling (2026-10-02, user-approved — supersedes the per-item-folder
+ruling of 2026-10-01):** one grouped hierarchy carries data *and* metadata,
+hive-separated like the vector tree's `zone=NN/`:
+
+```
+raster/{year}/collection.json                              committed
+raster/{year}/zone={ZZ}/catalog.json                       committed, 54/year
+raster/{year}/zone={ZZ}/gzd={GZD}/catalog.json             committed, 356/year
+raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif        the COG
+raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.json       the item  (committed)
+raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.thumb.png  its thumbnail
+raster/{year}/{overview.tif,thumbnail.webp,items.parquet}  collection level
+```
+
+`{ZZ}` is the tile key's two leading digits and `{GZD}` those plus the
+latitude-band letter, so `01KFS_0_0` groups under `zone=01/gzd=01K/`. The
+per-tile folder keeps data beside metadata, so every item asset href is
+`./{tile}.tif` / `./{tile}.thumb.png`.
+
+The 67,197 COGs and thumbnails are server-side copied into the grouped keys
+and `index/raster.parquet` is rewritten to match (same machinery as the
+first move; old keys deleted only with separate approval). The items are
+**committed** under `catalog/raster/` together with the zone/GZD catalogs
+that group them — that is what makes them reachable by `rel` links and what
+closes PTL-COL-005, since rashid derives containment from directory nesting
+and only sees item JSON that is in the tree (docs/conformance.md has the
+measurements). The inference pipeline emits this hierarchy directly, so new
+generations never need a relayout. llms.txt is removed from the catalog
+(2026-10-01 ruling, unchanged).
+
 1. `tools/build_raster_items.py` reads `index/raster.parquet` (all fields needed: href, size,
    bbox, epsg, field/boundary/cropland fracs) + a one-time COG-header pass for proj:transform/shape
    (or derive from index bbox+known 40032² grid). Emits per year: collection.json (committed),
-   ~7,466 items **straight to S3** at `raster/{year}/{tile}.json` next to each `.tif` (relative
-   asset hrefs), grouped browse subcatalogs if flat item-link count is unwieldy (alpha's
-   zone/gzd tree in `build_features_items.py` is the model), and `items.parquet` collection-mirror.
+   ~7,466 **committed** items per year at
+   `raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.json` beside each `.tif` (relative asset
+   hrefs), the zone/GZD browse catalogs that group them (with README.md + AGENTS.md each,
+   since PTL-FIL-001/002/003 bind plain catalogs too), and the `items.parquet`
+   collection-mirror. Run order is `items` → `collections` → `mirror`: a collection links the
+   zone catalogs that exist on disk, and `portolan stac-geoparquet` finds the nested items by
+   following those `child` links. (The browse-subcatalog idea here named alpha's
+   `build_features_items.py` as the model; that script has no zone/gzd tree — it publishes
+   S3-only items with no item links at all, which is where PTL-COL-005 came from.
+   docs/conformance.md records what was measured.)
    Items carry proj + file + render extensions; bands metadata (field, boundary, scale 1/255,
    quantization) from the verified gdalinfo; `derived_from` links to the four Sentinel-2 quarter
    source items recorded in GDAL metadata.
 2. **Thumbnails**: extend `make_thumbnails.py` — per-item PNG from each COG's smallest overview
    (rasterio decimated read of the `field` band, colormap, nodata→alpha, composite over `#0b1414`),
-   uploaded next to the item (`raster/{year}/{tile}.png`, item asset role `thumbnail`). Run as an
+   uploaded next to the item (`…/gzd={GZD}/{tile}/{tile}.thumb.png`, item asset role `thumbnail`). Run as an
    sbatch array on rails (67k renders, embarrassingly parallel, data in-region). Collection
    thumbnails: low-zoom mosaic per year. Start with 2025, then batch 2017–2024.
 3. **Global overview COGs (per year)**: mosaic each year's 7,466 tiles at overview resolution
@@ -161,9 +198,33 @@ Adapt `alpha:scripts/tiles/` (README there has measured timings). Beta is ~12× 
 - Browser QC per collection: default style renders at full extent, legends match measured values,
   tight bboxes, first tile load small (pmtiles.io), thumbnails show data not basemap
 - `tools/publish.py` dry-run → `--confirm`; then `rashid`/`portolan check --live --url
-  https://data.source.coop/ftw/global-data-beta`
+  https://data.source.coop/ftw/global-data-2e`
 - Rerun every AGENTS.md query against published data
 - Register later via `register-catalog` skill (ask user first)
+
+## Documentation decisions
+
+Applied from the Portolan best-practices specs
+([documentation](https://github.com/portolan-sdi/portolan-spec/blob/main/specs/best-practices/documentation.md),
+[philosophy](https://github.com/portolan-sdi/portolan-spec/blob/main/specs/best-practices/philosophy.md)):
+
+- **Two files, two audiences.** README.md for a person deciding whether to trust the data;
+  AGENTS.md for an agent that has already committed and needs the first query to work. No copying
+  between them. Every level cross-links its parent, its children and its sibling file.
+- **llms.txt dropped** (2026-10-01, user's call). It was a third surface duplicating the other two
+  and drifting from the hive layout; the `rel: llms` links went with it at the root and in the
+  vector tree. rashid 0.1.8 stays green without them. The raster tree still carries llms.txt —
+  removing those belongs to the agent that owns `tools/build_raster_items.py`. The llms.txt objects
+  already in the bucket are untouched: publishing never deletes.
+- **Lead with what a reader can do.** Each README opens with measured numbers, then a runnable
+  single-file query, then the whole-collection hive glob — the pattern a reader would not have
+  guessed. Every example is run before it is committed.
+- **Say what the data is not.** A `Limitations` section at the root and in the vector tree quotes
+  FTW's own framing (remote-sensing field unit, not a cadastral/legal parcel; not a land-tenure
+  product), names the model, and states that `score` is an uncalibrated model probability.
+- **CRS with consequences, not just an EPSG code.** The vector GeoParquet is EPSG:4326 in every
+  zone file — the UTM zone is a partition key, not a CRS — so `ST_Area` returns square degrees and
+  `metrics:area` is the column to read. COGs are per-tile UTM; PMTiles are Web Mercator.
 
 ## Execution checkpoints (will ask before acting)
 
@@ -173,7 +234,7 @@ without asking).
 
 ## Verification
 
-End-to-end: open `https://source.coop/ftw/global-data-beta` in the data browser — root catalog with
+End-to-end: open `https://source.coop/ftw/global-data-2e` in the data browser — root catalog with
 vector + raster trees, fields-yearly renders the 2025 handover (cells→fields at z9) with legends,
 COG items open with thumbnails; DuckDB queries from AGENTS.md run as written; CI green on GitHub.
 

@@ -11,7 +11,7 @@ gpio process aggregate a5 global2025_gp2.parquet cells_raw.parquet \
   --resolution 7 --metric "sum:metrics:area,avg:score" \
   --out-geometry polygon --geoparquet-version 2.0
 # Slurm job 205790: Elapsed 00:00:45, MaxRSS 115,190,196 K, 48 cores
-# input: ftw/global-data-beta vector/2025 merged (134,259,417 rows, 42 GB)
+# input: ftw/global-data-2e vector/2025 merged (134,259,417 rows, 42 GB)
 ```
 
 No `--breakdown` was used, so the known-heavy breakdown materialization is

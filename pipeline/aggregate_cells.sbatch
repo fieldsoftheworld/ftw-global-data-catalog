@@ -1,5 +1,5 @@
 #!/bin/bash
-# Per-year a5 cell aggregation for the low-zoom exploration layer (beta).
+# Per-year a5 cell aggregation for the low-zoom exploration layer (2e).
 #
 # Produces cells_a5r${R}_${YEAR}.parquet with, per a5 cell:
 #   count             number of parcels
@@ -12,9 +12,9 @@
 #   YEAR=2025 R=7 sbatch --export=ALL aggregate_cells.sbatch
 #   (IN=... to override the input; defaults to global${YEAR}_gp2.parquet)
 #
-# No MAX_AREA_KM2 filter: the beta upstream already removes parcels > 5 km2
+# No MAX_AREA_KM2 filter: the 2e upstream already removes parcels > 5 km2
 # (measured max 5.007 km2 across all 2025 zones).
-#SBATCH --job-name=ftw-beta-agg-cells
+#SBATCH --job-name=ftw-2e-agg-cells
 #SBATCH --partition=cpu,cpu_amd
 #SBATCH --account=bgtj-tgirails
 #SBATCH --time=24:00:00

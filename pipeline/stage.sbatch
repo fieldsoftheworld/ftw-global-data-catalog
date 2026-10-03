@@ -1,11 +1,11 @@
 #!/bin/bash
-# Stage one beta year (54 UTM-zone files, all columns except bbox) and merge
+# Stage one 2e year (54 UTM-zone files, all columns except bbox) and merge
 # into one GeoParquet 2.0 file with native geo stats (enables tylertoo's
 # row-group pruning).
 #
-#   cp pipeline/* ~/ftw-beta-pipeline/ && cd ~/ftw-beta-pipeline
+#   cp pipeline/* ~/ftw-2e-pipeline/ && cd ~/ftw-2e-pipeline
 #   YEAR=2025 sbatch --export=ALL stage.sbatch
-#SBATCH --job-name=ftw-beta-stage
+#SBATCH --job-name=ftw-2e-stage
 #SBATCH --partition=cpu,cpu_amd
 #SBATCH --account=bgtj-tgirails
 #SBATCH --time=12:00:00

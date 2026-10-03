@@ -15,7 +15,7 @@ Change detection compares local size and MD5 against the object's size and
 ETag, so a normal publish uploads only what changed. The remote side is read
 by listing each directory the catalog occupies *non-recursively*
 (``--delimiter /``), concurrently. Listing write_prefix recursively instead
-would walk every data object sharing it — the beta bucket holds ~67k COGs and
+would walk every data object sharing it — the 2e bucket holds ~67k COGs and
 227 GiB of parquet under the same prefix — when only a couple thousand
 metadata objects are ever published. Caveats, all inherited from what a bucket
 listing can tell you:
@@ -73,7 +73,7 @@ _CT_BY_SUFFIX = {
     ".parquet": "application/vnd.apache.parquet",
     ".pmtiles": "application/vnd.pmtiles",
     ".md": "text/markdown; charset=utf-8",
-    ".txt": "text/markdown; charset=utf-8",  # llms.txt
+    ".txt": "text/plain; charset=utf-8",
     ".png": "image/png",
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
@@ -262,6 +262,51 @@ def _list_dir(aws: str, bucket: str, prefix: str, region: str) -> list:
     return json.loads(out) or []
 
 
+# Above this many distinct directories, per-directory listing costs more
+# subprocesses than one recursive listing costs pages: the committed raster
+# item tree alone is ~71k directories, and a recursive listing of its
+# top-level prefixes is a few hundred paginated calls.
+RECURSIVE_LISTING_THRESHOLD = 64
+
+
+def remote_index_recursive(
+    uploads: list[Upload], config: dict[str, str],
+) -> dict[str, tuple[int, str]] | None:
+    """One recursive listing per top-level prefix, via boto3.
+
+    Returns None when boto3 is unavailable (caller falls back to the
+    per-directory walk) and {} when a listing fails — the same
+    err-toward-upload contract as the per-directory path.
+    """
+    try:
+        import boto3
+    except ImportError:
+        return None
+    bucket, prefix = split_s3_uri(config["write_prefix"])
+    region = config.get("region", "us-west-2")
+    tops = set()
+    for u in uploads:
+        rel = u.key[len(prefix) + 1:] if prefix else u.key
+        first, sep, _ = rel.partition("/")
+        # A root-level file is its own prefix; a directory gets the slash so
+        # "raster/" cannot also match a sibling named "raster.json".
+        tops.add(f"{first}/" if sep else first)
+    index: dict[str, tuple[int, str]] = {}
+    s3 = boto3.client("s3", region_name=region)
+    try:
+        for top in sorted(tops):
+            head = f"{prefix}/{top}" if prefix else top
+            paginator = s3.get_paginator("list_objects_v2")
+            for page in paginator.paginate(Bucket=bucket, Prefix=head):
+                for obj in page.get("Contents", []):
+                    index[obj["Key"]] = (obj["Size"], obj["ETag"].strip('"'))
+    except Exception as exc:  # noqa: BLE001 — same contract as remote_index
+        print(f"note: could not list s3://{bucket}/{prefix} ({exc}); "
+              "treating every file as changed")
+        return {}
+    return index
+
+
 def remote_index(
     uploads: list[Upload], config: dict[str, str],
     workers: int = MAX_UPLOAD_WORKERS,
@@ -271,8 +316,16 @@ def remote_index(
     Lists each directory the catalog occupies non-recursively, concurrently.
     Returns {} if any listing fails, so a dry run still works without
     credentials; every file then simply looks new, which errs toward
-    uploading. It never silently skips.
+    uploading. It never silently skips. Past RECURSIVE_LISTING_THRESHOLD
+    distinct directories (the committed raster item tree is ~71k of them),
+    one recursive listing per top-level prefix replaces the walk.
     """
+    if len(key_dirs(uploads)) > RECURSIVE_LISTING_THRESHOLD:
+        recursive = remote_index_recursive(uploads, config)
+        if recursive is not None:
+            return recursive
+        print("note: boto3 not available; falling back to per-directory "
+              "listing — this will be slow for a tree this size")
     aws = aws_cli()
     if aws is None:
         print("note: aws CLI not found; treating every file as changed")
@@ -372,6 +425,13 @@ def main() -> int:
         "--retries", type=int, default=4,
         help="retries per object on a transient S3 failure (default: 4)",
     )
+    parser.add_argument(
+        "--only", action="append", metavar="SUBDIR",
+        help="publish only files under this publish_dir subdirectory "
+             "(repeatable). For a staged rollout where part of the tracked "
+             "tree is known to be behind the published catalog — e.g. "
+             "publishing raster/ while the vector tree awaits a merge.",
+    )
     args = parser.parse_args()
 
     config = load_config()
@@ -386,6 +446,13 @@ def main() -> int:
     bucket, prefix = split_s3_uri(config["write_prefix"])
     region = config.get("region", "us-west-2")
     uploads = collect_uploads(config)
+    if args.only:
+        heads = tuple(
+            f"{prefix}/{sub.strip('/')}/" if prefix else f"{sub.strip('/')}/"
+            for sub in args.only
+        )
+        uploads = [u for u in uploads if u.key.startswith(heads)]
+        print(f"scoped to: {', '.join(s.strip('/') + '/' for s in args.only)}")
     if not uploads:
         print(f"nothing under {config['publish_dir']}/ to publish",
               file=sys.stderr)

@@ -14,6 +14,8 @@ Three notes on how this is wired:
   contradict Portolan on purpose: stac-check recommends a rel:'self' link,
   which Portolan forbids, because a static catalog that hardcodes its own
   location cannot be mirrored or moved. rashid is the gate; this is advisory.
+  They are grouped by note text with a few example objects, because printed
+  per object the 67,197 raster items emit ~134k lines saying the same things.
 - One stac-check failure is exempted, and the exemption expires by itself. See
   below and docs/conformance.md.
 
@@ -123,6 +125,13 @@ def declares_profile(doc: dict) -> bool:
 errors: list[str] = []
 exempted: list[str] = []
 reachable: list[str] = []
+# Best-practice notes, grouped by their text. Printed per object, this gate
+# emitted two notes for every one of the 67,197 raster items — ~134k lines of
+# advice that says the same three things. Grouping keeps every distinct note
+# and a few example objects, and drops only the repetition. Notes never fail
+# the build; errors below are still reported one by one.
+notes: dict[str, list[str]] = {}
+NOTE_EXAMPLES = 3
 checked = 0
 
 for path in sorted(BASE.rglob("*.json")):
@@ -151,8 +160,27 @@ for path in sorted(BASE.rglob("*.json")):
         errors.append(f"{rel}: {linter.error_msg}")
         continue
     for note in linter.best_practices_msg[1:]:
-        if note.strip():
-            print(f"note   {rel}: {note.strip()}")
+        if not note.strip():
+            continue
+        # Some notes quote the object's own id ("Item name '33UUU_0_0'
+        # should only contain Searchable identifiers"), which would make one
+        # group per tile — 7,466 of them saying the same thing. Replacing the
+        # id with a placeholder groups the note, and the examples still name
+        # the objects.
+        text = note.strip()
+        if isinstance(doc.get("id"), str) and doc["id"]:
+            text = text.replace(doc["id"], "{id}")
+        # The same note with the link count spelled out, once per distinct
+        # count: 46 groups of "You have N links" where one will do.
+        text = re.sub(r"You have \d+ links", "You have {n} links", text)
+        notes.setdefault(text, []).append(str(rel))
+
+for text, where in sorted(notes.items(), key=lambda kv: -len(kv[1])):
+    examples = ", ".join(where[:NOTE_EXAMPLES])
+    more = (f", +{len(where) - NOTE_EXAMPLES} more"
+            if len(where) > NOTE_EXAMPLES else "")
+    print(f"note   {len(where)} object(s): {text}")
+    print(f"       e.g. {examples}{more}")
 
 if exempted:
     for rel_str in exempted:

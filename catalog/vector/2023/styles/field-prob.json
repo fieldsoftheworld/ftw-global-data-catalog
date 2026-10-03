@@ -1,0 +1,67 @@
+{
+  "version": 8,
+  "name": "Field probability (A5 r7 → fields) (2023)",
+  "metadata": {
+    "description": "Mean parcel score (model field probability × 100) per A5 r7 cell at z0–8; from z9 each 2023 field polygon is colored by its own score on the same bins."
+  },
+  "sources": {
+    "data": {
+      "type": "vector",
+      "url": "pmtiles://https://data.source.coop/ftw/global-data-2e/vector/2023/fields-2023.pmtiles"
+    }
+  },
+  "layers": [
+    {
+      "id": "cells-fill",
+      "type": "fill",
+      "source": "data",
+      "source-layer": "cells",
+      "maxzoom": 9,
+      "paint": {
+        "fill-color": [
+          "step",
+          [
+            "get",
+            "avg_score"
+          ],
+          "#d73027",
+          45,
+          "#fdae61",
+          55,
+          "#ffffbf",
+          65,
+          "#a6d96a",
+          80,
+          "#1a9850"
+        ],
+        "fill-opacity": 0.8
+      }
+    },
+    {
+      "id": "fields-fill",
+      "type": "fill",
+      "source": "data",
+      "source-layer": "fields",
+      "minzoom": 9,
+      "paint": {
+        "fill-color": [
+          "step",
+          [
+            "get",
+            "score"
+          ],
+          "#d73027",
+          45,
+          "#fdae61",
+          55,
+          "#ffffbf",
+          65,
+          "#a6d96a",
+          80,
+          "#1a9850"
+        ],
+        "fill-opacity": 0.7
+      }
+    }
+  ]
+}

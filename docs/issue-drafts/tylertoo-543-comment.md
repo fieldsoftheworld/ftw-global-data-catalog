@@ -1,6 +1,6 @@
 # Comment for existing issue #543 (preflight the pass-1 memory floor)
 
-A second datapoint from the FTW **beta** build, one scale down from the
+A second datapoint from the FTW **2e** build, one scale down from the
 issue's 1.58 B-row case and with a wider property set:
 
 - 134,259,417 features, 42 GB GeoParquet 2.0, 17 exported properties,
@@ -20,5 +20,5 @@ Two implications for the preflight proposed here:
    page cache counts toward the number being preflighted, the check will
    refuse jobs that would in fact succeed.
 
-Happy to run instrumented reruns of the beta case on our cluster
+Happy to run instrumented reruns of the 2e case on our cluster
 (`TYLERTOO_PROFILE_JSON` captures) against a branch.

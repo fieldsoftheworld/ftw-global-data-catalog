@@ -3,7 +3,7 @@
 
 Portolan (PORTO-CORE-028/029) requires every asset to carry ``file:size``
 (byte count) and ``file:checksum`` encoded as a multihash: ``1220`` (sha2-256,
-32 bytes) followed by the 64-char sha256 hex digest. The beta data lives only
+32 bytes) followed by the 64-char sha256 hex digest. The 2e data lives only
 in the bucket, so the bytes have to be streamed to hash them. Run this on
 rails, where the reads are cheap; the item builders then consume the sidecar.
 

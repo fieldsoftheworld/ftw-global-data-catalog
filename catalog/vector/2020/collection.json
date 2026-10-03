@@ -11,7 +11,7 @@
   ],
   "id": "ftw-s2-2020",
   "title": "FTW Global — Field Boundaries 2020 (GeoParquet)",
-  "description": "Predicted agricultural field boundaries for 2020: 129,270,485 parcels (6,359,697 km² of field area) in 54 per-UTM-zone GeoParquet files, 109.9 GiB total, browsable in the [data browser](https://source.coop/ftw/global-data-beta). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2020 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+  "description": "Predicted agricultural field boundaries for 2020: 129,366,600 parcels (6,360,730 km² of field area) in 54 per-UTM-zone GeoParquet files, 80.0 GiB total. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2020), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2020/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2020 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Within a processed tile no parcel is removed on land-cover, water or terrain grounds, the retention test being UTM-zone and MGRS-square ownership plus the size bounds above. Land cover did decide which tiles ran: only MGRS tiles with at least 1% cropland were processed, so regions below that threshold are absent entirely. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror). The full pipeline, from mosaic download to this file, is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
   "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
@@ -127,7 +127,7 @@
       "rel": "root",
       "href": "../../catalog.json",
       "type": "application/json",
-      "title": "Fields of the World — Global Data (beta)"
+      "title": "Fields of the World — Global Data (2nd Edition)"
     },
     {
       "rel": "parent",
@@ -159,16 +159,16 @@
       "title": "Collection agent guide"
     },
     {
-      "rel": "llms",
-      "href": "./llms.txt",
-      "type": "text/markdown",
-      "title": "Agent/LLM usage guide"
-    },
-    {
       "rel": "describedby",
       "href": "https://github.com/fiboa/specification",
       "type": "text/html",
       "title": "fiboa specification (core parcel fields)"
+    },
+    {
+      "rel": "vcs",
+      "href": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
+      "type": "text/html",
+      "title": "Catalog source repository (metadata and pipeline)"
     },
     {
       "rel": "pmtiles",
@@ -507,13 +507,19 @@
   ],
   "assets": {
     "data": {
-      "href": "./zone=*/utm*.parquet",
+      "href": "https://data.source.coop/ftw/global-data-2e/vector/2020/zone=*/utm*.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "All 2020 field boundaries (GeoParquet glob, hive-partitioned by zone)",
-      "description": "One glob over every zone partition. Read it with hive partitioning on to get `zone` as a column; per-file sizes and checksums live on the items.",
+      "description": "One glob over every zone partition. Read it with `hive_partitioning=1` to get `zone` as a column. Expanding the wildcard needs the `s3` alternate below, because an HTTP URL cannot be globbed; per-file sizes and checksums live on the items.",
       "roles": [
         "data"
-      ]
+      ],
+      "alternate": {
+        "s3": {
+          "href": "s3://us-west-2.opendata.source.coop/ftw/global-data-2e/vector/2020/zone=*/utm*.parquet",
+          "title": "S3 glob (us-west-2, anonymous read) — the form DuckDB can expand"
+        }
+      }
     },
     "pmtiles": {
       "href": "./fields-2020.pmtiles",
@@ -522,8 +528,8 @@
       "roles": [
         "visual"
       ],
-      "file:size": 28360814815,
-      "file:checksum": "1220ff3bb95d4da5c143b4c13c5b95ae0f2e2d9a7103f936d91aac31b236b399b5fe"
+      "file:size": 26870655143,
+      "file:checksum": "1220ea296aa2a9b17667cf51d3f622417215766169f4f4a495d7510a363bac6bdcd1"
     },
     "cells": {
       "href": "./cells_a5r7_2020.parquet",
@@ -533,8 +539,8 @@
       "roles": [
         "data"
       ],
-      "file:size": 1644164,
-      "file:checksum": "1220e13e90aba0b3d1065d9db1ace80aedca42abddd049c3af099014a3a3d88e460d"
+      "file:size": 1644573,
+      "file:checksum": "12201a6697cf441e8a4e98b96b1003cd95690114ed5daf6acd9b8c09ee8057b9a879"
     },
     "styles/count": {
       "href": "./styles/count.json",
@@ -543,8 +549,8 @@
       "roles": [
         "style"
       ],
-      "file:size": 1324,
-      "file:checksum": "1220fd5ee20875b8dbecc2541b5f1476fdfb77b7d3d9f4b014ea0d3175a11b72963c"
+      "file:size": 1322,
+      "file:checksum": "1220ee9d845b15e2b415c9726913df0d10883943fbf39008a05928b313783a304e7f"
     },
     "styles/coverage": {
       "href": "./styles/coverage.json",
@@ -554,8 +560,8 @@
         "style",
         "default"
       ],
-      "file:size": 1366,
-      "file:checksum": "12203d32948513e2749272c517a60507171674785e624446eac6e55b95ac26ade3c2"
+      "file:size": 1364,
+      "file:checksum": "12201da298d35f659a53a57296607ab44071feaf748a13d60eb08e59e9873d128247"
     },
     "styles/avg-size": {
       "href": "./styles/avg-size.json",
@@ -564,8 +570,8 @@
       "roles": [
         "style"
       ],
-      "file:size": 1647,
-      "file:checksum": "12204a948a3ac4e801f328b92eb3d4d25a5cba8ea1f984ddd18c71131eeaf61fe373"
+      "file:size": 1645,
+      "file:checksum": "1220c9a877dc7c715886f10e0cfcc3a325602781bba01b3b30b90d746006a3c7ec59"
     },
     "styles/field-prob": {
       "href": "./styles/field-prob.json",
@@ -574,13 +580,13 @@
       "roles": [
         "style"
       ],
-      "file:size": 1396,
-      "file:checksum": "1220d9d5fc472cb463cc1b56e817a35ce5c10841db16e7982ceeecb1722fb234145e"
+      "file:size": 1394,
+      "file:checksum": "122041aa18c3d4ffb013a436cf640ecd7dfe4021d05630e3f6e9a538c49b2909ae53"
     },
     "thumbnail": {
       "href": "./thumbnail.png",
       "type": "image/png",
-      "title": "Fields 2020 rendered with the default (coverage) style",
+      "title": "Fields 2020 rendered with the field coverage style",
       "roles": [
         "thumbnail"
       ],
@@ -596,8 +602,8 @@
         "collection-mirror",
         "metadata"
       ],
-      "file:size": 34420,
-      "file:checksum": "122021c947a60e52e3ef1354027a70dcd3e2bfe9ad42750d4ef08f741e43436488bd"
+      "file:size": 34427,
+      "file:checksum": "1220f846ee8976f0b9967b204a775c4434011dde4bf3e501524d32c66f2664d11cef"
     }
   }
 }

@@ -3,14 +3,17 @@
 # Everything under publish_dir is synced 1:1 to write_prefix. Data files are
 # never placed under publish_dir, so they cannot be published by accident.
 
-# The S3 URI uploads are written to.
-write_prefix: s3://us-west-2.opendata.source.coop/ftw/global-data-beta
+# The S3 URI uploads are written to, through the Source Cooperative proxy: run with
+# AWS_PROFILE=source-coop AWS_ENDPOINT_URL=https://data.source.coop (the per-session STS
+# credentials from `source-coop creds` only work against the proxy, not the bucket directly).
+write_prefix: s3://ftw/global-data-2e
 
 # The public base URL that serves write_prefix. Every href in the catalog is
 # built from this, so it goes in the STAC JSON and write_prefix does not.
-public_base: https://data.source.coop/ftw/global-data-beta
+public_base: https://data.source.coop/ftw/global-data-2e
 
-region: us-west-2
+# Signing region for the proxy.
+region: us-east-1
 
 # The directory that IS the published catalog, synced 1:1 to write_prefix.
 # Nothing outside it is ever uploaded by tools/publish.py.

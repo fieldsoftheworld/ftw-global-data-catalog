@@ -45,7 +45,7 @@ pass-2 sinks (`SinkBacking::Spill`, `pipeline.rs`), so ~190 GiB resident is
 
 ## Reproduction / evidence available
 
-The FTW beta pipeline reproduces this on demand (fieldsoftheworld/
+The FTW 2e pipeline reproduces this on demand (fieldsoftheworld/
 ftw-global-data-catalog, `pipeline/tile_fields.sbatch`, `MODE=coarse`).
 A `TYLERTOO_PROFILE_JSON` capture from the next run of the same command can
 be attached here on request; the alpha-scale datapoint in #543

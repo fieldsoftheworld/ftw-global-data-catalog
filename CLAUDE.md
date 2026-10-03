@@ -1,6 +1,6 @@
 # ftw-global-data-catalog — developer guide
 
-Git-backed Portolan/STAC catalog for the Fields of the World (FTW) Global **beta** release.
+Git-backed Portolan/STAC catalog for the Fields of the World (FTW) Global **2nd Edition** (2e) release (bucket prefix `global-data-2e`).
 The build plan is in [docs/plan.md](docs/plan.md) — read it first.
 
 ## Models
@@ -13,25 +13,55 @@ exploration/search subagents; keep Opus (the default) for implementation and rev
 `catalog/` is published; everything outside it never is. Data files are never placed in
 `catalog/`, so they cannot be published by accident.
 
-- Write target (uploads): `s3://us-west-2.opendata.source.coop/ftw/global-data-beta/`
-- Public href base (all STAC hrefs): `https://data.source.coop/ftw/global-data-beta/`
+- Write target (uploads): `s3://us-west-2.opendata.source.coop/ftw/global-data-2e/`
+- Public href base (all STAC hrefs): `https://data.source.coop/ftw/global-data-2e/`
 - Config lives in `catalog.publish.yaml`; this catalog uses `tools/publish.py`
   (stateless size+MD5 change detection), not `portolan push`.
 
 ## Layout
-- `catalog/` — the published catalog (STAC JSON, README.md, AGENTS.md, llms.txt,
-  thumbnails, styles). Dotfiles are not published, except `.portolan/metadata.yaml`.
+- `catalog/` — the published catalog (STAC JSON, README.md, AGENTS.md,
+  thumbnails, styles; llms.txt was removed by user ruling 2026-10-01).
+  Dotfiles are not published. `catalog/.portolan/` was removed
+  on 2026-10-03 (portolan-cli state this catalog does not use; every fact in
+  `metadata.yaml` was already in the STAC). `publish.py` still allows
+  `.portolan/metadata.yaml` through as a general rule. **The bucket copy was not
+  deleted** — publishing never deletes — so ask Chris before removing
+  `.portolan/` objects from the bucket.
+- Bucket data layouts (both per-item folders, data beside metadata):
+  `vector/{year}/zone=NN/utm{NN}.parquet` and
+  `raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif` (+ `{tile}.json`,
+  `{tile}.thumb.png`; per-year `overview.tif`/`thumbnail.webp`/`items.parquet`
+  at `raster/{year}/`; user ruling 2026-10-02). `{ZZ}`/`{GZD}` come from the
+  tile key: `01KFS_0_0` → `zone=01/gzd=01K/`. The inference pipeline emits
+  the raster hierarchy directly — new generations never need a relayout.
+- The raster item tree (67,197 items + 3,690 zone/GZD catalogs) is
+  **generated, not committed** (user ruling 2026-10-03; gitignored as
+  `catalog/raster/*/zone=*/`). Rebuild it with `tools/build_raster_items.py`,
+  in the order `items` → `collections` → `mirror`; `tools/publish.py` walks
+  the filesystem, so what publishes is unchanged. A checkout without the
+  tree skips the conformance gate in CI and fails it locally — the full
+  check runs pre-publish via `pipeline/rashid_check.sbatch` (see
+  docs/conformance.md, "generated item tree", and rashid#205).
 - `tools/` — `publish.py` (metadata, 1:1), `upload_data.py` (staged data, suffix
-  allow-list, never deletes), `make_thumbnails.py` (COG thumbnail core).
-- `pipeline/` — the rails Slurm PMTiles pipeline (alpha port; Phase 3 adapts it — see
-  `pipeline/README.md` for cluster gotchas and measured timings).
+  allow-list, never deletes), `build_vector_items.py` / `build_raster_items.py`
+  (tree generators), `render_thumbnails.py` (vector thumbnails via chiitiler),
+  `make_thumbnails.py` (COG thumbnail core).
+- `pipeline/` — all five processing stages (mosaics, inference, postprocessing,
+  rails Slurm PMTiles, catalog). `pipeline/README.md` is the end-to-end overview;
+  cluster gotchas and measured timings live there too.
 - `staging-data/` — gitignored staging tree read by `upload_data.py`; keys mirror its
-  layout under the write prefix.
+  layout under the write prefix. `checksums/tiles_meta.json` carries the
+  size+multihash for each year's `pmtiles`, `cells` and `mirror` asset, and
+  `--checksums` supplies the per-zone sidecar. Both can be reconstructed from the
+  committed collection/item JSON if the staging tree is missing — without them a
+  regeneration silently drops `file:size`/`file:checksum` and the whole styles
+  subtree.
 - `tests/` — the gates; `docs/conformance.md` — the conformance allow-list record.
 
 ## Publish workflow
 ```
 python3 tests/run_all.py                    # every gate (link check, contracts, stac-check, rashid)
+python3 tools/render_thumbnails.py          # vector thumbnails (needs chiitiler)
 python3 tools/publish.py                    # dry run
 python3 tools/publish.py --confirm          # upload metadata (needs AWS creds)
 python3 tools/upload_data.py [--confirm]    # staged data files
@@ -40,6 +70,12 @@ python3 tools/upload_data.py [--confirm]    # staged data files
   **non-recursively** per catalog directory (a recursive listing of the prefix would walk
   every COG/parquet sharing it). A changed content-type mapping needs `--force`.
 - Publishing **never deletes**, and never delete bucket objects without asking Chris.
+- **Stale raster subtree:** `catalog/raster/{year}/{README.md,AGENTS.md,collection.json}` are
+  older than the published ones (flat `{tile_key}.tif` paths, no `zone=NN` child links). The
+  bucket's hive raster tree (per-zone/per-gzd catalogs, newer collections) was built by tooling
+  that is not in this repo. A full `publish.py --confirm` overwrites those 27 objects with the
+  stale copies; if that happens, restore them from the published versions (2026-10-03 copies in
+  `/projects/bgtj/isaaccorley/tmp/meta2e/{year}/`). Fix: bring the raster tree generator in here.
 - CI (`.github/workflows/ci.yml`) sets `CI_LIGHT=1`: asset hrefs with data suffixes are
   exempt from the link check there (bytes live in the bucket, not git). Run gates locally
   without `CI_LIGHT` where the bytes are reachable.
