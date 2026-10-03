@@ -53,6 +53,12 @@
       "title": "FTW Global Data (2nd Edition) on Source Cooperative"
     },
     {
+      "rel": "icon",
+      "href": "./ftw-logo.svg",
+      "type": "image/svg+xml",
+      "title": "Fields of the World"
+    },
+    {
       "rel": "vcs",
       "href": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
       "title": "Source repository"
