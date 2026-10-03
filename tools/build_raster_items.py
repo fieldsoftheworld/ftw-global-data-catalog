@@ -22,7 +22,12 @@ Band facts below are quoted from a verified ``gdalinfo`` of
 overviews, GDAL tags ``model=unet_balanced_fp32.onnx``,
 ``source_bands=B02,B03,B04,B08 x Q1-Q4``).
 
-    .venv/bin/python3 tools/build_raster_items.py collections
+    .venv/bin/python3 tools/build_raster_items.py collections --out /tmp/raster-draft
+
+LEGACY TEMPLATES: they still describe the flat ``raster/{year}/{tile_key}.tif`` layout. The
+published tree is hive-partitioned with per-zone/per-gzd catalogs, and catalog/raster/{year}
+now holds snapshots of the published files (see CLAUDE.md). ``--out`` is therefore required:
+the default no longer points at catalog/raster, so a bare run cannot regress the snapshots.
 """
 from __future__ import annotations
 
@@ -337,7 +342,8 @@ def main() -> int:
         "collections", help="emit the committed year collections + docs"
     )
     collections.add_argument(
-        "--out", type=Path, default=ROOT / "catalog" / "raster",
+        "--out", type=Path, required=True,
+        help="draft directory; do not point this at catalog/raster (legacy flat templates)",
     )
     args = parser.parse_args()
     if args.command == "collections":
