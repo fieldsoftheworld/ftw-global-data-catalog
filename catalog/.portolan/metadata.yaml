@@ -15,4 +15,4 @@ providers:
 keywords: ["agriculture", "field boundaries", "Fields of the World", "FTW", "global", "Sentinel-2"]
 
 source_url: "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/"
-processing_notes: "FTW model (unet_balanced_fp32) on Sentinel-2 quarterly cloudless mosaics; BoundaryVote instance post-processing; parcels > 5 km2 removed. See each collection's description."
+processing_notes: "FTW model (unet_balanced_fp32) on Sentinel-2 quarterly cloudless mosaics; BoundaryVote instance post-processing; parcels > 5 km2 removed; interior holes under 20 m2 (polygonization artifacts) filled. See each collection's description."

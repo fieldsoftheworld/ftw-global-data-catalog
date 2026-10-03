@@ -6,7 +6,7 @@
   ],
   "id": "ftw-global-data-2e",
   "title": "Fields of the World — Global Data (2nd Edition)",
-  "description": "2nd Edition of the Fields of the World (FTW) global field-boundary predictions: per-UTM-zone GeoParquet field polygons for 2017–2025, and 2.5 m field/boundary-probability Cloud-Optimized GeoTIFFs for 2017–2025, hosted on [Source Cooperative](https://source.coop/ftw/global-data-2e). Predictions derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/).",
+  "description": "2nd Edition of the Fields of the World (FTW) global field-boundary predictions: 1,139,401,371 predicted field polygons as per-UTM-zone GeoParquet for 2017–2025, and 67,197 two-band field/boundary-probability Cloud-Optimized GeoTIFFs at 2.5 m (26.0 TB) for 2017–2025, hosted on [Source Cooperative](https://source.coop/ftw/global-data-2e). Predictions derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/). One collection per year in each tree, so new years drop in incrementally. These are model predictions: a field here is a remote-sensing field unit, not a cadastral/legal parcel, and this is not a land-tenure product — see the catalog README for the limitations in full.",
   "git:repository": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
   "git:ref": "main",
   "git:provider": "github",
