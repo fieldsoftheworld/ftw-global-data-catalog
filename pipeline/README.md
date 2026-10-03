@@ -9,51 +9,47 @@ handover:
 
 ## Status
 
-These scripts are the proven alpha pipeline, copied verbatim from
-`fieldsoftheworld/ftw-data-catalog@fd844c4` (`scripts/tiles/`), which built
-`predictions/vectors-test/fields-yearly` from the 1.58 B-feature alpha
-release. They are the starting point, not yet the 2e pipeline. Adapting
-them to the 2e source (Phase 3 of [docs/plan.md](../docs/plan.md)) changes:
+This is the pipeline that built the 2e per-year archives (`vector/{year}/fields-{year}.pmtiles`
+and `cells_a5r7_{year}.parquet`, 2017-2025). It descends from the alpha pipeline
+(`fieldsoftheworld/ftw-data-catalog@fd844c4`, `scripts/tiles/`, which built
+`predictions/vectors-test/fields-yearly` from 1.58 B features) and differs from it for 2e:
 
-- **Stage** (`stage_global.py`): read `vector/{year}/utm{NN}.parquet` from
-  `ftw/global-data-2e` instead of the alpha `results-by-admin-conf`
-  partitions; carry **all** parquet columns (drop only the `bbox` struct and
-  constant columns from tiles); measure cross-zone duplicates before deciding
-  to dedupe (2e ids are tile-scoped; the alpha `(id, area)` dedupe targeted
-  a different defect); no year split (the source is already per-year); no
-  `SET TimeZone` need expected (no datetime column — verify).
-- **Aggregate** (`aggregate_cells.sbatch` + `add_coverage.py`): metrics from
-  the 2e schema — `count`, `area_ha` from `metrics:area`, `avg_field_prob`,
-  `avg_boundary_prob`, `pct_covered`. The 350 km² giant-field cutoff should
-  be unnecessary (2e post-processing already removes >5 km² parcels —
-  verify the max first).
-- **Tile/shard** (`tile_cells.sbatch`, `tile_fields.sbatch`): 2e is ~12×
-  smaller than alpha (134 M vs 1.58 B features for 2025), so expect hours,
-  not days, possibly fewer shards, and maybe no 360 G coarse node.
+- **Stage** (`stage_global.py`): reads the 54 `vector/{year}/zone=NN/utm{NN}.parquet` zone files
+  (public proxy by default; `SRC_ROOT=/path/to/hive/tree` reads a local copy of the same bytes)
+  and carries **all** columns except the redundant `bbox` struct. No dedupe (zones partition
+  parcels cleanly, measured), no year split (the source is per-year), `TimeZone='UTC'` so
+  `determination:datetime` cannot shift.
+- **Aggregate** (`aggregate_cells.sbatch` + `add_coverage.py`): `count`, `area_ha` from
+  `metrics:area`, `avg_score` and `pct_covered`. No giant-field cutoff: upstream already removes
+  parcels > 5 km² (measured max 5.007 km²).
+- **Tile/shard** (`tile_cells.sbatch`, `tile_fields.sbatch`): 2e is ~12× smaller than alpha
+  (134 M vs 1.58 B features for 2025), so a year takes under two hours of compute and the
+  coarse step is `--plan-only` (no 192-360 G node).
+- **Upload** (`upload_year.sbatch` + `s3_put_retry.py`): per-part retry through the Source
+  Cooperative proxy, then size + multihash records for the collection assets
+  (`tilecheck_remote.py` samples tiles from the uploaded archive and compares feature counts with
+  the zone files).
 
-The measured reference points below are from the alpha run and bound the
-2e run from above.
-
-## Running it (alpha shape, for reference)
+## Running it
 
 ```bash
-# 1. Stage, merge, convert to GeoParquet 2.0
-sbatch stage.sbatch
+# one year, whole chain with Slurm dependencies (sizes overridable via *_C / *_M env)
+./run_year.sh 2025
 
-# 2. Cell archive
+# or step by step
+sbatch stage.sbatch                                   # stage + merge to GeoParquet 2.0
 YEAR=2025 sbatch --export=ALL aggregate_cells.sbatch
-YEAR=2025 sbatch --export=ALL tile_cells.sbatch     # prints tile-weight report
-
-# 3. Field shards + handover merge
-export IN=$PWD/global2025_gp2.parquet
+YEAR=2025 sbatch --export=ALL tile_cells.sbatch       # prints tile-weight report
+export IN=$PWD/global2025_gp2.parquet N=4             # N shards; run_year.sh defaults to 4
 YEAR=2025 MODE=plan   sbatch --export=ALL tile_fields.sbatch
-YEAR=2025 MODE=coarse sbatch --export=ALL --mem=360G tile_fields.sbatch
-for i in $(seq 0 7); do YEAR=2025 MODE=shard IDX=$i sbatch --export=ALL tile_fields.sbatch; done
+YEAR=2025 MODE=coarse sbatch --export=ALL tile_fields.sbatch
+for i in $(seq 0 3); do YEAR=2025 MODE=shard IDX=$i sbatch --export=ALL tile_fields.sbatch; done
 YEAR=2025 MODE=merge COARSE=fields-2025-a5r7.pmtiles sbatch --export=ALL tile_fields.sbatch
+YEAR=2025 sbatch --export=ALL upload_year.sbatch      # optional: PY=/path/to/python PROFILE=name
 ```
 
-Env vars go through the shell + `--export=ALL` (a value inside
-`--export=A=x,B=y` gets comma-split by sbatch).
+Env vars go through the shell + `--export=ALL` (a value inside `--export=A=x,B=y` gets
+comma-split by sbatch).
 
 ## Cluster gotchas (all learned the hard way on alpha)
 
@@ -76,6 +72,25 @@ Env vars go through the shell + `--export=ALL` (a value inside
   self-calibrates with pyproj. Dateline cells have vertices past ±180 and
   must be wrapped or tile exporters drop them.
 
+## Uploading through the Source Cooperative proxy
+
+Quirks of `data.source.coop` seen while uploading the 2e products and mirroring the mosaics:
+
+- Single PUTs of about 170 MB and up answer 413. Use multipart with 16 MiB parts (aws-cli
+  `multipart_chunksize = 16MB`); `s3_put_retry.py` does.
+- A part can answer 520. botocore does not retry it and `aws s3 cp` then restarts the whole file,
+  so a large file can fail every pass. `s3_put_retry.py` retries the failed part only (10 times,
+  exponential backoff) and checks the remote size afterwards.
+- Credentials are per-session STS keys that only work against the proxy
+  (`AWS_PROFILE=source-coop AWS_ENDPOINT_URL=https://data.source.coop`), not the bucket directly.
+- rclone fails with `SignatureDoesNotMatch` on `CreateMultipartUpload` (unresolved); aws-cli and
+  boto3 are fine.
+- Reads: the proxy 403s Python's default `Python-urllib` User-Agent, so send a browser-like one.
+  CDSE STAC search (the mosaic side, not the proxy) answers 429 under concurrent enumerations;
+  enumerate serially with jittered backoff.
+- `publish.py` / `upload_data.py` never delete, and a dry run lists the prefix directory by
+  directory, never recursively.
+
 ## Measured timings (2e, tylertoo main @ dabed9f, 2026-09-29)
 
 Wall time per step (Slurm sacct; queue waits excluded). The coarse step is
@@ -96,7 +111,7 @@ needs neither the 192–360 G of the old full-convert coarse nor its hours.
 Reference: the same 2025 build on tylertoo 6b9c3ff (pre plan-only, 17-column
 schema) took 37 m 44 s at 192 GiB MaxRSS for the coarse step alone and
 produced a 44.1 GB archive. The alpha run (1.58 B features) took ~7 h 50 m
-for its 115.5 GB archive with a 360 G coarse node.
+for its 115.5 GB archive with a 360 G coarse node. The alpha figures bound the 2e run from above.
 
 ## Mosaic input preparation
 
