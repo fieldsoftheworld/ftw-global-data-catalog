@@ -3,9 +3,10 @@
 
 Fails on any error-severity finding whose rule is not in ACCEPTED.
 
-ACCEPTED ships empty, and the rule for growing it is not negotiable: every
+ACCEPTED is small, and the rule for growing it is not negotiable: every
 entry needs a row in docs/conformance.md giving the rule, where it fires, why
-it is accepted, and the issue tracking its removal. A known deviation with an
+it is accepted, and what tracks its removal. An entry waives its rule only at
+the paths its regex matches, so it cannot hide the same defect elsewhere. A known deviation with an
 issue number is a debt. A silently widened allow-list is a lie about what this
 catalog conforms to.
 
@@ -33,7 +34,20 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from publish import load_config  # noqa: E402
 
-ACCEPTED: set[str] = set()
+# rule id -> regex over the finding's path (relative to the published directory).
+# The raster year collections are snapshots of the published bucket, whose zone and gzd
+# catalogs and tile items are generated outside this repo; see docs/conformance.md.
+RASTER_YEARS = re.compile(r"^raster/\d{4}/collection\.json$")
+ACCEPTED: dict[str, re.Pattern] = {
+    "PTL-LNK-006": RASTER_YEARS,
+    "PTL-COL-005": RASTER_YEARS,
+    "PTL-VIZ-002": RASTER_YEARS,
+}
+
+
+def accepted(finding: dict) -> bool:
+    pattern = ACCEPTED.get(finding.get("rule_id", ""))
+    return pattern is not None and bool(pattern.match(finding.get("path", "")))
 
 config = load_config()
 target = ROOT / config["publish_dir"]
@@ -100,7 +114,7 @@ except json.JSONDecodeError:
 findings = report.get("findings", [])
 blocking = [
     f for f in findings
-    if f.get("severity") == "error" and f.get("rule_id") not in ACCEPTED
+    if f.get("severity") == "error" and not accepted(f)
 ]
 
 for finding in blocking:
@@ -109,7 +123,15 @@ for finding in blocking:
     if finding.get("fix_hint"):
         print(f"       hint: {finding['fix_hint']}")
 
-waived = [f for f in findings if f.get("rule_id") in ACCEPTED]
+waived = [f for f in findings if f.get("severity") == "error" and accepted(f)]
+# The waiver is exactly what docs/conformance.md records: 9 year collections x
+# (54 zone child links + 1 mirror asset + 1 style asset). A different count means
+# the exemption started covering something else, or stopped covering something.
+EXPECTED_WAIVED = 9 * (54 + 1 + 1)
+if len(waived) != EXPECTED_WAIVED:
+    print(f"error  {len(waived)} waived finding(s), expected {EXPECTED_WAIVED}; "
+          "update docs/conformance.md with the change")
+    raise SystemExit(1)
 if waived:
     print(f"\n{len(waived)} accepted finding(s); see docs/conformance.md")
 

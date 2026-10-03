@@ -7,8 +7,8 @@ not claiming to conform, so it runs in CI:
 python3 tests/test_portolan_conformance.py
 ```
 
-That gate fails on any error-severity finding whose rule is not listed below.
-The list starts empty and it must never grow without a row here. A known
+That gate fails on any error-severity finding whose rule is not listed below
+(at the paths listed). It must never grow without a row here. A known
 deviation with an issue number is a debt someone can pay off. A silently
 widened allow-list is a false claim about what this catalog conforms to.
 
@@ -34,7 +34,20 @@ something.
 
 ## Accepted deviations
 
-None.
+| Rule | Where | Why accepted | Tracking |
+|---|---|---|---|
+| PTL-LNK-006 | `raster/{year}/collection.json` (486 `child` links) | the 54 zone catalogs per year exist only in the bucket | none filed yet, see below |
+| PTL-COL-005 | `raster/{year}/collection.json` (`mirror` asset) | the 7,466 item JSONs exist only in the bucket | none filed yet, see below |
+| PTL-VIZ-002 | `raster/{year}/collection.json` (`overview` asset) | the raster tree has no MapLibre style | none filed yet, see below |
+
+### The raster year collections are bucket snapshots
+
+`catalog/raster/{year}/` holds copies of the published objects. Their 54 `zone=ZZ/catalog.json`
+children, the gzd catalogs and the tile items are generated into the bucket by tooling that is not
+in this repo, so the three rules above are waived for those nine collections only; the gate
+asserts the count (9 x 56 = 504) and 54 zone links per year. `tests/test_links.py` HEAD-checks the
+zone links only without `CI_LIGHT`, so CI does not verify them. Remove the rows when the generator
+lands here. No tracking issue yet.
 
 <!--
 When you accept one, add a row and a section explaining it, like this:
