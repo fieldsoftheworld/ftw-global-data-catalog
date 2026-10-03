@@ -39,6 +39,32 @@ def test_drain_finishes_all_then_exit_nonzero(capsys):
     assert "2/7 tiles failed" in err
 
 
+def test_io_failures_are_retried_once_and_others_are_not():
+    calls: dict[str, int] = {}
+
+    def flaky(k: str) -> str:
+        calls[k] = calls.get(k, 0) + 1
+        if k == "io" and calls[k] == 1:
+            raise RasterioIOError("HTTP response code: 503")
+        if k == "io2":
+            raise RasterioIOError("still down")
+        if k == "bad":  # a RasterioIOError mentioned in the source line must not count
+            raise ValueError("bad")  # not a RasterioIOError
+        return k
+
+    ok = []
+    with ThreadPoolExecutor(2) as pool:
+        keys = ["fine", "io", "io2", "bad"]
+        futs = {pool.submit(flaky, k): k for k in keys}
+        failures = pool_utils.drain(futs, lambda k, r: ok.append(k))
+        failures = pool_utils.retry_io_failures(
+            failures, lambda k: pool.submit(flaky, k), lambda k, r: ok.append(k), wait_s=0
+        )
+    assert sorted(ok) == ["fine", "io"]
+    assert sorted(k for k, _ in failures) == ["bad", "io2"]
+    assert calls == {"fine": 1, "io": 2, "io2": 2, "bad": 1}
+
+
 def test_warp_missing_local_file_is_nan(tmp_path):
     out = tfa._warp(
         [str(tmp_path / "nope.tif")], (2, 2), "EPSG:4326", None, Resampling.nearest, np.float32
@@ -119,6 +145,12 @@ CDSE_HREF = (
     "/vsicurl/https://cdse.invalid/odata/v1/Products(x)/Nodes(B04.tif)/$value"
 )
 _EXT_REJECT = "not recognized as a supported dataset name"
+
+
+def test_vsicurl_opts_retry_transient_http_errors():
+    # GDAL's default is zero retries: one 503 from a public bucket failed the tile
+    assert int(tfa.VSICURL_OPTS["GDAL_HTTP_MAX_RETRY"]) > 0
+    assert float(tfa.VSICURL_OPTS["GDAL_HTTP_RETRY_DELAY"]) > 0
 
 
 def test_vsicurl_opts_do_not_allow_list_extensions():

@@ -14,6 +14,7 @@ from run import (
     model_contract,
     output_tags,
     read_stack,
+    same_pixels,
     write_score,
 )
 from torch.utils._python_dispatch import TorchDispatchMode
@@ -279,3 +280,34 @@ def test_device_preflight_rejects_a_provider_the_build_lacks(monkeypatch):
 def test_active_provider_catches_a_silent_cpu_fallback():
     assert active_provider(signature(), "CPUExecutionProvider") is None
     assert "did not initialize" in (active_provider(signature(), "CUDAExecutionProvider") or "")
+
+
+def test_same_pixels_catches_a_lost_base_level(tmp_path):
+    """The written COG is read back at full resolution before it replaces dst."""
+    dst = tmp_path / "score.tif"
+    data = np.stack([np.full((64, 128), 128, np.uint8), np.full((64, 128), 64, np.uint8)])
+    tr = Affine(2.5, 0, 500000, 0, -2.5, 1000000)
+    write_score(dst, data, "EPSG:32631", tr, {})
+    same_pixels(dst, data, rows=16)
+    blank = data.copy()
+    blank[:, 40:] = 0
+    with pytest.raises(ValueError, match="differ from scores at row 32"):
+        same_pixels(dst, blank, rows=16)
+    with pytest.raises(ValueError, match="shape"):
+        same_pixels(dst, data[:1])
+
+
+def test_write_score_refuses_a_cog_that_does_not_read_back(tmp_path, monkeypatch):
+    """A failed read-back leaves neither dst nor a .tmp- sibling."""
+    import run
+
+    def lost(path, scores, rows=4096):
+        raise ValueError("full-resolution pixels differ")
+
+    monkeypatch.setattr(run, "same_pixels", lost)
+    tr = Affine(2.5, 0, 500000, 0, -2.5, 1000000)
+    with pytest.raises(ValueError, match="differ"):
+        run.write_score(
+            tmp_path / "score.tif", np.zeros((2, 64, 128), np.uint8), "EPSG:32631", tr, {}
+        )
+    assert list(tmp_path.iterdir()) == []
