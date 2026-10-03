@@ -18,6 +18,7 @@ TESTS = [
     "test_publish.py",
     "test_upload_data.py",
     "test_raster_index_lite.py",
+    "test_known_limitation.py",
     "test_stac_valid.py",
     "test_portolan_conformance.py",
 ]

@@ -17,3 +17,14 @@ Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 - [2023](./2023/collection.json) — 7,467 tiles, 2.94 TB
 - [2024](./2024/collection.json) — 7,467 tiles, 2.90 TB
 - [2025](./2025/collection.json) — 7,467 tiles, 2.88 TB
+
+Tiles live at `raster/{year}/zone={ZZ}/gzd={ZZL}/{tile_key}/{tile_key}.tif` (`ZZ` and `ZZL` are the
+first two and three characters of the tile key), with the tile's STAC item and thumbnail beside it. To find the tiles
+covering a box, read the 110 kB [tile index](https://data.source.coop/ftw/global-data-2e/index/raster-lite.parquet)
+(`year`, `tile_key`, `epsg`, float32 WGS 84 bbox; no hrefs, rebuild them from the tile key); the full
+[index manifest](https://data.source.coop/ftw/global-data-2e/index/raster.parquet) adds hrefs, sizes and
+per-tile statistics.
+
+<!-- known-limitation:begin -->
+**Known limitation, under investigation: the 2017 and 2024 predictions are under-detected in some regions.**
+<!-- known-limitation:end -->

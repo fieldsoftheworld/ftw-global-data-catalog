@@ -8,11 +8,15 @@ Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ## How it was made
 
-Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2017 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/).
+Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2017 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Interior holes under 20 m² (pixel-scale polygonization artifacts) are filled; larger holes are kept. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/).
+
+<!-- known-limitation:begin -->
+**Known limitation, under investigation: the 2017 and 2024 predictions are under-detected in some regions.**
+<!-- known-limitation:end -->
 
 ## Files
 
-One file per UTM zone at `vector/2017/zone=NN/utm{NN}.parquet` (hive-partitioned by `zone`) (e.g. [utm48](https://data.source.coop/ftw/global-data-2e/vector/2017/utm48.parquet) is the largest, 18,298,288 parcels). Zone numbers with no land coverage are absent.
+One file per UTM zone at `vector/2017/zone=NN/utm{NN}.parquet` (hive-partitioned by `zone`) (e.g. [utm48](https://data.source.coop/ftw/global-data-2e/vector/2017/zone=48/utm48.parquet) is the largest, 18,298,288 parcels). Zone numbers with no land coverage are absent.
 
 ## Columns
 

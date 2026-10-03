@@ -41,12 +41,22 @@ import json
 import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import known_limitation  # noqa: E402
+
 ROOT = Path(__file__).resolve().parent.parent
 BINS_FILE = ROOT / "pipeline" / "style_bins.json"
 TILES_META = ROOT / "staging-data" / "checksums" / "tiles_meta.json"
 
 PUBLIC_BASE = "https://data.source.coop/ftw/global-data-2e"
 INDEX_URL = f"{PUBLIC_BASE}/index/vector.parquet"
+
+#: Appended to every collection's "How this was made": the embedded footer metadata
+#: predates the hole fill, so this is stated here rather than read from the data.
+HOLE_NOTE = (
+    "Interior holes under 20 m² (pixel-scale polygonization artifacts) are filled; "
+    "larger holes are kept."
+)
 
 PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
 WEBMAP_EXT = "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json"
@@ -428,10 +438,11 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             f"{len(rows)} per-UTM-zone GeoParquet files, {gib:,.1f} GiB "
             f"total, browsable in the [data browser]({DATA_BROWSER}). "
             f"{_PROJECT}\n\n**How this was made.** "
-            f"{meta['determination:details']} Source imagery: the "
+            f"{meta['determination:details']} {HOLE_NOTE} Source imagery: the "
             f"[TGE Labs Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}) "
             f"(CDSE mirror).\n\nThe schema follows {_FIBOA} and {_VECOREL}: "
             f"columns {_COLS_SHORT} — see `table:columns` for definitions."
+            f"{known_limitation.description_note(year)}"
         ),
         "license": "CC-BY-4.0",
         "keywords": ["agriculture", "field boundaries", "Fields of the World",
@@ -510,6 +521,11 @@ def _query_block(year: int) -> list[str]:
     ]
 
 
+def _limitation_block(year: int) -> list[str]:
+    "The managed known-limitation block (and a blank line) for the affected years."
+    return [known_limitation.block(), ""] if year in known_limitation.YEARS else []
+
+
 def year_readme(year: int, rows: list[dict], meta: dict) -> str:
     n = sum(r["n_parcels"] for r in rows)
     gib = sum(r["size_bytes"] for r in rows) / 2**30
@@ -522,14 +538,16 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         f"Browse it in the [data browser]({DATA_BROWSER}).", "",
         "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## How it was made", "",
-        f"{meta['determination:details']} Source imagery: the "
+        f"{meta['determination:details']} {HOLE_NOTE} Source imagery: the "
         f"[TGE Labs Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}).",
         "",
+        *_limitation_block(year),
         "## Files", "",
         f"One file per UTM zone at `vector/{year}/zone=NN/utm{{NN}}.parquet` "
         "(hive-partitioned by `zone`) "
         f"(e.g. [utm{biggest['zone']:02d}]"
-        f"({PUBLIC_BASE}/vector/{year}/{zone_stem(biggest['zone'])}.parquet) "
+        f"({PUBLIC_BASE}/vector/{year}/zone={biggest['zone']:02d}/"
+        f"{zone_stem(biggest['zone'])}.parquet) "
         f"is the largest, {biggest['n_parcels']:,} parcels). Zone numbers "
         "with no land coverage are absent.", "",
         "## Columns", "",
@@ -587,12 +605,14 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         "parcels cleanly (measured: zero shared ids or geometries in the "
         "6°E utm31/utm32 boundary strip).",
         "- `metrics:area` is m²; the upstream post-processing removed "
-        "parcels larger than 5 km².",
+        "parcels larger than 5 km² and filled interior holes under 20 m² "
+        "(larger holes are kept).",
         "- Query with DuckDB over https:// URLs (s3:// hangs on some "
         "networks); a browser-like User-Agent is needed for bucket "
         "listings only, not file reads.",
         "- The `items.parquet` collection mirror holds all item metadata "
         "for bulk spatial lookup of zones.", "",
+        *_limitation_block(year),
         "Runnable example:", "",
         *_query_block(year), "",
     ]
@@ -614,7 +634,7 @@ def vector_readme(per_year: dict[int, list[dict]]) -> str:
         *[f"- [{y}](./{y}/collection.json) — "
           f"{sum(r['n_parcels'] for r in per_year[y]):,} parcels"
           for y in sorted(per_year)], "",
-        "",
+        known_limitation.block(), "",
     ])
 
 
@@ -630,6 +650,7 @@ def vector_agents(per_year: dict[int, list[dict]]) -> str:
         "- Data layout: `vector/{year}/zone=NN/utm{NN}.parquet` — hive-"
         "partitioned by zone, each parquet colocated with its item "
         "metadata; whole-year reads glob `zone=*/utm*.parquet`.", "",
+        known_limitation.block(), "",
     ])
 
 

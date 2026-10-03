@@ -24,10 +24,17 @@ it carries the measured numbers and the quirks this file does not repeat.
     by UTM zone, 54 zones per year
   - `vector/{year}/fields-{year}.pmtiles` and `vector/{year}/styles/*.json` —
     map tiles and MapLibre styles
-  - `raster/{year}/{tile_key}.tif` — two-band uint8 field/boundary-probability
-    COGs at 2.5 m
+  - `raster/{year}/zone={ZZ}/gzd={ZZL}/{tile_key}/{tile_key}.tif` — two-band
+    uint8 field/boundary-probability COGs at 2.5 m; the tile's STAC item
+    (`{tile_key}.json`) and thumbnail (`{tile_key}.thumb.png`) sit beside it.
+    `ZZ` is the first two characters of the tile key, `ZZL` the first three.
   - `index/vector.parquet`, `index/raster.parquet` — manifests listing hrefs,
     sizes and bboxes for every data file
+  - `index/raster-lite.parquet` — 110 kB tile finder, one row per (year, tile):
+    `year` int16, `tile_key`, `epsg` int32 and the WGS 84 bbox
+    `xmin, ymin, xmax, ymax` as float32 rounded outward. No hrefs: build them
+    from the tile key as above. Use `raster.parquet` for sizes and per-tile
+    statistics.
 - Read in place over HTTP range requests; there is no reason to download.
   Use `https://` URLs for single files (`s3://` hangs on some networks). To
   glob the vector partitions you need `s3://` with
@@ -59,6 +66,10 @@ it carries the measured numbers and the quirks this file does not repeat.
 - Counts and areas are predictions, not measurements; report them as such.
   [README.md](./README.md#limitations) has the full set of caveats with
   sources.
+
+<!-- known-limitation:begin -->
+**Known limitation, under investigation: the 2017 and 2024 predictions are under-detected in some regions.**
+<!-- known-limitation:end -->
 
 ## Fixing this metadata
 

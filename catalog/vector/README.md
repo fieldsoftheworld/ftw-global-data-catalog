@@ -18,3 +18,6 @@ Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 - [2024](./2024/collection.json) — 120,295,636 parcels
 - [2025](./2025/collection.json) — 134,085,099 parcels
 
+<!-- known-limitation:begin -->
+**Known limitation, under investigation: the 2017 and 2024 predictions are under-detected in some regions.**
+<!-- known-limitation:end -->
