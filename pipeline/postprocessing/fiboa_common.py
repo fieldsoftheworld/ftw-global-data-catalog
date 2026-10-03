@@ -100,9 +100,13 @@ def final_select(rows: str, cid: str, year: int, bbox: list[float], max_m2: floa
         f"TIMESTAMPTZ '{year}-01-01 00:00:00+00' AS \"determination:datetime\", "
         f"'{DET_METHOD}' AS \"determination:method\""
     )
+    # Branch on the geometry TYPE, not the part count: a one-part MULTIPOLYGON has
+    # ST_NumGeometries = 1 but is not a Polygon, so the ring functions in
+    # ``drop_small_holes`` return NULL for it and the row would vanish at the
+    # ``g IS NOT NULL`` filter below. Every MULTIPOLYGON is dumped, however many parts.
     parts = (
-        f"SELECT id, tile_key, pf_mean, CASE WHEN ST_NumGeometries(g) > 1 THEN "
-        f"ST_Collect(list_transform(list_filter(ST_Dump(g), "
+        f"SELECT id, tile_key, pf_mean, CASE WHEN ST_GeometryType(g) = 'MULTIPOLYGON' "
+        f"THEN ST_Collect(list_transform(list_filter(ST_Dump(g), "
         f"x -> ST_Area({zone_utm('x.geom')}) >= {MIN_PART_M2}), "
         f"x -> {drop_small_holes('x.geom')})) "
         f"ELSE {drop_small_holes('g')} END AS g FROM ({rows})"
