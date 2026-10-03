@@ -44,3 +44,12 @@ __pycache__/
 
 # NFS silly-rename leftovers (a deleted file still held open)
 .nfs*
+
+# The raster item tree is generated, not authored: 67,197 item JSONs plus the
+# 3,690 zone/GZD catalogs that group them, ~78k files. They are rebuilt by
+# `tools/build_raster_items.py items` and published straight from the working
+# tree, because tools/publish.py walks the filesystem rather than the index.
+# Keeping them out of git costs one generator run and saves every clone from
+# carrying a tree that no human edits. The year collections, their README,
+# AGENTS and thumbnails stay committed.
+catalog/raster/*/zone=*/
