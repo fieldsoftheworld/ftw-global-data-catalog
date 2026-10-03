@@ -462,7 +462,6 @@ def test_hole_fill_keeps_every_geometry_shape(tmp_path, monkeypatch, tile_key, l
     cx = 500_000.0  # zone 30 central meridian is -3 deg
     box = (300.0, 300.0)
     small, large = (4.3, 4.3), (4.6, 4.6)  # 18.5 m2 and 21.2 m2
-    far = (100.0, 0.0)
     wkts = [
         f"POLYGON{_utm_box_wkt(32630, cx, cy, *box, hole=(0, 0, *small))}",  # 0: filled
         f"POLYGON{_utm_box_wkt(32630, cx, cy + 1000, *box, hole=(0, 0, *large))}",  # 1: kept
