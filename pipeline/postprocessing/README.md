@@ -52,7 +52,8 @@ unlisted year fails rather than silently borrowing another year's vintages.
 Core/halo defaults are 8192/512 pixels. Core centroid ownership reduces window
 duplicates, but parcels wider than the halo may be truncated or duplicated;
 `touches_window_edge` identifies candidates and conversion joins seam parcels.
-Ownership uses the tile raster's own bounds for its MGRS square and the MGRS
+Ownership snaps the tile raster's north-west corner to its 100 km MGRS square (the published
+rasters are 100.08 km, 0-80 m off the square) and uses the MGRS
 longitude bands, including the 31V/32V exception the Sentinel-2 grid follows.
 Simplification uses 5 m in UTM over the **whole** coverage in one pass, so shared
 edges stay shared; results are repaired, never re-simplified per geometry, and
@@ -133,15 +134,12 @@ Known differences, so nobody expects byte-identical output from a rerun:
   coverage-invalid got per-polygon Douglas-Peucker at 1.2 m. This package keeps every polygon in
   one whole-coverage pass after repairing validity (see `polygons.py` for why), so output differs
   only around those parcels.
-- **Release-time defects fixed here, not there.** The release's tile ownership used a nominal 6°
-  zone test without the 31V/32V exception and rounded the MGRS square from the origin, so a
-  sub-pixel offset moved a square by 100 km, and its fiboa conversion used a per-row hemisphere
-  CRS and filtered at 900 m² before the seam union. `outlines.py` and `fiboa_convert.py` here
-  carry the corrected rules (see above); reconverting with them can change which parcels exist
-  near zone/square edges, tile seams and the equator.
-- **Provenance string.** The released files' `determination:details` reads
-  `(nbg-pb-h0.01-t0.3+A900)` and does not mention the hole fill; this package writes the real
-  method read from merge's `_summary.json`.
+- **Release-time defects fixed here, not there.** Tile ownership, the filter order around the
+  seam union, the equator CRS and the method string differ from the released data; see
+  [Known differences from the released 2e data](../README.md#known-differences-from-the-released-2e-data).
+- **Provenance string.** This package stamps the BoundaryVote method that ran into each outline
+  file (`outline_provenance`), merge records it in `_summary.json`, and `fiboa_convert` writes
+  it into `determination:details`.
 
 ```sh
 uv pip install pytest

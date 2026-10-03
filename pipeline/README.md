@@ -306,14 +306,53 @@ was extracted from, so a rerun is not byte-identical.
   1.2 m for the few parcels per tile that GEOS reports as coverage-invalid.
   This code keeps every polygon in one whole-coverage pass after repairing
   validity, so output differs only around those parcels.
-- **Defects fixed here, not in the release.** The release's tile ownership used
-  a nominal 6 degree zone test without the 31V/32V exception and rounded the
-  MGRS square from the origin, and its conversion used a per-row hemisphere CRS
-  and filtered at 900 m² before the seam union. Reconverting with this code can
-  change which parcels exist near zone and square edges, tile seams and the
-  equator.
+- **Defects fixed here, not in the release.** See
+  [Known differences from the released 2e data](#known-differences-from-the-released-2e-data).
 - **Holes.** Interior holes under 20 m² are filled in all nine published years.
   The published descriptions' provenance string predates that.
+
+### Known differences from the released 2e data
+
+The released FTW 2nd Edition files were produced by the working pipeline before the fixes
+below, and the data was **not regenerated** with them. This code is correct where they differ,
+so reconverting with it changes the following (numbers measured on the released and raw
+outputs; years whose raw outlines are partial are omitted, so counts are lower bounds there).
+
+- **Four Norwegian tiles lose parcels.** Tile ownership tested the nominal 6 degree zone, but
+  in MGRS band V zone 32 spans 3-12E (31V is 0-3E). Parcels west of 6E in tiles 32VKK, 32VKL,
+  32VLK and 32VLL (south-west Norway: Bergen, Stavanger, Jaeren) were flagged outside zone 32,
+  and no 31V tile exists, so merge dropped them. That is 10-19k parcels per year (2025: 16,681
+  parcels, 63.7k ha). The released zone-32 file has no parcel west of 6E, and 32VKK and 32VKL
+  contribute none. `outlines.lon_in_zone` has the exception.
+- **About 7,000 parcels are unions above 5 km2.** The released conversion dropped parts and
+  parcels under 900 m2 and applied the 5 km2 cap before the seam union, so two pieces under the
+  cap could be published as one larger parcel. Five 2025 zones reconverted both ways (1.48M
+  parcels) gave 9 such unions (49.8 km2) and no fields lost to two sub-900 m2 halves; scaled to
+  the release that is on the order of 7,000 parcels, 0.06% of mapped area. Here every size
+  filter runs once, after the union (`fiboa_common.final_select`).
+- **A handful of equator seam pairs overlap.** Fields cut by the equator were not unioned
+  because a per-row hemisphere CRS puts the two halves 10,000 km apart. In the 17 zones with
+  tiles on both sides, the 2025 files have 5 overlapping pairs from different tiles, 3 of which
+  the join rule would have merged (zones 17, 48 and 50). Areas are unaffected. This code
+  projects each zone with one north-UTM CRS (`fiboa_common.zone_utm`).
+- **The footers name the wrong method.** The released `determination:details` says
+  BoundaryVote `(nbg-pb-h0.01-t0.3+A900)` for every year, while production ran
+  `nbg-pb-h0.01-t0.3+R35+F10+G2+A900+q1` (`+G2` was added part-way through the 2018-2023
+  runs, so the exact string can differ by year and is not recorded in the files). They also omit
+  the 900 m2 rule and the 20 m2 hole fill. This code stamps the method that ran into the
+  outline files, merge records it in `_summary.json`, and the footer states it, or says it was
+  not recorded.
+- **Not a difference.** The released tile ownership rounded the MGRS square from the raster
+  origin; on the real 100.08 km rasters this gives the true square for all 7,467 tiles
+  (including 59GQQ_0_1 and 60GTU_0_0), so no parcels moved. An earlier version of
+  `outlines.mgrs_square` here assumed a 110 km raster and would have claimed a 90 km square;
+  it now snaps the raster's north-west corner to its 100 km cell and has tests on real tile
+  geometries.
+
+Smaller, with no effect on the nine released columns: slope was stored as 0 where the DEM had
+no coverage (QA columns in the intermediate files only), and the `bbox` struct was copied from
+the source row, so about 0.03% of rows have a bbox slightly wider than the geometry (still a
+superset).
 
 ### Where the published descriptions lag this code
 
