@@ -14,6 +14,7 @@ from pyproj import CRS
 
 sys.path.insert(0, str(Path(__file__).parent))
 from fiboa_common import (
+    MIN_HOLE_M2,
     MIN_PART_M2,
     connect,
     discover_zones,
@@ -78,7 +79,8 @@ def collection_metadata(cid: str, year: int, summary: dict | None = None) -> dic
             f"(CDSE sentinel-2-global-mosaics, {year} Q1-Q4, 4 quarters x {INPUT_BANDS}), "
             "2.5 m field/boundary probabilities, BoundaryVote instance post-processing "
             f"({s.get('spec', DEFAULT_SPEC)}), {simplify}parcels > {max_km2:g} km2 removed, "
-            f"parcels and parts under {MIN_PART_M2:g} m2 removed. "
+            f"parcels and parts under {MIN_PART_M2:g} m2 removed, "
+            f"interior holes under {MIN_HOLE_M2:g} m2 filled. "
             "Attributes are for filtering; no land-cover masking was applied." + partial
         ),
         "schemas:custom": {
