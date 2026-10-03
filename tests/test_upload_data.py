@@ -89,8 +89,8 @@ with tempfile.TemporaryDirectory() as tmp:
     write(root / "stray-at-root.pmtiles")
 
     config = {
-        "write_prefix": "s3://a-bucket/ftw/global-data-beta",
-        "public_base": "https://data.example.org/ftw/global-data-beta",
+        "write_prefix": "s3://a-bucket/ftw/global-data-2e",
+        "public_base": "https://data.example.org/ftw/global-data-2e",
         "publish_dir": "catalog",
         "data_dir": "staging-data",
     }
@@ -98,9 +98,9 @@ with tempfile.TemporaryDirectory() as tmp:
     keys = {u.key for u in uploads}
 
     expected = {
-        "ftw/global-data-beta/vector/fields-yearly/fields-2025.pmtiles",
-        "ftw/global-data-beta/vector/fields-yearly/cells_a5r7_2025.parquet",
-        "ftw/global-data-beta/raster/2025/overview.tif",
+        "ftw/global-data-2e/vector/fields-yearly/fields-2025.pmtiles",
+        "ftw/global-data-2e/vector/fields-yearly/cells_a5r7_2025.parquet",
+        "ftw/global-data-2e/raster/2025/overview.tif",
     }
     check(keys == expected, f"upload set wrong.\n  extra:   {keys - expected}"
                             f"\n  missing: {expected - keys}")
@@ -108,12 +108,12 @@ with tempfile.TemporaryDirectory() as tmp:
     # Content types come from publish.py, not from a second table.
     types = {u.key: u.content_type for u in uploads}
     check(
-        types["ftw/global-data-beta/vector/fields-yearly/cells_a5r7_2025.parquet"]
+        types["ftw/global-data-2e/vector/fields-yearly/cells_a5r7_2025.parquet"]
         == "application/vnd.apache.parquet",
         "parquet content type comes from publish.py",
     )
     check(
-        types["ftw/global-data-beta/vector/fields-yearly/fields-2025.pmtiles"]
+        types["ftw/global-data-2e/vector/fields-yearly/fields-2025.pmtiles"]
         == "application/vnd.pmtiles",
         "pmtiles content type comes from publish.py",
     )

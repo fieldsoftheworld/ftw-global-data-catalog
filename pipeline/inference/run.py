@@ -18,6 +18,7 @@ import torch  # imported before ONNX Runtime so its CUDA libraries load first
 import onnxruntime as ort
 import rasterio
 from affine import Affine
+from rasterio.windows import Window
 from predict import PATCH, predict_tile
 
 PROVIDERS = {"cuda": "CUDAExecutionProvider", "cpu": "CPUExecutionProvider"}
@@ -124,6 +125,26 @@ def model_contract(session) -> str | None:
     return None
 
 
+def same_pixels(path: Path, scores: np.ndarray, rows: int = 4096) -> None:
+    """Raise unless the file at ``path`` holds exactly ``scores`` at full resolution.
+
+    Guards against a COG whose base level was lost while its overviews survived:
+    44 published 2019-2021 FTW-beta tiles had an empty base under valid overviews,
+    which no header check or overview read catches.
+    """
+    with rasterio.open(path) as ds:
+        if (ds.count, ds.height, ds.width) != scores.shape:
+            raise ValueError(
+                f"{path.name}: shape {ds.count}x{ds.height}x{ds.width} != {scores.shape}"
+            )
+        for r in range(0, ds.height, rows):
+            w = Window(0, r, ds.width, min(rows, ds.height - r))
+            if not np.array_equal(ds.read(window=w), scores[:, r : r + w.height]):
+                raise ValueError(
+                    f"{path.name}: full-resolution pixels differ from scores at row {r}"
+                )
+
+
 def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> None:
     dst.parent.mkdir(parents=True, exist_ok=True)
     tmp = dst.with_name(f"{dst.name}.tmp-{os.getpid()}")
@@ -165,6 +186,7 @@ def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> No
                     STATISTICS_STDDEV=float(band.std()),
                     STATISTICS_VALID_PERCENT=100.0,
                 )
+        same_pixels(tmp, scores)
         os.replace(tmp, dst)
     except BaseException:
         tmp.unlink(missing_ok=True)

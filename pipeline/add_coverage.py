@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Add pct_covered and final column names to a beta a5 cells file.
+"""Add pct_covered and final column names to a 2e a5 cells file.
 
 Input: the raw ``gpio process aggregate a5`` output with columns
 ``a5_cell, count, sum_metrics:area, avg_score, geometry`` (naming verified

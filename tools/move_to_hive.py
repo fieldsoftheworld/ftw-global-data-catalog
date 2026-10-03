@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parent.parent
 PLAN = ROOT / "staging-data" / "checksums" / "move_plan.json"
 AWS = "/u/cholmes/micromamba/envs/ftw/bin/aws"
 BUCKET = "us-west-2.opendata.source.coop"
-PREFIX = "ftw/global-data-beta"
+PREFIX = "ftw/global-data-2e"
 
 
 def head(key: str) -> int | None:

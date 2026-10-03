@@ -23,7 +23,7 @@ import duckdb
 
 ROOT = Path(__file__).resolve().parent.parent
 OUT_DIR = ROOT / "staging-data" / "index"
-LIVE_BASE = "https://data.source.coop/ftw/global-data-beta/index"
+LIVE_BASE = "https://data.source.coop/ftw/global-data-2e/index"
 GPIO = "/u/cholmes/ftw-us-tiles/venv/bin/gpio"
 
 # (flat-layout pattern, replacement, target-layout pattern). RE2 has no

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage the beta FTW field predictions for one year into merged GeoParquet.
+"""Stage the 2e FTW field predictions for one year into merged GeoParquet.
 
 Reads ``vector/{year}/utm{NN}.parquet`` (54 zone files) from the source.coop
 data proxy and spools each to a local parquet, carrying **all columns except
@@ -27,12 +27,16 @@ nodes probing the (blackholed) EC2 metadata service.
     python3 stage_global.py --year 2025
 """
 import argparse
+import os
 import time
 from pathlib import Path
 
 import duckdb
 
-INDEX = "https://data.source.coop/ftw/global-data-beta/index/vector.parquet"
+INDEX = "https://data.source.coop/ftw/global-data-2e/index/vector.parquet"
+# SRC_ROOT=/projects/.../ftw-fiboa-v3 reads the local hive tree ({year}/zone=NN/utmNN.parquet)
+# instead of the proxy: same bytes as the bucket, no network.
+SRC_ROOT = os.environ.get("SRC_ROOT")
 
 
 def main() -> None:
@@ -45,7 +49,7 @@ def main() -> None:
     staged.mkdir(parents=True, exist_ok=True)
 
     con = duckdb.connect(
-        config={"custom_user_agent": "Mozilla/5.0 (ftw-beta-pipeline)"}
+        config={"custom_user_agent": "Mozilla/5.0 (ftw-2e-pipeline)"}
     )
     con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
     con.execute("SET TimeZone='UTC';")  # determination:datetime is a constant year-start UTC instant
@@ -54,10 +58,13 @@ def main() -> None:
     con.execute("SET http_retries=8; SET http_retry_wait_ms=2000;"
                 "SET http_timeout=120000;")
 
-    hrefs = con.execute(
-        f"SELECT href FROM '{INDEX}' WHERE year = ? ORDER BY zone",
-        [args.year],
-    ).fetchall()
+    if SRC_ROOT:
+        hrefs = [(str(f),) for f in sorted(Path(SRC_ROOT, str(args.year)).glob("zone=*/utm*.parquet"))]
+    else:
+        hrefs = con.execute(
+            f"SELECT href FROM '{INDEX}' WHERE year = ? ORDER BY zone",
+            [args.year],
+        ).fetchall()
     if not hrefs:
         raise SystemExit(f"no index rows for year {args.year}")
 

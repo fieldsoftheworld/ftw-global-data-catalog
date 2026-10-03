@@ -1,47 +1,20 @@
 # FTW Global — Field Boundaries 2020 (GeoParquet)
 
-Predicted agricultural field boundaries for 2020: **129,270,485 parcels** in 54 per-UTM-zone GeoParquet files (109.9 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
+Predicted agricultural field boundaries for 2020: **129,366,600 parcels** in 54 per-UTM-zone GeoParquet files (80.0 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
-Browse it in the [data browser](https://source.coop/ftw/global-data-beta); read [AGENTS.md](./AGENTS.md) beside this file if you are an agent, and [Limitations](#limitations) below before you draw conclusions from the numbers.
+**[Open 2020 on the interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2020)** to see the fields over imagery, or **[open it in the Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2020/collection.json)** to walk the metadata and preview each asset. The files themselves are listed on [Source Cooperative](https://source.coop/ftw/global-data-2e).
+
+Agents: [AGENTS.md](https://data.source.coop/ftw/global-data-2e/vector/2020/AGENTS.md) beside this file is the agent guide.
 
 Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
-## Query it
+## How it was made
 
-One zone, straight over https — no download, no credentials:
+Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2020 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Within a processed tile no parcel is removed on land-cover, water or terrain grounds, the retention test being UTM-zone and MGRS-square ownership plus the size bounds above. Land cover did decide which tiles ran: only MGRS tiles with at least 1% cropland were processed, so regions below that threshold are absent entirely. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/). [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md) documents every stage, from mosaic download to this file.
 
-```python
-import duckdb
-con = duckdb.connect()
-con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
-url = "https://data.source.coop/ftw/global-data-beta/vector/2020/zone=31/utm31.parquet"
-con.sql(f"""
-    SELECT count(*) AS parcels,
-           round(sum("metrics:area") / 1e6, 1) AS km2,
-           round(avg(score), 1) AS avg_score
-    FROM read_parquet('{url}')
-""").show()
-```
+## Files
 
-## Whole year, every zone
-
-```python
-import duckdb
-con = duckdb.connect()
-con.execute("INSTALL httpfs; LOAD httpfs;")
-con.execute("""
-    CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2',
-                   URL_STYLE 'path')
-""")
-glob = "s3://us-west-2.opendata.source.coop/ftw/global-data-beta/vector/2020/zone=*/utm*.parquet"
-con.sql(f"""
-    SELECT zone, count(*) AS parcels
-    FROM read_parquet('{glob}', hive_partitioning=1)
-    GROUP BY zone ORDER BY parcels DESC LIMIT 5
-""").show()
-```
-
-The glob needs the `s3://` endpoint — DuckDB cannot expand a wildcard in an http URL — and Source Cooperative needs `URL_STYLE 'path'`. The bucket is anonymous-read, so the secret carries no credentials. `hive_partitioning=1` is what turns the `zone=NN` directory into a `zone` column; it arrives as a string, zero-padded, so compare it as `zone = '31'`. Swap the year in the glob to read a different collection.
+One file per UTM zone at `vector/2020/zone=NN/utm{NN}.parquet`, hive-partitioned by `zone`. The largest is [utm48](https://data.source.coop/ftw/global-data-2e/vector/2020/zone=48/utm48.parquet), with 20,057,787 parcels. Zone numbers with no land coverage are absent.
 
 ## Columns
 
@@ -59,38 +32,25 @@ The schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.y
 | `determination:datetime` | The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)). |
 | `determination:method` | Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)). |
 
-## Coordinate system
-
-Every zone file stores `geometry` as WGS 84 lon/lat (**EPSG:4326**), not in its UTM zone — the zone is a partition key, so a cross-zone or whole-year read needs no reprojection and the `bbox` struct can be compared across zones directly. Because the coordinates are degrees, `ST_Area` and `ST_Length` on `geometry` return degree-based numbers that mean nothing on the ground: read `metrics:area` (m²) and `metrics:perimeter` (m) instead, or reproject to an equal-area CRS first.
-
-The PMTiles archive is Web Mercator (EPSG:3857), the tiling CRS, and its cell aggregates were computed before that reprojection.
-
-## Files
-
-One file per UTM zone at `vector/2020/zone=NN/utm{NN}.parquet` (hive-partitioned by `zone`) (e.g. [utm48](https://data.source.coop/ftw/global-data-beta/vector/2020/zone=48/utm48.parquet) is the largest, 20,056,564 parcels). Zone numbers with no land coverage are absent. Each parquet sits beside its own STAC item, and `items.parquet` mirrors every item's metadata for bulk lookup.
-
 ## Browse it
 
-One [PMTiles archive](https://data.source.coop/ftw/global-data-beta/vector/2020/fields-2020.pmtiles) renders the whole year with a zoom handover: A5 r7 cell aggregates (`cells` layer, z0–8: `count`, `area_ha`, `avg_score`, `pct_covered`) switching to the full field polygons (`fields` layer, z9–13: `id`, `metrics:area`, `metrics:perimeter`, `score`). Four styles — count, coverage (default), avg-size, field-prob — live beside it in `styles/`; the per-cell aggregates are also published as [GeoParquet](https://data.source.coop/ftw/global-data-beta/vector/2020/cells_a5r7_2020.parquet).
+One [PMTiles archive](https://data.source.coop/ftw/global-data-2e/vector/2020/fields-2020.pmtiles) renders the whole year with a zoom handover: A5 r7 cell aggregates (`cells` layer, z0–8: `count`, `area_ha`, `avg_score`, `pct_covered`) switching to the full field polygons (`fields` layer, z9–13: `id`, `metrics:area`, `metrics:perimeter`, `score`). Four styles — count, coverage (default), avg-size, field-prob — live beside it in `styles/`; the per-cell aggregates are also published as [GeoParquet](https://data.source.coop/ftw/global-data-2e/vector/2020/cells_a5r7_2020.parquet).
 
-## How it was made
+## Query it
 
-Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2020 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/).
+```python
+import duckdb
+con = duckdb.connect()
+con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
+url = "https://data.source.coop/ftw/global-data-2e/vector/2020/zone=31/utm31.parquet"
+con.sql(f"""
+    SELECT count(*) AS parcels,
+           round(sum("metrics:area") / 1e6, 1) AS km2,
+           round(avg(score), 1) AS avg_score
+    FROM read_parquet('{url}')
+""").show()
+```
 
-## Limitations
+Read the whole year at once by globbing the partitions over `s3://` with `hive_partitioning=1`; an HTTP URL cannot expand a wildcard. The collection's `data` asset carries both forms.
 
-These are **model predictions**, not a survey. In the FTW project's own words, a field here is a *remote-sensing field unit* (a connected component of predicted field-interior pixels), **not** a cadastral/legal parcel, and [this is not a land-tenure product](https://source.coop/ftw/global-data); one legal parcel may map to many polygons or to none. Parcel counts, areas and perimeters are therefore predicted quantities that carry the model's errors, not measurements of anything surveyed.
-
-- **Model provenance.** The FTW `unet_balanced_fp32.onnx` model, run on the Sentinel-2 quarterly cloudless mosaics and vectorized by BoundaryVote instance post-processing; *How it was made* above and each collection's `description` record the exact chain. The checkpoint and its model card are released by the [FTW project](https://fieldsofthe.world) separately from this data.
-- **`score` is a model probability, not a validated confidence.** It is the mean field probability the model assigned to the pixels inside the parcel, × 100 and rounded into a `uint8` (0–100). Use it to rank and filter; no calibration against ground truth is published for this beta, so a score of 80 is not an 80% chance that the parcel is real.
-- **Weaker outside the training distribution.** FTW describes the confidence on its earlier global release as "conservative outside the FTW training distribution (e.g. smallholder systems): real fields there may receive low confidence" ([FTW](https://source.coop/ftw/global-data)). Expect the same shape of error here, and prefer a continuous `score` over a hard threshold in smallholder regions.
-- **No land-cover masking.** Nothing upstream removed non-agricultural ground, so water, scrub and built-up land can appear as parcels; `score` is the filter the dataset gives you. Parcels larger than 5 km² were dropped in post-processing.
-- **Each year is an independent prediction.** `id` is unique within a year's collection and carries no meaning across years, so year-over-year comparison needs a spatial join, not an id join.
-
-Found something wrong? Open an [issue](https://github.com/fieldsoftheworld/ftw-global-data-catalog/issues).
-
-## Fixing this metadata
-
-`catalog/` in [the repository](https://github.com/fieldsoftheworld/ftw-global-data-catalog) **is** this catalog: it syncs 1:1 to the bucket through `tools/publish.py`, so a merged change lands here on the next publish. Publishing never deletes, and no data bytes live in git — the repository carries only the metadata that describes them.
-
-Every file in this directory is **generated** by `tools/build_vector_items.py`. Edit that generator and re-run it; an edit to the generated output is overwritten by the next build.
+Coverage is not global. Only MGRS tiles with at least 1% cropland were processed, so a region below that threshold has no parcels here and an absence is not a prediction of absence. Inside a processed tile nothing is filtered by land cover, so water, scrub and built-up ground can carry predicted parcels. Filter on `score` (the model's field probability × 100) to trade precision against recall.
