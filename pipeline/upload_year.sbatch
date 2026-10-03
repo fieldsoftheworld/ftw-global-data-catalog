@@ -1,6 +1,6 @@
 #!/bin/bash
 # Upload one year's PMTiles + a5 cells parquet to vector/{year}/ on Source Coop; record size + multihash.
-# Usage: YEAR=2020 sbatch --export=ALL upload_year.sbatch
+# Usage: YEAR=2020 sbatch --export=ALL upload_year.sbatch   (optional: PY=/path/to/python PROFILE=name)
 #SBATCH --account=bgtj-tgirails
 #SBATCH --partition=cpu,cpu_amd
 #SBATCH --exclude=rails[04-15]
@@ -11,13 +11,15 @@
 set -euo pipefail
 : "${YEAR:?}"
 HERE=${SLURM_SUBMIT_DIR:-$PWD}
-REPO=/u/isaaccorley/github/global-ftw-2e
-export UV_CACHE_DIR="$HOME/.cache/uv-ftw"
+# s3_put_retry.py retries each multipart part (the proxy answers 520 and aws s3 cp restarts the
+# whole file). PY needs boto3; PROFILE is an AWS profile with Source Coop credentials ('' = env).
+PY=${PY:-python3}
+PROFILE=${PROFILE:-source-coop}
 DST=s3://ftw/global-data-2e/vector/$YEAR
 for kind in pmtiles cells; do
   if [[ $kind == pmtiles ]]; then f=$HERE/fields-$YEAR.pmtiles; else f=$HERE/cells_a5r7_$YEAR.parquet; fi
   [[ -s $f ]] || { echo "missing $f" >&2; exit 1; }
-  (cd "$REPO" && uv run --no-sync python -u scripts/s3_put_retry.py --workers 16 "$f" "$DST/$(basename "$f")")
+  "$PY" -u "$HERE/s3_put_retry.py" --profile "$PROFILE" --workers 16 "$f" "$DST/$(basename "$f")"
   h=$(sha256sum "$f" | cut -d' ' -f1)
   printf '{"size": %s, "checksum": "1220%s"}\n' "$(stat -c %s "$f")" "$h" > "$HERE/checksums/${kind}_$YEAR.json"
   echo "$kind $YEAR: $(cat "$HERE/checksums/${kind}_$YEAR.json")"

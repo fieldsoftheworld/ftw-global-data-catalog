@@ -1,8 +1,10 @@
-import math, gzip, sys
+import math, gzip, os, sys
 import urllib.request
 from pmtiles.reader import Reader
 import mapbox_vector_tile as mvt, duckdb
 year=sys.argv[1]
+# SRC_ROOT=/path/to/hive/tree reads {year}/zone=NN/utmNN.parquet locally; else the public bucket.
+SRC_ROOT=os.environ.get("SRC_ROOT")
 def tile(lon,lat,z):
     n=2**z; return int((lon+180)/360*n), int((1-math.asinh(math.tan(math.radians(lat)))/math.pi)/2*n)
 def bounds(x,y,z):
@@ -27,6 +29,7 @@ if True:
         k=0
         for zz in zs:
             if 1<=zz<=60:
-                fp=f"/projects/bgtj/isaaccorley/ftw-fiboa-v2/{year}/zone={zz:02d}/utm{zz:02d}.parquet"
+                rel=f"{year}/zone={zz:02d}/utm{zz:02d}.parquet"
+                fp=f"{SRC_ROOT}/{rel}" if SRC_ROOT else f"https://data.source.coop/ftw/global-data-2e/vector/{rel}"
                 k+=c.execute(f"select count(*) from '{fp}' where bbox.xmin<={e} and bbox.xmax>={w} and bbox.ymin<={n} and bbox.ymax>={s}").fetchone()[0]
         print(name,(z,x,y),"tile features",len(fs),"| parquet features in tile bbox",k,"| props",list(fs[0]["properties"]) if fs else None)
