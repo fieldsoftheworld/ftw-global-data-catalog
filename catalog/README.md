@@ -109,6 +109,43 @@ returns square degrees; read `metrics:area` (m²) instead. The COGs are each in
 their own tile's UTM zone, so a mosaic across zones needs a warp. The PMTiles
 archives are Web Mercator (EPSG:3857).
 
+## Reading an area across tiles
+
+The COGs are one file per tile, so an area that crosses a tile edge needs a mosaic.
+This reads the field and boundary probabilities for a lon/lat box at 20 m. `rasterio`
+fetches the overview closest to `res`, not the 2.5 m data. Find the tiles in
+[`index/raster.parquet`](https://data.source.coop/ftw/global-data-2e/index/raster.parquet):
+
+```python
+import duckdb, numpy as np, rasterio
+from rasterio.merge import merge
+from rasterio.vrt import WarpedVRT
+from rasterio.warp import transform_bounds
+from rasterio.enums import Resampling
+
+def read_area(bbox, year, res, crs):
+    """bbox = (lon_min, lat_min, lon_max, lat_max) -> (band, y, x) uint8 at `res` metres in `crs`."""
+    x0, y0, x1, y1 = bbox
+    hrefs = [h for (h,) in duckdb.sql(f"""
+        select href from read_parquet('https://data.source.coop/ftw/global-data-2e/index/raster.parquet')
+        where year={year} and xmax>={x0} and xmin<={x1} and ymax>={y0} and ymin<={y1}
+        order by tile_key""").fetchall()]
+    vrts = [WarpedVRT(rasterio.open(h), crs=crs, resampling=Resampling.nearest) for h in hrefs]
+    l, b, r, t = transform_bounds("EPSG:4326", crs, *bbox)
+    snap = lambda v, f: f(v / res) * res          # tile grids sit on whole multiples of res
+    return merge(vrts, bounds=(snap(l, np.floor), snap(b, np.floor), snap(r, np.ceil), snap(t, np.ceil)),
+                 res=res, method="first")
+
+mosaic, transform = read_area((-93.06, 41.90, -92.94, 42.00), 2024, 20, "EPSG:32615")
+# band 0 = field, band 1 = boundary; probability = value / 255
+```
+
+- Snap the bounds to the pixel size, as above. Otherwise the output grid sits a fraction of a
+  pixel off the tile grid, and the values differ slightly from the COGs.
+- Neighbouring tiles overlap by about 60 m, and each predicted that strip on its own.
+  `method="first"` keeps the first tile's values there; use `"max"` or `"mean"` to combine them.
+- `WarpedVRT` warps tiles from other UTM zones into `crs`. It leaves tiles already in `crs` as they are.
+
 ## Fixing this metadata
 
 `catalog/` in
