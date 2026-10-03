@@ -11,7 +11,9 @@ the released tiles), so the pass costs a few tenths of a second per tile.
         --footprints tile_footprints.parquet --cropland global_cropland.parquet
     # {cog-root}/{year}/{tile_key}.tif (flat) -> staging-data/index/raster_{year}.parquet per year
 
-The score COGs are flat files named ``{tile_key}.tif``; the hrefs written are the published hive
+``--layout flat`` (default) reads ``{cog-root}/{year}/{tile_key}.tif``. ``--layout hive`` reads the
+published layout ``{cog-root}/{year}/zone=ZZ/gzd=ZZL/{tile_key}/{tile_key}.tif``, which is what
+``pipeline/inference/run.py --layout hive`` writes. The hrefs written are always the published hive
 paths. ``--footprints`` needs ``tile_key``, ``geometry`` (WKB), ``west``, ``south``, ``east``,
 ``north``; ``--cropland`` needs ``tile_key``, ``fraction``. A year is written on its own so a year
 can be indexed once its COGs are staged and folded in with ``tools/merge_raster_index.py``.
@@ -43,16 +45,27 @@ def hive_key(year: int, tile_key: str) -> str:
     return f"{year}/zone={tile_key[:2]}/gzd={tile_key[:3]}/{tile_key}/{tile_key}.tif"
 
 
+GLOBS = {"flat": "*.tif", "hive": "zone=*/gzd=*/*/*.tif"}
+
+
+def cog_paths(cog_root: Path, year: int, layout: str) -> list[Path]:
+    "The tile COGs of one year under ``cog_root`` in the given on-disk layout."
+    return sorted((cog_root / str(year)).glob(GLOBS[layout]))
+
+
 def stats(path: Path) -> tuple[str, int, float, float, int]:
     "(tile_key, epsg, field_frac, boundary_frac, size_bytes) from the coarsest overview."
     with rasterio.open(path) as ds:
+        epsg = ds.crs.to_epsg() if ds.crs else None
+        if epsg is None:
+            raise SystemExit(f"{path}: CRS is missing or has no EPSG code; refusing to index epsg 0")
         overviews = ds.overviews(1)
         factor = max(overviews) if overviews else 64
         shape = (max(1, ds.height // factor), max(1, ds.width // factor))
         a = ds.read(out_shape=(2, *shape))
         return (
             path.stem,
-            ds.crs.to_epsg() or 0,
+            epsg,
             float((a[0] > 128).mean()),
             float((a[1] > 64).mean()),
             path.stat().st_size,
@@ -112,14 +125,18 @@ def main() -> int:
     ap.add_argument("--cog-root", type=Path, required=True)
     ap.add_argument("--footprints", type=Path, required=True)
     ap.add_argument("--cropland", type=Path, required=True)
+    ap.add_argument("--layout", choices=tuple(GLOBS), default="flat")
     ap.add_argument("--out-dir", type=Path, default=ROOT / "staging-data" / "index")
     ap.add_argument("--workers", type=int, default=16)
     a = ap.parse_args()
     meta = footprints(a.footprints, a.cropland)
     for year in a.years:
-        paths = sorted((a.cog_root / str(year)).glob("*.tif"))
+        paths = cog_paths(a.cog_root, year, a.layout)
         if not paths:
-            raise SystemExit(f"no COGs under {a.cog_root / str(year)}")
+            raise SystemExit(
+                f"no COGs matching {GLOBS[a.layout]!r} under {a.cog_root / str(year)}; "
+                "is --layout right?"
+            )
         rows = year_rows(year, paths, meta, a.workers)
         out = a.out_dir / f"raster_{year}.parquet"
         table = write_index(rows, out)

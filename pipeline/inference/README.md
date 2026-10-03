@@ -19,6 +19,10 @@ own tags. They are written in two steps (tiled GTiff, overviews, then the COG dr
 them) because the COG driver alone would build levels 2-128. `--layout hive` writes the
 published `raster/` layout, `{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif`, from the stack's
 `year` tag and file name; the default `flat` writes `{output-dir}/{tile}.tif`.
+`tools/build_raster_index.py` reads either layout, but it defaults to `--layout flat`
+(`{cog-root}/{year}/*.tif`), so index hive output with `--layout hive`
+(`{year}/zone=*/gzd=*/*/*.tif`); the wrong choice fails with a "no COGs matching" error
+instead of indexing nothing.
 
 ```sh
 uv venv

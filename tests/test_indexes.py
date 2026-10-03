@@ -9,6 +9,7 @@ Run: python3 tests/test_indexes.py
 """
 import sys
 import tempfile
+import warnings
 from pathlib import Path
 
 import numpy as np
@@ -110,6 +111,29 @@ with tempfile.TemporaryDirectory() as tmp:
         check(False, "a tile without a footprint must fail")
     except SystemExit as exc:
         check("no footprint" in str(exc), "footprint message")
+
+    # --- layouts: flat vs the published hive layout ---------------------
+    hive_root = tmp / "hive"
+    score_cog(hive_root / "x", 2025, "15TVG_0_0", field=200, boundary=100)
+    nested = hive_root / "2025" / "zone=15" / "gzd=15T" / "15TVG_0_0"
+    nested.mkdir(parents=True)
+    (hive_root / "x" / "2025" / "15TVG_0_0.tif").rename(nested / "15TVG_0_0.tif")
+    check([p.name for p in bri.cog_paths(hive_root, 2025, "hive")] == ["15TVG_0_0.tif"],
+          "hive layout globbed")
+    check(bri.cog_paths(hive_root, 2025, "flat") == [], "a hive tree is not read as flat")
+    check(len(bri.cog_paths(cogs, 2025, "flat")) == 2 and bri.cog_paths(cogs, 2025, "hive") == [],
+          "a flat tree is not read as hive")
+
+    # --- an unknown CRS must raise, not be written as epsg 0 -----------
+    warnings.simplefilter("ignore", rasterio.errors.NotGeoreferencedWarning)
+    nocrs = tmp / "nocrs.tif"
+    with rasterio.open(nocrs, "w", driver="GTiff", height=8, width=8, count=2, dtype="uint8") as ds:
+        ds.write(np.zeros((2, 8, 8), np.uint8))
+    try:
+        bri.stats(nocrs)
+        check(False, "a COG without an EPSG code must fail")
+    except SystemExit as exc:
+        check("epsg 0" in str(exc), "unknown-CRS message")
 
     # --- merge: a year is replaced, others kept, sorted, bbox recomputed -
     main = tmp / "index" / "raster.parquet"

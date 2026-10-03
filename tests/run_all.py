@@ -28,6 +28,10 @@ failed = []
 for name in TESTS:
     path = HERE / name
     if not path.exists():
+        # A listed gate that is absent must fail loudly. Skipping it would report a
+        # green run for a gate nobody ran.
+        print(f"\nerror  {name} is listed in TESTS but does not exist")
+        failed.append(f"{name} (missing)")
         continue
     print(f"\n=== {name} " + "=" * (60 - len(name)), flush=True)
     if subprocess.run([sys.executable, str(path)]).returncode != 0:
