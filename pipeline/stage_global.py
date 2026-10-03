@@ -27,12 +27,16 @@ nodes probing the (blackholed) EC2 metadata service.
     python3 stage_global.py --year 2025
 """
 import argparse
+import os
 import time
 from pathlib import Path
 
 import duckdb
 
-INDEX = "https://data.source.coop/ftw/global-data-beta/index/vector.parquet"
+INDEX = "https://data.source.coop/ftw/global-data-2e/index/vector.parquet"
+# SRC_ROOT=/projects/.../ftw-fiboa-v3 reads the local hive tree ({year}/zone=NN/utmNN.parquet)
+# instead of the proxy: same bytes as the bucket, no network.
+SRC_ROOT = os.environ.get("SRC_ROOT")
 
 
 def main() -> None:
@@ -54,10 +58,13 @@ def main() -> None:
     con.execute("SET http_retries=8; SET http_retry_wait_ms=2000;"
                 "SET http_timeout=120000;")
 
-    hrefs = con.execute(
-        f"SELECT href FROM '{INDEX}' WHERE year = ? ORDER BY zone",
-        [args.year],
-    ).fetchall()
+    if SRC_ROOT:
+        hrefs = [(str(f),) for f in sorted(Path(SRC_ROOT, str(args.year)).glob("zone=*/utm*.parquet"))]
+    else:
+        hrefs = con.execute(
+            f"SELECT href FROM '{INDEX}' WHERE year = ? ORDER BY zone",
+            [args.year],
+        ).fetchall()
     if not hrefs:
         raise SystemExit(f"no index rows for year {args.year}")
 

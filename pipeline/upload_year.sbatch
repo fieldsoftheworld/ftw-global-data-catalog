@@ -13,7 +13,7 @@ set -euo pipefail
 HERE=${SLURM_SUBMIT_DIR:-$PWD}
 REPO=/u/isaaccorley/github/ftw-s2-quarterly
 export UV_CACHE_DIR="$HOME/.cache/uv-ftw"
-DST=s3://ftw/global-data-beta/vector/$YEAR
+DST=s3://ftw/global-data-2e/vector/$YEAR
 for kind in pmtiles cells; do
   if [[ $kind == pmtiles ]]; then f=$HERE/fields-$YEAR.pmtiles; else f=$HERE/cells_a5r7_$YEAR.parquet; fi
   [[ -s $f ]] || { echo "missing $f" >&2; exit 1; }

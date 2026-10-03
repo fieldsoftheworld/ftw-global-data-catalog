@@ -18,4 +18,5 @@ for i in $(seq 0 $((N - 1))); do
 done
 dep=$(IFS=:; echo "${sh[*]}")
 m=$(MODE=merge COARSE="fields-$y-a5r7.pmtiles" sub -c8 --mem="${MERGE_M:-32G}" -J "pm-merge-$y" --dependency="afterok:$c:$dep" tile_fields.sbatch)
-echo "$y: stage $s agg $a cells $c plan $p coarse $k shards ${sh[*]} merge $m"
+u=$(sub -J "pm-upload-$y" --dependency=afterok:$m upload_year.sbatch)
+echo "$y: stage $s agg $a cells $c plan $p coarse $k shards ${sh[*]} merge $m upload $u"
