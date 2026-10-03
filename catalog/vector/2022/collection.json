@@ -516,8 +516,8 @@
       "roles": [
         "visual"
       ],
-      "file:size": 28571918420,
-      "file:checksum": "12208c12b0dadcd38e9ad892227d9815131842a7978d82ffdd897887340e93498344"
+      "file:size": 27036243896,
+      "file:checksum": "12200b8f557c39a9de90113deedceab1c5d35168ef7fcc5c38e4945673b003cdd305"
     },
     "cells": {
       "href": "./cells_a5r7_2022.parquet",
@@ -527,8 +527,8 @@
       "roles": [
         "data"
       ],
-      "file:size": 1660458,
-      "file:checksum": "12205e0f3fe802c5fe6ccc661ccbd0f3ff57569d98cb0f7fc86d8cbc063a0ad19d17"
+      "file:size": 1660608,
+      "file:checksum": "122063291338faaeea7dee14feb66f65e8c0f01dfaa94723ae2728d096093f1f61f4"
     },
     "styles/count": {
       "href": "./styles/count.json",
