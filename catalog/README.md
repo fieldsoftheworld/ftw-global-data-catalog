@@ -26,7 +26,7 @@ contains.
 to download them directly, or read them in place over HTTP range requests from
 `https://data.source.coop/ftw/global-data-2e/`.
 
-Agents: [AGENTS.md](./AGENTS.md) beside this file is the agent guide. Read
+Agents: [AGENTS.md](https://data.source.coop/ftw/global-data-2e/AGENTS.md) beside this file is the agent guide. Read
 [Limitations](#limitations) before drawing conclusions from any of these
 numbers.
 
@@ -56,7 +56,7 @@ so a whole year reads as one dataset. Its nine-column schema follows
 [fiboa](https://fiboa.org) and [vecorel](https://vecorel.org). A per-year
 PMTiles archive hands over from A5 r7 cell aggregates to the field polygons at
 z9, and four MapLibre styles ship beside it. The
-[vector README](./vector/README.md) has a runnable whole-collection query.
+[vector README](https://source.coop/ftw/global-data-2e/vector) has a runnable whole-collection query.
 
 The **raster** product is one COG per Sentinel-2 MGRS-based tile, each
 40,032 × 40,032 pixels at 2.5 m in its own tile's UTM zone, with `field`
@@ -66,7 +66,7 @@ Enumerate tiles from the
 [raster index manifest](https://data.source.coop/ftw/global-data-2e/index/raster.parquet),
 which lists every tile with href, size, bbox and per-tile
 field/boundary/cropland pixel fractions. The
-[raster README](./raster/README.md) and each year's own README carry the band
+[raster README](https://source.coop/ftw/global-data-2e/raster) and each year's own README carry the band
 semantics.
 
 Both trees come from the same model on the same mosaics. The vectors are

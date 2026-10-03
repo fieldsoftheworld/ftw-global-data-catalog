@@ -4,7 +4,7 @@ Predicted agricultural field boundaries for 2023: **133,227,819 parcels** in 54 
 
 **[Open 2023 on the interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2023)** to see the fields over imagery, or **[open it in the Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2023/collection.json)** to walk the metadata and preview each asset. The files themselves are listed on [Source Cooperative](https://source.coop/ftw/global-data-2e).
 
-Agents: [AGENTS.md](./AGENTS.md) beside this file is the agent guide.
+Agents: [AGENTS.md](https://data.source.coop/ftw/global-data-2e/vector/2023/AGENTS.md) beside this file is the agent guide.
 
 Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 

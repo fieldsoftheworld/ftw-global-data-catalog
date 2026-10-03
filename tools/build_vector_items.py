@@ -85,6 +85,22 @@ def viewer(year: int | None = None) -> str:
     """The map URL, opened on one year. The app reads `year` from the hash."""
     return VIEWER_URL if year is None else f"{VIEWER_URL}#year={year}"
 
+
+def folder(path: str = "") -> str:
+    """The Source Cooperative page listing one directory of the catalog."""
+    return f"{SOURCE_COOP}/{path}".rstrip("/")
+
+
+def doc(path: str) -> str:
+    """The raw URL of one published markdown file."""
+    return f"{PUBLIC_BASE}/{path}"
+
+
+# Prose links in these READMEs are absolute on purpose. Source Cooperative
+# renders the markdown at /ftw/global-data-2e, where a relative `./vector/...`
+# resolves to /ftw/vector/... and 404s, which is what readers reported. STAC
+# `links` stay relative, as Portolan requires; only markdown prose changes.
+
 PROVIDERS = [
     {
         "name": "Taylor Geospatial",
@@ -613,8 +629,8 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         f"({browser_year})** to walk the metadata and preview each asset. "
         f"The files themselves are listed on "
         f"[Source Cooperative]({SOURCE_COOP}).", "",
-        "Agents: [AGENTS.md](./AGENTS.md) beside this file is the agent "
-        "guide.", "",
+        f"Agents: [AGENTS.md]({doc(f'vector/{year}/AGENTS.md')}) beside "
+        f"this file is the agent guide.", "",
         "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## How it was made", "",
         f"{fix_details(meta['determination:details'])} Source imagery: the "
@@ -726,9 +742,9 @@ def vector_readme(per_year: dict[int, list[dict]]) -> str:
         "## Collections", "",
         "| Year | Parcels | Files | Browse |",
         "|---|---|---|---|",
-        *[f"| [{y}](./{y}/collection.json) "
+        *[f"| {y} "
           f"| {sum(r['n_parcels'] for r in per_year[y]):,} "
-          f"| {len(per_year[y])} UTM zones "
+          f"| [{len(per_year[y])} UTM zones]({folder(f'vector/{y}')}) "
           f"| [map]({viewer(y)}) · "
           f"[browser]({browser(f'vector/{y}/collection.json')}) |"
           for y in sorted(per_year)], "",

@@ -4,15 +4,15 @@ Guidance for AI agents and automated clients working with this Portolan/STAC
 catalog. Every claim in this file is quoted from a source or measured from the
 data.
 
-Around this file: [catalog.json](./catalog.json) is the normative root and
-[README.md](./README.md) is the human landing page. For a person rather than
+Around this file: [catalog.json](https://data.source.coop/ftw/global-data-2e/catalog.json) is the normative root and
+[README.md](https://source.coop/ftw/global-data-2e) is the human landing page. For a person rather than
 an agent, the
 [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/)
 renders the fields and the
 [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/catalog.json)
 walks this tree with each collection's own style. Each subtree has its own
-guide — [vector/AGENTS.md](./vector/AGENTS.md) for the field polygons and
-[raster/AGENTS.md](./raster/AGENTS.md) for the probability COGs — and so does
+guide — [vector/AGENTS.md](https://data.source.coop/ftw/global-data-2e/vector/AGENTS.md) for the field polygons and
+[raster/AGENTS.md](https://data.source.coop/ftw/global-data-2e/raster/AGENTS.md) for the probability COGs — and so does
 every per-year collection. Read the collection-level guide before querying;
 it carries the measured numbers and the quirks this file does not repeat.
 
@@ -72,7 +72,7 @@ it carries the measured numbers and the quirks this file does not repeat.
   the parcel × 100 — a ranking for filtering, not a calibrated probability.
   No calibration against ground truth is published for this 2nd Edition.
 - Counts and areas are predictions, not measurements; report them as such.
-  [README.md](./README.md#limitations) has the full set of caveats with
+  [README.md](https://source.coop/ftw/global-data-2e) has the full set of caveats with
   sources.
 
 ## Fixing this metadata

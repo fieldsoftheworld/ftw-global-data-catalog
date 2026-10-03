@@ -62,6 +62,22 @@ def viewer(year: int | None = None) -> str:
     """The map URL, opened on one year. The app reads `year` from the hash."""
     return VIEWER_URL if year is None else f"{VIEWER_URL}#year={year}"
 
+
+def folder(path: str = "") -> str:
+    """The Source Cooperative page listing one directory of the catalog."""
+    return f"{SOURCE_COOP}/{path}".rstrip("/")
+
+
+def doc(path: str) -> str:
+    """The raw URL of one published markdown file."""
+    return f"{PUBLIC_BASE}/{path}"
+
+
+# Prose links in these READMEs are absolute on purpose. Source Cooperative
+# renders the markdown at /ftw/global-data-2e, where a relative `./raster/...`
+# resolves to /ftw/raster/... and 404s, which is what readers reported. STAC
+# `links` stay relative, as Portolan requires; only markdown prose changes.
+
 PROVIDERS = [
     {
         "name": "Taylor Geospatial",
@@ -305,8 +321,13 @@ def tree_readme(stats: dict[int, dict]) -> str:
         f"files are listed on [Source Cooperative]({SOURCE_COOP}).", "",
         "Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)", "",
         "## Collections", "",
-        *[f"- [{y}](./{y}/collection.json) — {stats[y]['n']:,} tiles, "
-          f"{stats[y]['bytes'] / 1e12:.2f} TB" for y in sorted(stats)], "",
+        "| Year | Tiles | Size | Browse |",
+        "|---|---|---|---|",
+        *[f"| {y} | [{stats[y]['n']:,}]({folder(f'raster/{y}')}) "
+          f"| {stats[y]['bytes'] / 1e12:.2f} TB "
+          f"| [map]({viewer(y)}) · "
+          f"[browser]({browser(f'raster/{y}/collection.json')}) |"
+          for y in sorted(stats)], "",
     ])
 
 
