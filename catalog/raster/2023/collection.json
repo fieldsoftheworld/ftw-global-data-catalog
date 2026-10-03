@@ -2,11 +2,14 @@
   "type": "Collection",
   "stac_version": "1.1.0",
   "stac_extensions": [
-    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/raster/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json"
   ],
   "id": "ftw-raster-2023",
   "title": "FTW Global — Field & Boundary Probabilities 2023 (COG)",
-  "description": "Field and boundary probability rasters for 2023: 7,467 Cloud-Optimized GeoTIFFs at 2.5 m (2.94 TB), one per Sentinel-2 MGRS-based tile at `raster/2023/{tile_key}.tif`. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2023), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2023/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**The rasters.** Each COG is 40,032 × 40,032 pixels at 2.5 m in its tile's UTM zone, with two uint8 bands scaled by 1/255: `field` (band 1, field-interior probability) and `boundary` (band 2, field-boundary probability). ZSTD-compressed COG layout with average-resampled overviews down to 626 px. Produced by the `unet_balanced_fp32` FTW model from 16 input bands (B02/B03/B04/B08 × quarters Q1–Q4 of the year's [Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/), 10 m); each COG's GDAL metadata records its four source mosaic tiles (`source_items`).\n\nPer-item STAC metadata is generated to the bucket next to each COG; the [index manifest](https://data.source.coop/ftw/global-data-2e/index/raster.parquet) lists every tile with href, size, bbox, and per-tile field/boundary/cropland pixel fractions. The pipeline that produced these COGs is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).",
+  "description": "Field and boundary probability rasters for 2023: 7,467 Cloud-Optimized GeoTIFFs at 2.5 m (2.94 TB), one per Sentinel-2 MGRS-based tile at `raster/2023/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif`. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2023), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/raster/2023/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**The rasters.** Each COG is 40,032 × 40,032 pixels at 2.5 m in its tile's UTM zone, with two uint8 bands scaled by 1/255: `field` (band 1, field-interior probability) and `boundary` (band 2, field-boundary probability). No nodata value is declared, so every pixel carries a probability. ZSTD-compressed COG layout with average-resampled overviews down to 626 px. Produced by the `unet_balanced_fp32` FTW model from 16 input bands (B02/B03/B04/B08 × quarters Q1–Q4 of the year's [Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/), 10 m); each COG's GDAL metadata records its four source mosaic tiles (`source_items`).\n\nEach tile's STAC item sits beside its COG and thumbnail; the [index manifest](https://data.source.coop/ftw/global-data-2e/index/raster.parquet) lists every tile with href, size, bbox, and per-tile field/boundary/cropland pixel fractions. The pipeline that produced these COGs is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).\n\n**Browsing.** The 7,467 items are grouped into 54 UTM-zone subcatalogs, each splitting into its grid zone designators (`zone=33/gzd=33U/…`), so every item is reachable by `child`/`item` links without any one object carrying thousands of them.\n\nThe year's `overview` asset renders the whole collection at global scale.",
   "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
@@ -54,7 +57,124 @@
   "summaries": {
     "gsd": [
       2.5
+    ],
+    "proj:code": [
+      "EPSG:32604",
+      "EPSG:32605",
+      "EPSG:32610",
+      "EPSG:32611",
+      "EPSG:32612",
+      "EPSG:32613",
+      "EPSG:32614",
+      "EPSG:32615",
+      "EPSG:32616",
+      "EPSG:32617",
+      "EPSG:32618",
+      "EPSG:32619",
+      "EPSG:32620",
+      "EPSG:32621",
+      "EPSG:32622",
+      "EPSG:32626",
+      "EPSG:32627",
+      "EPSG:32628",
+      "EPSG:32629",
+      "EPSG:32630",
+      "EPSG:32631",
+      "EPSG:32632",
+      "EPSG:32633",
+      "EPSG:32634",
+      "EPSG:32635",
+      "EPSG:32636",
+      "EPSG:32637",
+      "EPSG:32638",
+      "EPSG:32639",
+      "EPSG:32640",
+      "EPSG:32641",
+      "EPSG:32642",
+      "EPSG:32643",
+      "EPSG:32644",
+      "EPSG:32645",
+      "EPSG:32646",
+      "EPSG:32647",
+      "EPSG:32648",
+      "EPSG:32649",
+      "EPSG:32650",
+      "EPSG:32651",
+      "EPSG:32652",
+      "EPSG:32653",
+      "EPSG:32654",
+      "EPSG:32655",
+      "EPSG:32657",
+      "EPSG:32701",
+      "EPSG:32712",
+      "EPSG:32717",
+      "EPSG:32718",
+      "EPSG:32719",
+      "EPSG:32720",
+      "EPSG:32721",
+      "EPSG:32722",
+      "EPSG:32723",
+      "EPSG:32724",
+      "EPSG:32725",
+      "EPSG:32732",
+      "EPSG:32733",
+      "EPSG:32734",
+      "EPSG:32735",
+      "EPSG:32736",
+      "EPSG:32737",
+      "EPSG:32738",
+      "EPSG:32739",
+      "EPSG:32740",
+      "EPSG:32747",
+      "EPSG:32748",
+      "EPSG:32749",
+      "EPSG:32750",
+      "EPSG:32751",
+      "EPSG:32752",
+      "EPSG:32753",
+      "EPSG:32754",
+      "EPSG:32755",
+      "EPSG:32756",
+      "EPSG:32758",
+      "EPSG:32759",
+      "EPSG:32760"
     ]
+  },
+  "item_assets": {
+    "data": {
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
+      "title": "Field & boundary probabilities (COG)",
+      "roles": [
+        "data"
+      ],
+      "bands": [
+        {
+          "name": "field",
+          "description": "Field-interior probability: the model's probability that the pixel lies inside an agricultural field. probability = value × 1/255.",
+          "data_type": "uint8",
+          "raster:scale": 0.00392156862745098,
+          "raster:offset": 0,
+          "raster:sampling": "area",
+          "raster:spatial_resolution": 2.5
+        },
+        {
+          "name": "boundary",
+          "description": "Field-boundary probability: the model's probability that the pixel lies on a field boundary. probability = value × 1/255.",
+          "data_type": "uint8",
+          "raster:scale": 0.00392156862745098,
+          "raster:offset": 0,
+          "raster:sampling": "area",
+          "raster:spatial_resolution": 2.5
+        }
+      ]
+    },
+    "thumbnail": {
+      "type": "image/png",
+      "title": "Field probability preview",
+      "roles": [
+        "thumbnail"
+      ]
+    }
   },
   "links": [
     {
@@ -93,6 +213,330 @@
       "title": "Collection agent guide"
     },
     {
+      "rel": "child",
+      "href": "./zone=01/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 1"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=04/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 4"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=05/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 5"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=10/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 10"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=11/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 11"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=12/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 12"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=13/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 13"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=14/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 14"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=15/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 15"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=16/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 16"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=17/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 17"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=18/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 18"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=19/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 19"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=20/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 20"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=21/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 21"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=22/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 22"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=23/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 23"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=24/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 24"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=25/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 25"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=26/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 26"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=27/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 27"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=28/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 28"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=29/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 29"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=30/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 30"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=31/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 31"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=32/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 32"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=33/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 33"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=34/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 34"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=35/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 35"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=36/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 36"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=37/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 37"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=38/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 38"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=39/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 39"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=40/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 40"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=41/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 41"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=42/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 42"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=43/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 43"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=44/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 44"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=45/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 45"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=46/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 46"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=47/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 47"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=48/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 48"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=49/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 49"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=50/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 50"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=51/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 51"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=52/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 52"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=53/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 53"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=54/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 54"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=55/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 55"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=56/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 56"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=57/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 57"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=58/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 58"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=59/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 59"
+    },
+    {
+      "rel": "child",
+      "href": "./zone=60/catalog.json",
+      "type": "application/json",
+      "title": "UTM zone 60"
+    },
+    {
       "rel": "vcs",
       "href": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
       "type": "text/html",
@@ -101,14 +545,49 @@
   ],
   "assets": {
     "thumbnail": {
+      "href": "./thumbnail.webp",
+      "type": "image/webp",
+      "title": "Global field-probability overview 2023",
+      "roles": [
+        "thumbnail",
+        "overview"
+      ],
+      "file:size": 31622,
+      "file:checksum": "12207f14fa9381b71181c69bae5e1a030419fb2677ad85cb8e144a0bc8874dabbd5a"
+    },
+    "coverage": {
       "href": "./thumbnail.png",
       "type": "image/png",
       "title": "Tile coverage shaded by field fraction (2023)",
       "roles": [
-        "thumbnail"
+        "overview"
       ],
       "file:size": 132551,
       "file:checksum": "1220957ee1c2365011c3456938efb2a27a2208a37ec016304f51ac864f5bf4bd6da8"
+    },
+    "overview": {
+      "href": "./overview.tif",
+      "type": "image/tiff; application=geotiff",
+      "title": "Global field-probability overview 2023 (COG)",
+      "description": "The whole year mosaicked and colormapped at overview resolution, so the collection renders at global scale.",
+      "roles": [
+        "visual",
+        "overview",
+        "cloud-optimized"
+      ],
+      "file:size": 2284989637
+    },
+    "mirror": {
+      "href": "./items.parquet",
+      "type": "application/vnd.apache.parquet",
+      "title": "STAC GeoParquet mirror of the items",
+      "description": "Every item's metadata in one stac-geoparquet file, for bulk and spatial queries without fetching thousands of item JSONs. Derived from the items; the item JSON stays normative.",
+      "roles": [
+        "collection-mirror",
+        "metadata"
+      ],
+      "file:size": 1706326,
+      "file:checksum": "1220fc773ab3d22708318257a4ef0209744d4635be0699b6369c190d8db55314bb36"
     }
   }
 }

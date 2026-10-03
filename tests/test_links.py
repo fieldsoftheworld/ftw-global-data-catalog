@@ -20,6 +20,7 @@ Run: python3 tests/test_links.py
 """
 import json
 import os
+import re
 import sys
 import urllib.request
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -45,6 +46,12 @@ DATA_SUFFIXES = (
     ".parquet", ".pmtiles", ".tif", ".tiff", ".copc.laz", ".laz", ".gpkg",
     ".zarr", ".geojsonl", ".shp", ".zip",
 )
+# The raster year collections link their 54 zone catalogs (./zone=NN/catalog.json). Those
+# catalogs, the 356 gzd catalogs under them and the 67k tile items are generated into the
+# bucket by tooling that is not in this repo (see CLAUDE.md), so they are never on disk.
+# Treated exactly like a data href: skipped under CI_LIGHT, HEAD-checked otherwise. The
+# pattern is anchored to a year collection under raster/, so it widens for nothing else.
+BUCKET_ONLY = re.compile(r"^\./zone=\d{2}/catalog\.json$")
 HEAD_WORKERS = 16
 UA = "Mozilla/5.0 (ftw-global-data-catalog link check)"
 
@@ -55,6 +62,20 @@ def is_remote(href: str) -> bool:
 
 def is_data(href: str) -> bool:
     return href.lower().endswith(DATA_SUFFIXES)
+
+
+RASTER_YEAR_COLLECTION = re.compile(r"^raster/\d{4}/collection\.json$")
+ZONE_CHILDREN_PER_YEAR = 54
+bucket_only_links: dict[str, int] = {}
+
+
+def is_bucket_only(path: Path, href: str) -> bool:
+    "A raster year collection's link to a zone catalog that lives only in the bucket."
+    rel = path.relative_to(BASE).as_posix()
+    hit = bool(RASTER_YEAR_COLLECTION.match(rel) and BUCKET_ONLY.match(href))
+    if hit:
+        bucket_only_links[rel] = bucket_only_links.get(rel, 0) + 1
+    return hit
 
 
 def published_url(doc_path: Path, href: str) -> str:
@@ -116,7 +137,7 @@ for path in documents:
             continue
         # A rel:pmtiles (or other data-suffix) link points at bytes that
         # live only in the bucket, exactly like a data asset href.
-        if is_data(href):
+        if is_data(href) or is_bucket_only(path, href):
             if CI_LIGHT:
                 skipped += 1
             else:
@@ -149,6 +170,14 @@ for path in documents:
             continue
         checked += 1
         errors.append(f"{rel_path}: asset {key} -> {href} does not exist")
+
+# The exemption must not widen or silently shrink: every year collection links exactly
+# its 54 zone catalogs, and nothing else uses it.
+if sorted(bucket_only_links) != [f"raster/{y}/collection.json" for y in range(2017, 2026)]:
+    errors.append(f"bucket-only links on unexpected objects: {sorted(bucket_only_links)}")
+for rel, n in sorted(bucket_only_links.items()):
+    if n != ZONE_CHILDREN_PER_YEAR:
+        errors.append(f"{rel}: {n} bucket-only zone links, expected {ZONE_CHILDREN_PER_YEAR}")
 
 if to_head:
     print(f"HEAD-checking {len(to_head)} data href(s) against "
