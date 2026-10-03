@@ -1,6 +1,6 @@
 # ftw-global-data-catalog — developer guide
 
-Git-backed Portolan/STAC catalog for the Fields of the World (FTW) Global **2nd Edition** (2e) release (formerly "beta"; bucket prefix `global-data-2e`).
+Git-backed Portolan/STAC catalog for the Fields of the World (FTW) Global **2nd Edition** (2e) release (bucket prefix `global-data-2e`).
 The build plan is in [docs/plan.md](docs/plan.md) — read it first.
 
 ## Models

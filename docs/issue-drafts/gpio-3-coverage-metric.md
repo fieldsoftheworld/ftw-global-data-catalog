@@ -56,7 +56,7 @@ to exist in the input schema.
 ### Acceptance
 
 - `--metric "sum:metrics:area,pct_cell:metrics:area" --resolution 7` on the
-  FTW beta 2025 input reproduces the downstream `pct_covered` values
+  FTW 2e 2025 input reproduces the downstream `pct_covered` values
   (within rounding) with `add_coverage.py`'s coverage step deleted.
 - `process overview` parents carry recomputed `pct_*` consistent with their
   own resolution's cell area.

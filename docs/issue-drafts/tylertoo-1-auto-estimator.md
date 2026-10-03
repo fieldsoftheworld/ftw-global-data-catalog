@@ -18,7 +18,7 @@ measured, so the estimate is wrong in both directions on real catalogs:
 
 - **Under-estimate**: wide-property datasets. A buffered row is a whole
   retained feature — geometry AND property columns as Arrow arrays
-  (`pipeline.rs:72`, `LevelSink::Ram` at `:1421`). The FTW beta vectors
+  (`pipeline.rs:72`, `LevelSink::Ram` at `:1421`). The FTW 2e vectors
   carry 17 exported properties; FIRMS-style aggregates
   (`gpio process aggregate --breakdown`) carry dozens to hundreds of
   `count_<value>` columns per feature. When real property bytes exceed the
@@ -74,6 +74,6 @@ calibrated. Note the companion report on bounded-profile RSS accounting
   `TYLERTOO_AUTO_MEM_LIMIT_BYTES`.
 - Unit test: a 2-property input must not spill under a generous limit
   (over-estimate direction).
-- Re-run the FTW beta coarse command with `--profile auto` inside a 64 GiB
+- Re-run the FTW 2e coarse command with `--profile auto` inside a 64 GiB
   cgroup: completes without OOM, and the profile JSON shows the measured
   per-row figure.

@@ -76,7 +76,7 @@ Env vars go through the shell + `--export=ALL` (a value inside
   self-calibrates with pyproj. Dateline cells have vertices past ±180 and
   must be wrapped or tile exporters drop them.
 
-## Measured timings (beta, tylertoo main @ dabed9f, 2026-09-29)
+## Measured timings (2e, tylertoo main @ dabed9f, 2026-09-29)
 
 Wall time per step (Slurm sacct; queue waits excluded). The coarse step is
 `--plan-only` (tylertoo #541/#574): it writes only the convert plan, so it

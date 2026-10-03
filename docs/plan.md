@@ -2,7 +2,7 @@
 
 ## Context
 
-FTW's global field-boundary predictions have a new **2nd Edition** (2e) release (first published as "beta") on Source Cooperative at
+FTW's global field-boundary predictions have a new **2nd Edition** (2e) release on Source Cooperative at
 `ftw/global-data-2e`. The bucket holds data only, no metadata: `vector/{2024,2025}/utm{NN}.parquet`
 (54 UTM zones/year, 227.5 GiB, 120M+134M parcels, fiboa/vecorel schema), `raster/{2017..2025}/`
 (67,197 two-band uint8 field/boundary-probability COGs, 2.5 m, ~26 TB), and `index/{raster,vector}.parquet`
@@ -103,7 +103,7 @@ catalog/
 
 ## Phase 3 — 2025 fields PMTiles (first deliverable; on rails)
 
-Adapt `alpha:scripts/tiles/` (README there has measured timings). Beta is ~12× smaller than alpha
+Adapt `alpha:scripts/tiles/` (README there has measured timings). 2e is ~12× smaller than alpha
 (134M vs 1.58B features) so expect hours, not days:
 
 1. **Stage**: read `vector/2025/utm*.parquet` (https URLs), **carry all columns** (drop only
@@ -111,17 +111,17 @@ Adapt `alpha:scripts/tiles/` (README there has measured timings). Beta is ~12× 
    keep in parquet). Check for cross-zone duplicates first (ids are tile-scoped; query
    `ftw:touches_window_edge` overlap) — dedupe only if measured. `SET TimeZone='UTC'` moot (no
    datetime col) — verify. `gpio` merge → GeoParquet 2.0 (row-group pruning).
-2. **A5 aggregate**: `gpio process aggregate a5 --resolution 7`; metrics adapted to beta schema:
+2. **A5 aggregate**: `gpio process aggregate a5 --resolution 7`; metrics adapted to the 2e schema:
    `count`, `area_ha` (from `metrics:area`), `avg_field_prob`, `avg_boundary_prob`, `pct_covered`
    via ported `add_coverage.py` (geodesic constant r7 ≈ 2,075.5 km², antimeridian wrap, rounding).
-   No 350 km² cutoff needed (beta already caps at 5 km²) — verify max area first.
+   No 350 km² cutoff needed (2e already caps at 5 km²) — verify max area first.
 3. **Cells archive**: `tylertoo tiles … --min-zoom 0 --max-zoom 8 --layer-name cells --verbatim
    --exclude-property a5_cell --profile bounded`; `tile_weights.py` report (≤600 KB gzipped from z2).
 4. **Fields shards + handover merge**: shard-plan → coarse (plan-writer only) → shards z9–13
    (`--row-group-size 100000`) → `tylertoo merge` with the cells archive as COARSE. At 134M
    features, possibly fewer shards / no 360G node needed — size from the staged parquet.
 5. **Styles**: per-year handover styles (cells `maxzoom: 9` / fields `minzoom: 9`, same PMTiles
-   source), all `step`/`match` expressions (browser legend rule). Proposed set for beta:
+   source), all `step`/`match` expressions (browser legend rule). Proposed set for 2e:
    count, coverage, avg-size, **field-prob** (replacing alpha's confidence); *style-plan checkpoint
    with measured distributions before tiling*.
 6. **Publish**: `fields-2025.pmtiles` + `cells_a5r7_2025.parquet` → `vector/fields-yearly/` via
