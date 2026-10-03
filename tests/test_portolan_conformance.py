@@ -124,6 +124,14 @@ for finding in blocking:
         print(f"       hint: {finding['fix_hint']}")
 
 waived = [f for f in findings if f.get("severity") == "error" and accepted(f)]
+# The waiver is exactly what docs/conformance.md records: 9 year collections x
+# (54 zone child links + 1 mirror asset + 1 style asset). A different count means
+# the exemption started covering something else, or stopped covering something.
+EXPECTED_WAIVED = 9 * (54 + 1 + 1)
+if len(waived) != EXPECTED_WAIVED:
+    print(f"error  {len(waived)} waived finding(s), expected {EXPECTED_WAIVED}; "
+          "update docs/conformance.md with the change")
+    raise SystemExit(1)
 if waived:
     print(f"\n{len(waived)} accepted finding(s); see docs/conformance.md")
 

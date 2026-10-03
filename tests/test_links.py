@@ -64,10 +64,18 @@ def is_data(href: str) -> bool:
     return href.lower().endswith(DATA_SUFFIXES)
 
 
+RASTER_YEAR_COLLECTION = re.compile(r"^raster/\d{4}/collection\.json$")
+ZONE_CHILDREN_PER_YEAR = 54
+bucket_only_links: dict[str, int] = {}
+
+
 def is_bucket_only(path: Path, href: str) -> bool:
     "A raster year collection's link to a zone catalog that lives only in the bucket."
-    rel = path.relative_to(BASE).parts
-    return len(rel) == 3 and rel[0] == "raster" and bool(BUCKET_ONLY.match(href))
+    rel = path.relative_to(BASE).as_posix()
+    hit = bool(RASTER_YEAR_COLLECTION.match(rel) and BUCKET_ONLY.match(href))
+    if hit:
+        bucket_only_links[rel] = bucket_only_links.get(rel, 0) + 1
+    return hit
 
 
 def published_url(doc_path: Path, href: str) -> str:
@@ -162,6 +170,14 @@ for path in documents:
             continue
         checked += 1
         errors.append(f"{rel_path}: asset {key} -> {href} does not exist")
+
+# The exemption must not widen or silently shrink: every year collection links exactly
+# its 54 zone catalogs, and nothing else uses it.
+if sorted(bucket_only_links) != [f"raster/{y}/collection.json" for y in range(2017, 2026)]:
+    errors.append(f"bucket-only links on unexpected objects: {sorted(bucket_only_links)}")
+for rel, n in sorted(bucket_only_links.items()):
+    if n != ZONE_CHILDREN_PER_YEAR:
+        errors.append(f"{rel}: {n} bucket-only zone links, expected {ZONE_CHILDREN_PER_YEAR}")
 
 if to_head:
     print(f"HEAD-checking {len(to_head)} data href(s) against "

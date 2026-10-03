@@ -50,9 +50,11 @@ published objects. The published raster tree is hive-partitioned
 is not in this repository (the earlier release tree was copied to 2e by a one-off relay that was not
 committed), and committing ~11,000 catalog files whose items cannot be checked offline would not
 make the gate meaningful. So the three rules above are waived for the nine year collections
-only; the same findings anywhere else, including the vector tree, still fail. The relative
-child links are HEAD-checked against the bucket by `tests/test_links.py` when `CI_LIGHT` is
-unset. Remove these rows when the generator is brought into the repo (see CLAUDE.md) or when
+only; the same findings anywhere else, including the vector tree, still fail. The gate asserts
+the waiver's size (9 collections x 56 findings = 504) and that each year collection has exactly 54
+zone links. The 486 zone-catalog links are only checked to exist **locally**: `tests/test_links.py`
+HEAD-checks them against the bucket when `CI_LIGHT` is unset, but CI sets it, so CI never verifies
+them. Run the gates without `CI_LIGHT` before merging. Remove these rows when the generator is brought into the repo (see CLAUDE.md) or when
 the raster collections gain a style asset and in-repo items. Open a tracking issue first; there
 is none yet.
 
