@@ -12,6 +12,8 @@ import torch  # imported before ONNX Runtime so its CUDA libraries load first
 import onnxruntime as ort
 import rasterio
 from affine import Affine
+import rasterio.shutil
+from rasterio.enums import Resampling
 from rasterio.windows import Window
 from predict import PATCH, predict_tile
 
@@ -21,6 +23,10 @@ BANDS = ("B04", "B03", "B02", "B08")
 QUARTERS = ("Q1", "Q2", "Q3", "Q4")
 BAND_DESCRIPTIONS = tuple(f"{q}_{b}" for q in QUARTERS for b in BANDS)
 INPUT_BANDS = f"{','.join(QUARTERS)} x {','.join(BANDS)}"
+#: Overview factors of the released COGs: 10-160 m. There is no 5 m level, which would add
+#: ~40% to the file size for a resolution the 10 m inputs do not have.
+OVERVIEWS = (4, 8, 16, 32, 64)
+ZSTD_LEVEL = 9
 
 
 def read_stack(path: Path):
@@ -52,12 +58,40 @@ def fingerprint(
     return json.dumps([st.st_size, st.st_mtime_ns, model_hash, batch, overlap, norm, provider])
 
 
+def hive_key(year: str | int, tile_key: str) -> str:
+    """Where a tile's COG lives under ``raster/``: ``{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif``."""
+    return f"{year}/zone={tile_key[:2]}/gzd={tile_key[:3]}/{tile_key}/{tile_key}.tif"
+
+
+def output_path(output_dir: Path, src: Path, src_tags: dict, layout: str) -> Path:
+    """Flat ``{output_dir}/{name}`` or the published hive layout (needs the stack's year tag)."""
+    if layout == "flat":
+        return output_dir / src.name
+    year = src_tags.get("year")
+    if not year:
+        raise ValueError(f"{src}: --layout hive needs a 'year' tag on the input stack")
+    return output_dir / hive_key(year, src.stem)
+
+
 def output_tags(
-    src_tags: dict, model_hash: str, fp: str, norm: float, overlap: float, provider: str
+    src_tags: dict,
+    model_hash: str,
+    fp: str,
+    norm: float,
+    overlap: float,
+    provider: str,
+    model_name: str | None = None,
+    tile_key: str | None = None,
 ) -> dict:
-    """Source tags plus this run's provenance; the input's verified band-order tag is kept."""
+    """Source tags plus this run's provenance; the input's verified band-order tag is kept.
+
+    ``model``, ``quantization``, ``zstd_level`` and ``tile_key`` are the tags the released
+    COGs carry (``model`` and ``tile_key`` are written only when given).
+    """
     tags = dict(
         src_tags,
+        quantization="uint8 = p*255",
+        zstd_level=str(ZSTD_LEVEL),
         model_sha256=model_hash,
         inference_fingerprint=fp,
         execution_provider=provider,
@@ -65,6 +99,10 @@ def output_tags(
         overlap=str(overlap),
     )
     tags.setdefault("input_bands", INPUT_BANDS)
+    if model_name:
+        tags["model"] = model_name
+    if tile_key:
+        tags["tile_key"] = tile_key
     return tags
 
 
@@ -123,7 +161,7 @@ def same_pixels(path: Path, scores: np.ndarray, rows: int = 4096) -> None:
     """Raise unless the file at ``path`` holds exactly ``scores`` at full resolution.
 
     Guards against a COG whose base level was lost while its overviews survived:
-    44 published 2019-2021 FTW-beta tiles had an empty base under valid overviews,
+    44 published 2019-2021 tiles had an empty base under valid overviews,
     which no header check or overview read catches.
     """
     with rasterio.open(path) as ds:
@@ -140,36 +178,58 @@ def same_pixels(path: Path, scores: np.ndarray, rows: int = 4096) -> None:
 
 
 def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> None:
+    """Write the two-band uint8 scores as a COG with overviews 4-64, verified before replace.
+
+    Two steps, as the released tiles were built: a tiled GTiff gets the overviews, then the COG
+    driver reuses them (``OVERVIEWS=FORCE_USE_EXISTING``). The COG driver alone would build
+    levels 2-128, including a 5 m level, and cannot be told otherwise.
+    """
     dst.parent.mkdir(parents=True, exist_ok=True)
+    stage = dst.with_name(f"{dst.name}.stage-{os.getpid()}")
     tmp = dst.with_name(f"{dst.name}.tmp-{os.getpid()}")
     try:
         with rasterio.open(
-            tmp,
+            stage,
             "w",
-            driver="COG",
+            driver="GTiff",
             height=scores.shape[1],
             width=scores.shape[2],
             count=2,
             dtype="uint8",
             crs=crs,
             transform=transform,
+            tiled=True,
+            blockxsize=512,
+            blockysize=512,
             compress="ZSTD",
-            level=9,
+            zstd_level=ZSTD_LEVEL,
             predictor=2,
-            blocksize=512,
             BIGTIFF="IF_SAFER",
-            overview_resampling="average",
         ) as ds:
             ds.write(scores)
             ds.scales = (1 / 255, 1 / 255)
+            ds.offsets = (0.0, 0.0)
             ds.set_band_description(1, "field")
             ds.set_band_description(2, "boundary")
             ds.update_tags(**tags)
+        with rasterio.open(stage, "r+") as ds:
+            ds.build_overviews(list(OVERVIEWS), Resampling.average)
+        rasterio.shutil.copy(
+            stage,
+            tmp,
+            driver="COG",
+            COMPRESS="ZSTD",
+            LEVEL=str(ZSTD_LEVEL),
+            PREDICTOR="2",
+            BLOCKSIZE="512",
+            BIGTIFF="IF_SAFER",
+            OVERVIEWS="FORCE_USE_EXISTING",
+        )
         same_pixels(tmp, scores)
         os.replace(tmp, dst)
-    except BaseException:
+    finally:
+        stage.unlink(missing_ok=True)
         tmp.unlink(missing_ok=True)
-        raise
 
 
 def main() -> None:
@@ -181,6 +241,13 @@ def main() -> None:
     ap.add_argument("--overlap", type=float, default=0.25)
     ap.add_argument("--norm", type=float, default=3000)
     ap.add_argument("--device", choices=tuple(PROVIDERS), default="cuda")
+    ap.add_argument(
+        "--layout",
+        choices=("flat", "hive"),
+        default="flat",
+        help="flat: {output-dir}/{tile}.tif; hive: the published raster/ layout "
+        "{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif (needs the stack's year tag)",
+    )
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--num-shards", type=int, default=1)
     a = ap.parse_args()
@@ -205,7 +272,8 @@ def main() -> None:
         ap.error(problem)
     todo = []
     for src in paths:
-        dst = a.output_dir / src.name
+        with rasterio.open(src) as ds:
+            dst = output_path(a.output_dir, src, ds.tags(), a.layout)
         fp = fingerprint(src, model_hash, a.batch, a.overlap, a.norm, provider)
         if not current(dst, fp):
             todo.append((src, dst, fp))
@@ -232,7 +300,16 @@ def main() -> None:
                 scores,
                 crs,
                 transform * Affine.scale(0.25),
-                output_tags(tags, model_hash, fp, a.norm, a.overlap, provider),
+                output_tags(
+                    tags,
+                    model_hash,
+                    fp,
+                    a.norm,
+                    a.overlap,
+                    provider,
+                    model_name=a.model.name,
+                    tile_key=src.stem,
+                ),
             )
             print(f"{src.name}: {patches} patches -> {dst}", flush=True)
 
