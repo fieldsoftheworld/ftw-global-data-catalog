@@ -9,7 +9,9 @@ is refused rather than assumed — the tag is the durable half,
 since GDAL does not always preserve band descriptions. Divide by 3000;
 bilinear upsample ×4; 512 px patches, 25% overlap, positive Hann blending.
 The model emits background/field/boundary logits; outputs retain field and
-boundary probabilities as uint8 (scale 1/255) at 2.5 m in a COG.
+boundary probabilities as uint8 (scale 1/255, offset 0) at 2.5 m in a COG with
+overviews 4-64 (10-160 m). `--layout hive` writes `{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif`
+(needs the stack's `year` tag); the default `flat` writes `{output-dir}/{tile}.tif`.
 
 ```sh
 uv venv

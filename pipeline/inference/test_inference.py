@@ -11,7 +11,9 @@ from run import (
     current,
     device_available,
     fingerprint,
+    hive_key,
     model_contract,
+    output_path,
     output_tags,
     read_stack,
     same_pixels,
@@ -91,8 +93,10 @@ def test_cog_contract(tmp_path):
         np.testing.assert_array_equal(ds.read(), data)
         assert ds.transform == tr
         assert ds.scales == (1 / 255, 1 / 255)
+        assert ds.offsets == (0.0, 0.0)
         assert ds.descriptions == ("field", "boundary")
         assert ds.tags(ns="IMAGE_STRUCTURE")["LAYOUT"] == "COG"
+        assert ds.overviews(1) == [4, 8, 16, 32, 64], "10-160 m, no 5 m level"
     assert current(dst, "fixture")
     assert not current(dst, "changed")
 
@@ -310,4 +314,33 @@ def test_write_score_refuses_a_cog_that_does_not_read_back(tmp_path, monkeypatch
         run.write_score(
             tmp_path / "score.tif", np.zeros((2, 64, 128), np.uint8), "EPSG:32631", tr, {}
         )
+    assert list(tmp_path.iterdir()) == []
+
+
+def test_released_output_tags_and_hive_layout(tmp_path):
+    """The tags and path the published tiles carry; hive needs the stack's year."""
+    tags = output_tags(
+        {"year": "2025"}, "h", "fp", 3000.0, 0.25, "CPUExecutionProvider",
+        model_name="unet_balanced_fp32.onnx", tile_key="15TVG_0_0",
+    )
+    assert tags["model"] == "unet_balanced_fp32.onnx"
+    assert tags["quantization"] == "uint8 = p*255"
+    assert tags["zstd_level"] == "9"
+    assert tags["tile_key"] == "15TVG_0_0"
+    assert hive_key(2025, "15TVG_0_0") == "2025/zone=15/gzd=15T/15TVG_0_0/15TVG_0_0.tif"
+    src = tmp_path / "15TVG_0_0.tif"
+    assert output_path(tmp_path / "out", src, {"year": "2025"}, "hive") == (
+        tmp_path / "out" / "2025/zone=15/gzd=15T/15TVG_0_0/15TVG_0_0.tif"
+    )
+    assert output_path(tmp_path / "out", src, {}, "flat") == tmp_path / "out" / src.name
+    with pytest.raises(ValueError, match="year"):
+        output_path(tmp_path / "out", src, {}, "hive")
+
+
+def test_failed_write_leaves_no_stage_or_tmp_files(tmp_path):
+    dst = tmp_path / "score.tif"
+    tr = Affine(2.5, 0, 500000, 0, -2.5, 1000000)
+    with pytest.raises(Exception):
+        write_score(dst, np.zeros((3, 64, 128), np.uint8), "EPSG:32631", tr, {})
+    assert not dst.exists()
     assert list(tmp_path.iterdir()) == []
