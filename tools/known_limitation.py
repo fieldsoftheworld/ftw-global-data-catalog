@@ -45,9 +45,15 @@ def block() -> str:
     return f"{BEGIN}{inner}{END}"
 
 
+#: Starts the note in a collection description. The comment is invisible when the markdown
+#: renders, and ``strip_note`` keys on it, so editing ``TEXT`` can never leave an old copy.
+DESC_MARKER = "\n\n<!-- known-limitation -->"
+_LEGACY_PREFIX = "\n\n**Known limitation"  # the first release of the note had no marker
+
+
 def description_note(year: int) -> str:
     "Final paragraph for a collection description, or '' when the year is not affected."
-    return f"\n\n**{TEXT}**" if TEXT and year in YEARS else ""
+    return f"{DESC_MARKER}**{TEXT}**" if TEXT and year in YEARS else ""
 
 
 def year_docs() -> list[Path]:
@@ -72,14 +78,21 @@ def replace_block(text: str) -> str | None:
 
 
 def strip_note(description: str) -> str:
-    return description.split("\n\n**Known limitation", 1)[0]
+    "``description`` without the note (the note is always its last paragraph)."
+    for marker in (DESC_MARKER, _LEGACY_PREFIX):
+        if marker in description:
+            return description.split(marker, 1)[0]
+    return description
+
+
+def with_note(description: str, year: int) -> str:
+    "``description`` with exactly one current note (or none, for unaffected years)."
+    return strip_note(description) + description_note(year)
 
 
 def refresh_description(path: Path) -> str:
     "The collection's description with the note applied (or removed) for its year."
-    doc = json.loads(path.read_text())
-    year = int(path.parent.name)
-    return strip_note(doc["description"]) + description_note(year)
+    return with_note(json.loads(path.read_text())["description"], int(path.parent.name))
 
 
 def stale() -> list[str]:
@@ -102,7 +115,7 @@ def stale() -> list[str]:
             out.append(f"{path.relative_to(ROOT)}: description note out of date")
     for tree in ("raster", "vector"):  # unaffected years must not carry it
         for path in sorted((CATALOG / tree).glob("20??/collection.json")):
-            if int(path.parent.name) not in YEARS and "Known limitation" in path.read_text():
+            if int(path.parent.name) not in YEARS and "known-limitation" in path.read_text():
                 out.append(f"{path.relative_to(ROOT)}: carries the note but is not in YEARS")
     return out
 

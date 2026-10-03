@@ -27,6 +27,27 @@ if kl.TEXT:
     if kl.YEARS != (2017, 2024):
         errors.append(f"YEARS {kl.YEARS} no longer matches the 2017 and 2024 wording in TEXT")
 
+# strip/apply is idempotent and survives edits to the text and the wording
+base = "Intro.\n\nMore."
+once = kl.with_note(base, 2017)
+if kl.TEXT and kl.with_note(once, 2017) != once:
+    errors.append("applying the description note twice must change nothing")
+if kl.with_note(base, 2020) != base:
+    errors.append("unaffected years get no description note")
+if kl.strip_note(once) != base:
+    errors.append("strip_note must return the original description")
+legacy = base + "\n\n**Known limitation, under investigation: old wording.**"
+if kl.strip_note(legacy) != base:
+    errors.append("the unmarked first-release note must still be stripped")
+text = kl.TEXT
+try:
+    kl.TEXT = "A completely different sentence."
+    changed = kl.with_note(once, 2017)
+    if changed.count("different sentence") != 1 or "Known limitation" in changed:
+        errors.append("editing TEXT must replace the old note, not add a second one")
+finally:
+    kl.TEXT = text
+
 # retiring the note empties blocks but keeps the markers, so a later finding is one edit
 text = kl.TEXT
 try:
