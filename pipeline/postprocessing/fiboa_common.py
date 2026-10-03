@@ -61,6 +61,26 @@ def hk_expr(bbox: list[float]) -> str:
 #: Minimum published parcel area and minimum kept part of a multipart parcel, m2.
 MIN_PARCEL_M2 = 900.0
 MIN_PART_M2 = 900.0
+#: Interior rings (holes) under this area are filled, m2: ~3 px at 2.5 m. Polygonizing
+#: leaves half-pixel (3.125 m2) holes inside ~40% of parcels; larger holes (farm
+#: buildings, ponds, a neighbouring field) are kept.
+MIN_HOLE_M2 = 20.0
+
+
+def drop_small_holes(poly: str) -> str:
+    """SQL rebuilding the simple Polygon ``poly`` without interior rings under ``MIN_HOLE_M2``.
+
+    Each ring's area is measured in the zone's north UTM CRS (``zone_utm``). The
+    ``ST_NumInteriorRings = 0`` guard skips the rebuild (and ST_MakePolygon, which
+    rejects a degenerate shell) for the common no-hole case.
+    """
+    rings = (
+        f"list_transform(range(1, ST_NumInteriorRings({poly}) + 1), "
+        f"i -> ST_InteriorRingN({poly}, i))"
+    )
+    keep = f"ring -> ST_Area({zone_utm('ST_MakePolygon(ring)')}) >= {MIN_HOLE_M2}"
+    rebuilt = f"ST_MakePolygon(ST_ExteriorRing({poly}), list_filter({rings}, {keep}))"
+    return f"CASE WHEN ST_NumInteriorRings({poly}) = 0 THEN {poly} ELSE {rebuilt} END"
 
 
 def final_select(rows: str, cid: str, year: int, bbox: list[float], max_m2: float) -> str:
@@ -72,18 +92,24 @@ def final_select(rows: str, cid: str, year: int, bbox: list[float], max_m2: floa
     ST_Union_Agg and vanished from the release, while a cap applied to merge's
     pre-union pixel area let a 6.4 km2 union through a 5 km2 cap. A bbox copied
     from the source row likewise disagreed with a geometry that ST_MakeValid and
-    the part filter had since changed.
+    the part filter had since changed. Holes under ``MIN_HOLE_M2`` are filled in the
+    same pass, after the union, so a seam-cut field's halves cannot leave one behind.
     """
     score = "CAST(LEAST(100, GREATEST(0, ROUND(pf_mean * 100))) AS UTINYINT)"
     det = (
         f"TIMESTAMPTZ '{year}-01-01 00:00:00+00' AS \"determination:datetime\", "
         f"'{DET_METHOD}' AS \"determination:method\""
     )
+    # Branch on the geometry TYPE, not the part count: a one-part MULTIPOLYGON has
+    # ST_NumGeometries = 1 but is not a Polygon, so the ring functions in
+    # ``drop_small_holes`` return NULL for it and the row would vanish at the
+    # ``g IS NOT NULL`` filter below. Every MULTIPOLYGON is dumped, however many parts.
     parts = (
-        f"SELECT id, tile_key, pf_mean, CASE WHEN ST_NumGeometries(g) > 1 THEN "
-        f"ST_Collect(list_transform(list_filter(ST_Dump(g), "
-        f"x -> ST_Area({zone_utm('x.geom')}) >= {MIN_PART_M2}), x -> x.geom)) "
-        f"ELSE g END AS g FROM ({rows})"
+        f"SELECT id, tile_key, pf_mean, CASE WHEN ST_GeometryType(g) = 'MULTIPOLYGON' "
+        f"THEN ST_Collect(list_transform(list_filter(ST_Dump(g), "
+        f"x -> ST_Area({zone_utm('x.geom')}) >= {MIN_PART_M2}), "
+        f"x -> {drop_small_holes('x.geom')})) "
+        f"ELSE {drop_small_holes('g')} END AS g FROM ({rows})"
     )
     metric = (
         f"SELECT id, pf_mean, g, {zone_utm('g')} AS gu FROM ({parts}) "
