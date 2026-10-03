@@ -63,7 +63,7 @@ MIN_PARCEL_M2 = 900.0
 MIN_PART_M2 = 900.0
 #: Interior rings (holes) under this area are filled, m2: ~3 px at 2.5 m. Polygonizing
 #: leaves half-pixel (3.125 m2) holes inside ~40% of parcels; larger holes (farm
-#: buildings, ponds, a neighbouring field) are kept. Mirrors global-ftw-2e's MIN_HOLE_AREA_M2.
+#: buildings, ponds, a neighbouring field) are kept.
 MIN_HOLE_M2 = 20.0
 
 

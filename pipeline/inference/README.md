@@ -29,11 +29,10 @@ uv pip install -r pipeline/inference/requirements.txt
 
 This path reads the 16-band stacks that `pipeline/mosaics` builds from CDSE. The 2e release was
 produced by streaming the same 16 bands from the byte-faithful Source Cooperative mirror of the
-mosaics (`tge-labs/sentinel-2-quarterly-cloudless-mosaics`), tile by tile, in
-[global-ftw-2e](https://github.com/taylor-geospatial/global-ftw-2e)'s `scripts/stream_infer.py`; its
-model, normalization, blending and output contract are the ones here. The mirror reader and its
-per-year tile list (`tile_index_{year}.parquet` filtered by a keep-list) are not part of this
-repository. The `source_collection`/`source_href_prefix` tags therefore name the mirror on
+mosaics (`tge-labs/sentinel-2-quarterly-cloudless-mosaics`), tile by tile, with a
+production runner whose model, normalization, blending and output contract are the ones here.
+That runner, the mirror reader and its per-year tile list (`tile_index_{year}.parquet` filtered
+by a keep-list) are not part of this repository. The `source_collection`/`source_href_prefix` tags therefore name the mirror on
 released tiles and CDSE on tiles written by this script.
 
 Use the model trained for this exact band order and normalization. Model weights
