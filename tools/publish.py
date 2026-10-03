@@ -15,7 +15,7 @@ Change detection compares local size and MD5 against the object's size and
 ETag, so a normal publish uploads only what changed. The remote side is read
 by listing each directory the catalog occupies *non-recursively*
 (``--delimiter /``), concurrently. Listing write_prefix recursively instead
-would walk every data object sharing it — the beta bucket holds ~67k COGs and
+would walk every data object sharing it — the 2e bucket holds ~67k COGs and
 227 GiB of parquet under the same prefix — when only a couple thousand
 metadata objects are ever published. Caveats, all inherited from what a bucket
 listing can tell you:
@@ -73,7 +73,7 @@ _CT_BY_SUFFIX = {
     ".parquet": "application/vnd.apache.parquet",
     ".pmtiles": "application/vnd.pmtiles",
     ".md": "text/markdown; charset=utf-8",
-    ".txt": "text/markdown; charset=utf-8",  # llms.txt
+    ".txt": "text/plain; charset=utf-8",
     ".png": "image/png",
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",

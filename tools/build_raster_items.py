@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the raster tree of the beta catalog.
+"""Generate the raster tree of the 2e catalog.
 
 ``collections`` (this phase) emits, under ``catalog/raster/``:
 
@@ -8,7 +8,7 @@
 - ``{year}/collection.json`` — one collection per year of field/boundary
   probability COGs, extents and measured numbers from
   ``index/raster.parquet``.
-- README.md / AGENTS.md / llms.txt for the subtree and each collection.
+- README.md / AGENTS.md for the subtree and each collection.
 
 The ~7,466 per-year items are NOT committed: Phase 4 of docs/plan.md adds an
 ``items`` subcommand that writes them straight to S3 at
@@ -33,7 +33,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 
-PUBLIC_BASE = "https://data.source.coop/ftw/global-data-beta"
+PUBLIC_BASE = "https://data.source.coop/ftw/global-data-2e"
 INDEX_URL = f"{PUBLIC_BASE}/index/raster.parquet"
 YEARS = tuple(range(2017, 2026))
 
@@ -41,7 +41,7 @@ PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
 
 MOSAICS_URL = "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/"
 FTW_URL = "https://fieldsofthe.world"
-DATA_BROWSER = "https://source.coop/ftw/global-data-beta"
+DATA_BROWSER = "https://source.coop/ftw/global-data-2e"
 
 PROVIDERS = [
     {
@@ -130,7 +130,7 @@ def build_collection(year: int, stats: dict) -> dict:
         "links": [
             {"rel": "root", "href": "../../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (beta)"},
+             "title": "Fields of the World — Global Data (2nd Edition)"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json"},
             {"rel": "license",
@@ -142,8 +142,6 @@ def build_collection(year: int, stats: dict) -> dict:
              "type": "text/markdown", "title": "Collection README"},
             {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
              "title": "Collection agent guide"},
-            {"rel": "llms", "href": "./llms.txt", "type": "text/markdown",
-             "title": "Agent/LLM usage guide"},
         ],
         "assets": {
             "thumbnail": {
@@ -170,7 +168,7 @@ def build_raster_catalog(stats: dict[int, dict]) -> dict:
         "stac_version": "1.1.0",
         "stac_extensions": [PORTOLAN_EXT],
         "id": "raster",
-        "title": "FTW Global (beta) — Field & boundary probability rasters",
+        "title": "FTW Global (2nd Edition) — Field & boundary probability rasters",
         "description": (
             f"Per-year collections of field/boundary probability COGs at "
             f"2.5 m, {min(stats)}–{max(stats)}: {total:,} tiles, "
@@ -180,15 +178,13 @@ def build_raster_catalog(stats: dict[int, dict]) -> dict:
         "links": [
             {"rel": "root", "href": "../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (beta)"},
+             "title": "Fields of the World — Global Data (2nd Edition)"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json"},
             {"rel": "describedby", "href": "./README.md",
              "type": "text/markdown", "title": "Raster tree README"},
             {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
              "title": "Raster tree agent guide"},
-            {"rel": "llms", "href": "./llms.txt", "type": "text/markdown",
-             "title": "Agent/LLM usage guide"},
             *children,
         ],
     }
@@ -259,23 +255,11 @@ def year_agents(year: int, stats: dict) -> str:
     ])
 
 
-def year_llms(year: int, stats: dict) -> str:
-    return "\n".join([
-        f"# FTW Global (beta) — probability rasters {year}", "",
-        f"> {stats['n']:,} two-band (field, boundary) uint8 probability "
-        f"COGs at 2.5 m for {year}. CC-BY-4.0.", "",
-        f"Data: `{PUBLIC_BASE}/raster/{year}/{{tile_key}}.tif`",
-        f"Index: {INDEX_URL}",
-        f"Collection: {PUBLIC_BASE}/raster/{year}/collection.json", "",
-        "Probability = pixel value / 255. See AGENTS.md beside this file.",
-        "",
-    ])
-
 
 def tree_readme(stats: dict[int, dict]) -> str:
     total = sum(s["n"] for s in stats.values())
     return "\n".join([
-        "# FTW Global (beta) — Field & boundary probability rasters", "",
+        "# FTW Global (2nd Edition) — Field & boundary probability rasters", "",
         f"Per-year collections of 2.5 m field/boundary probability COGs, "
         f"{min(stats)}–{max(stats)}: **{total:,} tiles**. {_PROJECT}", "",
         f"Browse it in the [data browser]({DATA_BROWSER}).", "",
@@ -299,16 +283,6 @@ def tree_agents(stats: dict[int, dict]) -> str:
         "comparison works tile by tile.", "",
     ])
 
-
-def tree_llms(stats: dict[int, dict]) -> str:
-    total = sum(s["n"] for s in stats.values())
-    return "\n".join([
-        "# FTW Global (beta) — raster tree", "",
-        f"> {total:,} field/boundary probability COGs across "
-        f"{len(stats)} years ({min(stats)}–{max(stats)}). CC-BY-4.0.", "",
-        *[f"- {y}: {PUBLIC_BASE}/raster/{y}/collection.json"
-          for y in sorted(stats)], "",
-    ])
 
 
 def patch_local_assets(year_dir: Path, collection: dict) -> None:
@@ -347,13 +321,11 @@ def cmd_collections(out: Path) -> int:
         write_json(year_dir / "collection.json", collection)
         (year_dir / "README.md").write_text(year_readme(year, year_stats))
         (year_dir / "AGENTS.md").write_text(year_agents(year, year_stats))
-        (year_dir / "llms.txt").write_text(year_llms(year, year_stats))
         print(f"{year}: {year_stats['n']:,} tiles, "
               f"{year_stats['bytes'] / 1e12:.2f} TB")
     write_json(out / "catalog.json", build_raster_catalog(stats))
     (out / "README.md").write_text(tree_readme(stats))
     (out / "AGENTS.md").write_text(tree_agents(stats))
-    (out / "llms.txt").write_text(tree_llms(stats))
     print(f"OK -> {out}")
     return 0
 

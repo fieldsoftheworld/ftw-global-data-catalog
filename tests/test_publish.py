@@ -58,7 +58,6 @@ with tempfile.TemporaryDirectory() as tmp:
     write(root / "catalog/catalog.json")
     write(root / "catalog/README.md")
     write(root / "catalog/AGENTS.md")
-    write(root / "catalog/llms.txt")
     write(root / "catalog/vector/2025/collection.json")
     write(root / "catalog/vector/2025/thumbnail.png")
     write(root / "catalog/vector/fields-yearly/styles/count.json")
@@ -79,22 +78,21 @@ with tempfile.TemporaryDirectory() as tmp:
     write(root / "catalog/_assets/.gitkeep", "")
 
     config = {
-        "write_prefix": "s3://a-bucket/ftw/global-data-beta",
-        "public_base": "https://data.example.org/ftw/global-data-beta",
+        "write_prefix": "s3://a-bucket/ftw/global-data-2e",
+        "public_base": "https://data.example.org/ftw/global-data-2e",
         "publish_dir": "catalog",
     }
     uploads = collect_uploads(config, root)
     keys = {u.key for u in uploads}
 
     expected = {
-        "ftw/global-data-beta/catalog.json",
-        "ftw/global-data-beta/README.md",
-        "ftw/global-data-beta/AGENTS.md",
-        "ftw/global-data-beta/llms.txt",
-        "ftw/global-data-beta/vector/2025/collection.json",
-        "ftw/global-data-beta/vector/2025/thumbnail.png",
-        "ftw/global-data-beta/vector/fields-yearly/styles/count.json",
-        "ftw/global-data-beta/.portolan/metadata.yaml",
+        "ftw/global-data-2e/catalog.json",
+        "ftw/global-data-2e/README.md",
+        "ftw/global-data-2e/AGENTS.md",
+        "ftw/global-data-2e/vector/2025/collection.json",
+        "ftw/global-data-2e/vector/2025/thumbnail.png",
+        "ftw/global-data-2e/vector/fields-yearly/styles/count.json",
+        "ftw/global-data-2e/.portolan/metadata.yaml",
     }
     check(keys == expected, f"upload set wrong.\n  extra:   {keys - expected}"
                             f"\n  missing: {expected - keys}")
@@ -103,7 +101,7 @@ with tempfile.TemporaryDirectory() as tmp:
     flat = dict(config, write_prefix="s3://a-bucket")
     check(
         {u.key for u in collect_uploads(flat, root)}
-        == {k.removeprefix("ftw/global-data-beta/") for k in expected},
+        == {k.removeprefix("ftw/global-data-2e/") for k in expected},
         "keys are wrong when write_prefix names no prefix",
     )
 
@@ -112,10 +110,10 @@ with tempfile.TemporaryDirectory() as tmp:
     # sharing it.
     dirs = key_dirs(uploads)
     check(dirs == [
-        "ftw/global-data-beta/",
-        "ftw/global-data-beta/.portolan/",
-        "ftw/global-data-beta/vector/2025/",
-        "ftw/global-data-beta/vector/fields-yearly/styles/",
+        "ftw/global-data-2e/",
+        "ftw/global-data-2e/.portolan/",
+        "ftw/global-data-2e/vector/2025/",
+        "ftw/global-data-2e/vector/fields-yearly/styles/",
     ], f"listing plan wrong: {dirs}")
     check(
         key_dirs([Upload(root / "x", "rootkey.json", "application/json")])
@@ -152,8 +150,8 @@ check(
 )
 check(content_type_for(Path("a/t.pmtiles")) == "application/vnd.pmtiles",
       "pmtiles")
-check(content_type_for(Path("a/llms.txt")).startswith("text/markdown"),
-      "llms.txt serves as markdown")
+check(content_type_for(Path("a/notes.txt")).startswith("text/plain"),
+      "txt serves as plain text")
 check(content_type_for(Path("a/README.md")).startswith("text/markdown"),
       "markdown")
 check(content_type_for(Path("a/thumbnail.png")) == "image/png", "png")

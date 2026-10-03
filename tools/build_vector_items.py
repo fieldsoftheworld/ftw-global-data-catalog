@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the vector tree of the beta catalog: per-year source collections.
+"""Generate the vector tree of the 2e catalog: per-year source collections.
 
 Emits, under ``catalog/vector/``:
 
@@ -11,7 +11,7 @@ Emits, under ``catalog/vector/``:
   subdirectory (PORTO-CORE-015), with ``table:columns`` for all 20 columns,
   ``file:size``/``file:checksum`` on the data asset, and an ``alternate`` s3
   href (PORTO-CORE-024).
-- README.md / AGENTS.md / llms.txt for the subtree and each collection, with
+- README.md / AGENTS.md for the subtree and each collection, with
   measured numbers (counts and sizes come from the index, not prose memory).
 
 Everything is derived from ``index/vector.parquet`` and the embedded parquet
@@ -45,7 +45,7 @@ ROOT = Path(__file__).resolve().parent.parent
 BINS_FILE = ROOT / "pipeline" / "style_bins.json"
 TILES_META = ROOT / "staging-data" / "checksums" / "tiles_meta.json"
 
-PUBLIC_BASE = "https://data.source.coop/ftw/global-data-beta"
+PUBLIC_BASE = "https://data.source.coop/ftw/global-data-2e"
 INDEX_URL = f"{PUBLIC_BASE}/index/vector.parquet"
 
 PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
@@ -61,7 +61,7 @@ VECOREL_SPEC = "https://vecorel.org/specification/v0.1.0/schema.yaml"
 FIBOA_README = "https://github.com/fiboa/specification"
 MOSAICS_URL = "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/"
 FTW_URL = "https://fieldsofthe.world"
-DATA_BROWSER = "https://source.coop/ftw/global-data-beta"
+DATA_BROWSER = "https://source.coop/ftw/global-data-2e"
 
 PROVIDERS = [
     {
@@ -324,7 +324,7 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
     links = [
         {"rel": "root", "href": "../../catalog.json",
          "type": "application/json",
-         "title": "Fields of the World — Global Data (beta)"},
+         "title": "Fields of the World — Global Data (2nd Edition)"},
         {"rel": "parent", "href": "../catalog.json",
          "type": "application/json"},
         {"rel": "license",
@@ -336,8 +336,6 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
          "title": "Collection README"},
         {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
          "title": "Collection agent guide"},
-        {"rel": "llms", "href": "./llms.txt", "type": "text/markdown",
-         "title": "Agent/LLM usage guide"},
         {"rel": "describedby", "href": FIBOA_README, "type": "text/html",
          "title": "fiboa specification (core parcel fields)"},
     ]
@@ -470,7 +468,7 @@ def build_vector_catalog(per_year: dict[int, dict], out: Path) -> dict:
         "stac_version": "1.1.0",
         "stac_extensions": [PORTOLAN_EXT],
         "id": "vector",
-        "title": "FTW Global (beta) — Vector field boundaries",
+        "title": "FTW Global (2nd Edition) — Vector field boundaries",
         "description": (
             "Per-year collections of predicted agricultural field boundaries "
             "as per-UTM-zone cloud-native GeoParquet, browsable in the "
@@ -479,15 +477,13 @@ def build_vector_catalog(per_year: dict[int, dict], out: Path) -> dict:
         "links": [
             {"rel": "root", "href": "../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (beta)"},
+             "title": "Fields of the World — Global Data (2nd Edition)"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json"},
             {"rel": "describedby", "href": "./README.md",
              "type": "text/markdown", "title": "Vector tree README"},
             {"rel": "agents", "href": "./AGENTS.md", "type": "text/markdown",
              "title": "Vector tree agent guide"},
-            {"rel": "llms", "href": "./llms.txt", "type": "text/markdown",
-             "title": "Agent/LLM usage guide"},
             *children,
         ],
     }
@@ -564,7 +560,7 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
 
 def year_agents(year: int, rows: list[dict], meta: dict) -> str:
     n = sum(r["n_parcels"] for r in rows)
-    glob = (f"s3://us-west-2.opendata.source.coop/ftw/global-data-beta/"
+    glob = (f"s3://us-west-2.opendata.source.coop/ftw/global-data-2e/"
             f"vector/{year}/zone=*/utm*.parquet")
     lines = [
         f"# AGENTS.md — FTW field boundaries {year}", "",
@@ -603,26 +599,12 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
     return "\n".join(lines)
 
 
-def year_llms(year: int, rows: list[dict], meta: dict) -> str:
-    n = sum(r["n_parcels"] for r in rows)
-    return "\n".join([
-        f"# FTW Global (beta) — field boundaries {year}", "",
-        f"> {n:,} predicted agricultural field parcels for {year} as "
-        f"{len(rows)} per-UTM-zone cloud-native GeoParquet files. "
-        "CC-BY-4.0.", "",
-        f"Data: `{PUBLIC_BASE}/vector/{year}/utm{{NN}}.parquet`",
-        f"Collection: {PUBLIC_BASE}/vector/{year}/collection.json",
-        "", "Processing (from the dataset's embedded metadata):",
-        meta["determination:details"], "",
-        "See AGENTS.md beside this file for query guidance.", "",
-    ])
-
 
 def vector_readme(per_year: dict[int, list[dict]]) -> str:
     total = sum(r["n_parcels"] for rows in per_year.values() for r in rows)
     years = ", ".join(str(y) for y in sorted(per_year))
     return "\n".join([
-        "# FTW Global (beta) — Vector field boundaries", "",
+        "# FTW Global (2nd Edition) — Vector field boundaries", "",
         f"Per-year collections of predicted agricultural field boundaries "
         f"({years}): **{total:,} parcels** total, as per-UTM-zone "
         f"cloud-native GeoParquet. {_PROJECT}", "",
@@ -651,18 +633,11 @@ def vector_agents(per_year: dict[int, list[dict]]) -> str:
     ])
 
 
-def vector_llms(per_year: dict[int, list[dict]]) -> str:
-    total = sum(r["n_parcels"] for rows in per_year.values() for r in rows)
-    return "\n".join([
-        "# FTW Global (beta) — vector tree", "",
-        f"> {total:,} predicted field parcels across "
-        f"{len(per_year)} years, per-UTM-zone GeoParquet. CC-BY-4.0.", "",
-        *[f"- {y}: {PUBLIC_BASE}/vector/{y}/collection.json"
-          for y in sorted(per_year)], "",
-    ])
 
+def write_json(path: Path, doc: dict) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
 
-# ── mirror registration ─────────────────────────────────────────────────────
 
 def patch_local_assets(year_dir: Path, collection: dict) -> None:
     """Fill file:size/file:checksum on assets whose files exist locally.
@@ -686,11 +661,6 @@ def patch_local_assets(year_dir: Path, collection: dict) -> None:
                 digest.update(chunk)
         asset["file:size"] = local.stat().st_size
         asset["file:checksum"] = "1220" + digest.hexdigest()
-
-
-def write_json(path: Path, doc: dict) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    path.write_text(json.dumps(doc, indent=2, ensure_ascii=False) + "\n")
 
 
 def main() -> int:
@@ -737,7 +707,6 @@ def main() -> int:
         write_json(year_dir / "collection.json", collection)
         (year_dir / "README.md").write_text(year_readme(year, rows, meta))
         (year_dir / "AGENTS.md").write_text(year_agents(year, rows, meta))
-        (year_dir / "llms.txt").write_text(year_llms(year, rows, meta))
         print(f"{year}: {len(rows)} items, "
               f"{sum(r['n_parcels'] for r in rows):,} parcels")
 
@@ -745,7 +714,6 @@ def main() -> int:
                build_vector_catalog(per_year, args.out))
     (args.out / "README.md").write_text(vector_readme(per_year))
     (args.out / "AGENTS.md").write_text(vector_agents(per_year))
-    (args.out / "llms.txt").write_text(vector_llms(per_year))
     print(f"OK -> {args.out}")
     return 0
 
