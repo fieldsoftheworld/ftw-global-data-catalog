@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Build ``index/raster-lite.parquet``, the slim copy of ``index/raster.parquet``.
 
-Viewers only need to find which tiles cover the map, so the lite index keeps six
+Viewers only need to find which tiles cover the map, so the lite index keeps seven
 columns and drops hrefs, sizes, per-tile statistics and the geometry::
 
     year      int16

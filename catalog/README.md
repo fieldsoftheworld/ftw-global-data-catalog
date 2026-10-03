@@ -171,7 +171,7 @@ Three manifests under `index/` list every data file, so nothing needs a bucket l
 | `cropland_frac` | IO land-cover cropland share of the tile (maximum over 2017, 2020, 2024) |
 | `xmin, ymin, xmax, ymax`, `geometry` | WGS 84 footprint bbox of the tile, also as a polygon |
 
-`raster-lite.parquet` has one row per (year, tile) and six columns: `year` (int16), `tile_key`,
+`raster-lite.parquet` has one row per (year, tile) and seven columns: `year` (int16), `tile_key`,
 `epsg` (int32) and the WGS 84 bbox `xmin, ymin, xmax, ymax` as float32, rounded outward so a tile
 is never missed at its edge. It carries no hrefs: build them from the tile key (zone is its first
 two characters, grid zone designator its first three):
