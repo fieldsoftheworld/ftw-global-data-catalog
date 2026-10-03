@@ -43,7 +43,7 @@
   ],
   "properties": {
     "title": "UTM zone 45 — 2018 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 45 for 2018: 633,864 parcels, 41,395 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 45 for 2018: 633,864 parcels, 41,401 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2018-01-01T00:00:00Z",
     "start_datetime": "2018-01-01T00:00:00Z",
     "end_datetime": "2018-12-31T23:59:59Z",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 472901614,
+      "file:size": 431569985,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2018/zone=45/utm45.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "1220fd6f38c81b05a60e7d7f596bead13316417fe196bdcb87611899c72d82831b3b"
+      "file:checksum": "1220dd30c41521d6c5c51dfac0ddf9c72803a4f0fd127aa171ff736f26fe731db3c5"
     }
   },
   "links": [

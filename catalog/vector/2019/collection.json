@@ -11,7 +11,7 @@
   ],
   "id": "ftw-s2-2019",
   "title": "FTW Global — Field Boundaries 2019 (GeoParquet)",
-  "description": "Predicted agricultural field boundaries for 2019: 122,156,582 parcels (6,157,799 km² of field area) in 54 per-UTM-zone GeoParquet files, 84.4 GiB total, browsable in the [data browser](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2019 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+  "description": "Predicted agricultural field boundaries for 2019: 122,156,582 parcels (6,158,957 km² of field area) in 54 per-UTM-zone GeoParquet files, 76.9 GiB total, browsable in the [data browser](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2019 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Attributes are for filtering; no land-cover masking was applied. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
   "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
@@ -537,8 +537,8 @@
       "roles": [
         "style"
       ],
-      "file:size": 1324,
-      "file:checksum": "1220aaebea5a28abaf26b00a527da2e0906175824e342ac64ddcbf7a9292f5759eab"
+      "file:size": 1322,
+      "file:checksum": "1220fdf746c1d205acaf17f4b02d47883e33795fef6b0ce90cf81074ad2c093c182b"
     },
     "styles/coverage": {
       "href": "./styles/coverage.json",
@@ -548,8 +548,8 @@
         "style",
         "default"
       ],
-      "file:size": 1366,
-      "file:checksum": "1220aae19f581296c2e282ae4f1671adbaebdfcdb20d80fa6971434b19bc7fcd918c"
+      "file:size": 1364,
+      "file:checksum": "1220730d3fc5f62d4237c1af7638c6dd749c37160e48dc5f79a81064073cec4beb70"
     },
     "styles/avg-size": {
       "href": "./styles/avg-size.json",
@@ -558,8 +558,8 @@
       "roles": [
         "style"
       ],
-      "file:size": 1647,
-      "file:checksum": "1220c555b894a5b954f7e22d7c2413951349aafa453f43eb41643999f93a060a90fb"
+      "file:size": 1645,
+      "file:checksum": "1220d693ebeda995764d1c807107fc1ac535905730005f9a9f0f54f501fcdee95cd7"
     },
     "styles/field-prob": {
       "href": "./styles/field-prob.json",
@@ -568,8 +568,8 @@
       "roles": [
         "style"
       ],
-      "file:size": 1396,
-      "file:checksum": "122057050c1b38c1c0d0a2c886ed28e4c4bf8f93f1ab067e2753c14ee6fd2ba34cf7"
+      "file:size": 1394,
+      "file:checksum": "12207edb8059ab4cae72c3c71b9770a2ecd7412ad8eaabe40021cad505350896b67f"
     },
     "thumbnail": {
       "href": "./thumbnail.png",
@@ -591,7 +591,7 @@
         "metadata"
       ],
       "file:size": 34410,
-      "file:checksum": "12205a94b9dfab315157746fb70a5a5d3a335dab7f97b5ca61aa780d884042182a35"
+      "file:checksum": "12202c0bb55a9f6c503a5396daecf14dc987e44806eb47c186b52cb78b1804dac16f"
     }
   }
 }

@@ -43,7 +43,7 @@
   ],
   "properties": {
     "title": "UTM zone 38 — 2022 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 38 for 2022: 1,918,788 parcels, 219,976 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 38 for 2022: 1,918,788 parcels, 220,009 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2022-01-01T00:00:00Z",
     "start_datetime": "2022-01-01T00:00:00Z",
     "end_datetime": "2022-12-31T23:59:59Z",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 2233967395,
+      "file:size": 1995055213,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2022/zone=38/utm38.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "12207494592543916347b783757f6c54363755b1ddaf30bbac345d8a6c1fb56fb5c9"
+      "file:checksum": "1220e046392fc701dc9ec32e459f2b3f6ae407c4ce763c5f8e8647995de7dddf321d"
     }
   },
   "links": [

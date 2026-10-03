@@ -43,7 +43,7 @@
   ],
   "properties": {
     "title": "UTM zone 41 — 2019 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 41 for 2019: 1,400,267 parcels, 70,863 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 41 for 2019: 1,400,267 parcels, 70,878 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2019-01-01T00:00:00Z",
     "start_datetime": "2019-01-01T00:00:00Z",
     "end_datetime": "2019-12-31T23:59:59Z",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 1101798651,
+      "file:size": 995236594,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2019/zone=41/utm41.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "122043694a80dba8d15db74a3de81f8668465c383e97a86bae8d0d4109e518476193"
+      "file:checksum": "1220bf98473c470898e9386cfe939e0cd70eebcebf8d2303e5a17a27ca3b7d851e0a"
     }
   },
   "links": [

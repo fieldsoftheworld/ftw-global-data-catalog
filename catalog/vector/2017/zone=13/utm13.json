@@ -43,7 +43,7 @@
   ],
   "properties": {
     "title": "UTM zone 13 — 2017 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 13 for 2017: 1,114,657 parcels, 222,000 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 13 for 2017: 1,114,657 parcels, 222,021 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2017-01-01T00:00:00Z",
     "start_datetime": "2017-01-01T00:00:00Z",
     "end_datetime": "2017-12-31T23:59:59Z",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 1477802279,
+      "file:size": 1332910195,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2017/zone=13/utm13.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "12200aa4a520cc202ae1acbb0d7071264a13166471beb86ebf5ecf26b1c3b67a4410"
+      "file:checksum": "122093dad14c3f0d26a889f92005459579940eef5bf3984017570c60d987677f5f4d"
     }
   },
   "links": [

@@ -1,6 +1,6 @@
 # FTW Global — Field Boundaries 2023 (GeoParquet)
 
-Predicted agricultural field boundaries for 2023: **133,227,819 parcels** in 54 per-UTM-zone GeoParquet files (90.6 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
+Predicted agricultural field boundaries for 2023: **133,227,819 parcels** in 54 per-UTM-zone GeoParquet files (82.7 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
 Browse it in the [data browser](https://source.coop/ftw/global-data-2e).
 

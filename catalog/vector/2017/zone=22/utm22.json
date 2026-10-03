@@ -43,7 +43,7 @@
   ],
   "properties": {
     "title": "UTM zone 22 — 2017 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 22 for 2017: 2,476,055 parcels, 174,295 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 22 for 2017: 2,476,055 parcels, 174,345 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2017-01-01T00:00:00Z",
     "start_datetime": "2017-01-01T00:00:00Z",
     "end_datetime": "2017-12-31T23:59:59Z",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 2408852751,
+      "file:size": 2059035977,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2017/zone=22/utm22.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "122039e3145e5b01dff289550eaa022686877d7c523274ca7162c324e77671560e26"
+      "file:checksum": "122025c6d26890a239f63cfe2ce6f99a4ac502856ebcb4b2d3ec4f10f1eecfb24086"
     }
   },
   "links": [

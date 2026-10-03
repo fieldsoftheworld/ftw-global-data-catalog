@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 2649511,
+      "file:size": 2447490,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2019/zone=01/utm01.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "12206a7843d42a98c8d49ea94f4a1092d4e73fcfe9d13aa5341144b0872d5c8c0b24"
+      "file:checksum": "12204e9afff59c9b682abb037b25525f7aa79d21d8255dc4553ef237ee32d8ab9bf1"
     }
   },
   "links": [

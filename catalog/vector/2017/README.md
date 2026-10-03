@@ -1,6 +1,6 @@
 # FTW Global — Field Boundaries 2017 (GeoParquet)
 
-Predicted agricultural field boundaries for 2017: **113,556,951 parcels** in 54 per-UTM-zone GeoParquet files (80.1 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
+Predicted agricultural field boundaries for 2017: **113,556,951 parcels** in 54 per-UTM-zone GeoParquet files (72.7 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
 Browse it in the [data browser](https://source.coop/ftw/global-data-2e).
 

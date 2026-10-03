@@ -43,7 +43,7 @@
   ],
   "properties": {
     "title": "UTM zone 49 — 2021 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 49 for 2021: 7,870,164 parcels, 65,012 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 49 for 2021: 7,870,164 parcels, 65,040 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2021-01-01T00:00:00Z",
     "start_datetime": "2021-01-01T00:00:00Z",
     "end_datetime": "2021-12-31T23:59:59Z",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 2839587269,
+      "file:size": 2655239014,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2021/zone=49/utm49.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "122079dad024597633175b19a035b4cfd3404547d7252f0e8c8c6eef04d05444cb05"
+      "file:checksum": "1220127d942599b290cf8523a7e86a7b8301cde33c980f5ed8cbf019b854ec298ece"
     }
   },
   "links": [

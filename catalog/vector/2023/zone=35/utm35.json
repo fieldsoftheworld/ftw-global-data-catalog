@@ -43,7 +43,7 @@
   ],
   "properties": {
     "title": "UTM zone 35 — 2023 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 35 for 2023: 4,151,006 parcels, 326,740 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 35 for 2023: 4,151,006 parcels, 326,802 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2023-01-01T00:00:00Z",
     "start_datetime": "2023-01-01T00:00:00Z",
     "end_datetime": "2023-12-31T23:59:59Z",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 3939780833,
+      "file:size": 3508040577,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2023/zone=35/utm35.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "1220097d41e01f8e4b827304387cc7eddc6a10c07f00508f5f4f99b924381bf231c7"
+      "file:checksum": "12209b13de02dbbbd4558e5c8a9c7d818d1c2af5a4a1986952bd1bd20efc4f59e284"
     }
   },
   "links": [

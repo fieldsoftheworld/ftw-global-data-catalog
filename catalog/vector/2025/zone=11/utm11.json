@@ -43,7 +43,7 @@
   ],
   "properties": {
     "title": "UTM zone 11 — 2025 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 11 for 2025: 415,845 parcels, 72,083 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 11 for 2025: 415,845 parcels, 72,090 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2025-01-01T00:00:00Z",
     "start_datetime": "2025-01-01T00:00:00Z",
     "end_datetime": "2025-12-31T23:59:59Z",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 494313746,
+      "file:size": 445788325,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2025/zone=11/utm11.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "1220c6416304aa0b7c8a2dc32205f783ab2215c3e2fa9848c721b990fa81da422ed1"
+      "file:checksum": "1220f5640c2c26681b126ddd67c6463d10152151b0bebe9c921a38aca9ba04e025c2"
     }
   },
   "links": [

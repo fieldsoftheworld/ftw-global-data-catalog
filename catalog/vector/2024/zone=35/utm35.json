@@ -43,7 +43,7 @@
   ],
   "properties": {
     "title": "UTM zone 35 — 2024 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 35 for 2024: 4,226,343 parcels, 339,257 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 35 for 2024: 4,226,343 parcels, 339,319 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2024-01-01T00:00:00Z",
     "start_datetime": "2024-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T23:59:59Z",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 4053207844,
+      "file:size": 3619325438,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2024/zone=35/utm35.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "12200c4313c62890316115a598e533975151d6fe3a48a2939e674abc46e238801361"
+      "file:checksum": "1220189c53c47b26d250187643a7de7f9424e5d40428021bdd21057bb0460d5f0aeb"
     }
   },
   "links": [

@@ -1,6 +1,6 @@
 # FTW Global — Field Boundaries 2020 (GeoParquet)
 
-Predicted agricultural field boundaries for 2020: **129,366,600 parcels** in 54 per-UTM-zone GeoParquet files (87.5 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
+Predicted agricultural field boundaries for 2020: **129,366,600 parcels** in 54 per-UTM-zone GeoParquet files (80.0 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
 Browse it in the [data browser](https://source.coop/ftw/global-data-2e).
 
