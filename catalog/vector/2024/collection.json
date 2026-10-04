@@ -590,8 +590,8 @@
       "roles": [
         "thumbnail"
       ],
-      "file:size": 208020,
-      "file:checksum": "12208563c1002884438c71a6363b98b3b04d4a082123ed7656d30df1fa0caf7f713b"
+      "file:size": 107530,
+      "file:checksum": "122045d2c35614e7bce900bb36879985c49c6243591ab76ca028033e66f03d5fd1bf"
     },
     "mirror": {
       "href": "./items.parquet",
