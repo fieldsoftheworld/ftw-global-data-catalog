@@ -34,19 +34,93 @@ something.
 
 ## Accepted deviations
 
-None.
+| Rule | Where | Why accepted | In `ACCEPTED`? | Tracking |
+|---|---|---|---|---|
+| PTL-VIZ-002 | `raster/{2017..2025}/collection.json` | The visualization derivative is a pre-rendered RGB JPEG COG (roles `visual`,`overview`,`cloud-optimized`); its styling is baked into the pixels at build time, so no client-side style document exists for a `style` asset to name. The colormap is documented in each README and in `pipeline/make_overview.py`. | yes (9× error) | rashid#202 |
+| PTL-DAT-009 | the 67,197 published 2e score COGs, `raster/{2017..2025}/.../{tile}.tif` | They were written without embedded band statistics. 26 TB cannot be rewritten in place without destroying the COG layout, and the writers are fixed, so the next generation complies. See the section below. | **no** — a data rule, never reached by the gate (see below) | — |
 
 <!--
-When you accept one, add a row and a section explaining it, like this:
+When you accept one, add a row and a section explaining it.
 
-| Rule | Where | Why accepted | Tracking |
-|---|---|---|---|
-| PTL-VIZ-001 | all thumbnails | WebP is not yet permitted; the size saving is 4x | portolan-spec#121 |
-| PTL-VIZ-002 | `raster/{2017..2025}/collection.json` | The visualization derivative is a pre-rendered RGB JPEG COG (roles `visual`,`overview`,`cloud-optimized`); its styling is baked into the pixels at build time, so no client-side style document exists for a `style` asset to name. The colormap is documented in each README and in `pipeline/make_overview.py`. | rashid#202 |
+A structural rule (`PTL-CAT/COL/LNK/AST/VIZ/FIL-…`) also needs its rule id in
+ACCEPTED in tests/test_portolan_conformance.py. Both, or neither.
 
-Then add the rule id to ACCEPTED in tests/test_portolan_conformance.py. Both, or
-neither.
+A **data** rule (`PTL-DAT-…`) does not, and must not be added: the gate runs
+`rashid check --no-data`, so the byte checks never run there and the id would
+waive nothing while reading as if the gate had seen the deviation and let it
+pass. The row is the whole record. Say so in the row, as PTL-DAT-009 does.
 -->
+
+### PTL-DAT-009: the published 2e score COGs carry no embedded band statistics
+
+**Rule.** Every COG band MUST carry `STATISTICS_MINIMUM`, `STATISTICS_MAXIMUM`,
+`STATISTICS_MEAN` and `STATISTICS_STDDEV` embedded in the file's own
+`GDAL_METADATA` tag (formats.md:95). rashid reads them with
+`GDAL_PAM_ENABLED=NO`, so statistics in a `.aux.xml` sidecar do not count — and
+a sidecar would not be published beside the bytes anyway. PTL-DAT-010 adds
+`STATISTICS_VALID_PERCENT`: a SHOULD, and a MUST for a band that declares a
+nodata value.
+
+**Where it fires.** The 67,197 already-published 2e score COGs
+(`raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif`, ~26 TB). The writer that
+made them did not compute statistics, so rashid's data pass reports one
+error-severity PTL-DAT-009 per asset — plus a PTL-DAT-010 warning, the SHOULD
+form, because these bands declare no nodata.
+
+This catalog publishes exactly two families of COG, and only one of them is
+affected. Measured over the published bytes with
+`gdalinfo --config GDAL_PAM_ENABLED NO` on 2026-10-04:
+
+| Published COG | Statistics in the file |
+|---|---|
+| `raster/{2017,2020,2025}/overview.tif` (3 of the 9 sampled) | all five on all three bands; `nodata=0`, so PTL-DAT-010's MUST form is satisfied as well |
+| `raster/{2017,2025}/…/01KFS_0_0.tif` (score COGs) | none on either band; `nodata=None` |
+
+The per-item `{tile}.thumb.png`, the per-year `thumbnail.webp` and every
+`.parquet` are not COGs, so the rule does not reach them.
+
+**Ruling (Chris, 2026-10-04): accepted for 2e; fixed for the next generation.**
+Statistics are a header fact, but there is no way to add one to a finished COG
+in place. The tag lives in the TIFF directory ahead of the image data, so
+growing it rewrites every subsequent offset: GDAL re-creates the file. At 26 TB
+that is a full re-upload of the whole raster product to change four numbers per
+band, and the alternative — letting GDAL write the statistics to PAM — produces
+67,197 `.aux.xml` sidecars that satisfy nothing, because the rule is about what
+is in the file.
+
+So 2e keeps its COGs, and the writers were fixed instead:
+
+- `pipeline/inference/run.py` `write_score` writes all five statistics per band
+  from the array it already holds in memory, so they are **exact**, not
+  estimated (no `STATISTICS_APPROXIMATE`), and they cost nothing — the array is
+  there, and no second pass over the pixels happens.
+- `pipeline/make_overview.py` computes them with `gdalinfo -approx_stats` over
+  the source VRT, which the COG translate then carries into the output file, and
+  `verify_band_stats` re-reads the finished COG with PAM off and refuses to
+  publish one where they did not land. `-approx_stats` reads the warped zones'
+  overviews rather than every base pixel, which the spec permits.
+
+Both are locked in by tests rather than by review:
+`pipeline/inference/test_inference.py::test_score_cog_embeds_exact_band_statistics`
+writes a COG through the real writer, reads it with `GDAL_PAM_ENABLED=NO` and
+compares all five values against numpy, and
+`test_rashid_finds_no_statistics_defect_in_a_score_cog` runs rashid's own
+`_check_cog_stats` over that file where rashid is installed.
+`pipeline/test_make_overview.py` covers the overview gate, including a
+stats-less COG that it must reject.
+
+**Why no `ACCEPTED` entry.** Both rashid runs in this repo — the CI gate
+(`tests/test_portolan_conformance.py`) and the pre-publish job
+(`pipeline/rashid_check.sbatch`) — pass `--no-data`, so no `PTL-DAT-*` rule ever
+fires in either. Adding the id to `ACCEPTED` would waive nothing and would claim
+the gate had seen this deviation and accepted it. It has never read a byte of
+these COGs. This row is the record; the gate is silent on it by construction.
+
+**How it closes.** Not by editing the published files, and not by a validator
+change: by the next generation of score COGs, which is written with the
+statistics in it. Until then anyone running `rashid check catalog/` with the
+data pass on the 2e tree should expect 67,197 PTL-DAT-009 errors and no others
+of that family.
 
 ## Policy: no `file:checksum` on the raster COG assets
 
