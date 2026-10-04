@@ -42,6 +42,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import shutil
 import subprocess
 import sys
@@ -432,6 +433,12 @@ def main() -> int:
              "tree is known to be behind the published catalog — e.g. "
              "publishing raster/ while the vector tree awaits a merge.",
     )
+    parser.add_argument(
+        "--skip-generated", action="store_true",
+        help="leave out the generated raster item tree "
+             "(raster/*/zone=*/, ~71k files) — publish the docs and "
+             "collection-level metadata without waiting on the items",
+    )
     args = parser.parse_args()
 
     config = load_config()
@@ -453,6 +460,11 @@ def main() -> int:
         )
         uploads = [u for u in uploads if u.key.startswith(heads)]
         print(f"scoped to: {', '.join(s.strip('/') + '/' for s in args.only)}")
+    if args.skip_generated:
+        before = len(uploads)
+        generated = re.compile(r"(^|/)raster/\d{4}/zone=")
+        uploads = [u for u in uploads if not generated.search(u.key)]
+        print(f"skipping the generated item tree: {before - len(uploads):,} file(s)")
     if not uploads:
         print(f"nothing under {config['publish_dir']}/ to publish",
               file=sys.stderr)
