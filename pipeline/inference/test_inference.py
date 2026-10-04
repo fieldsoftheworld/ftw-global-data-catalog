@@ -117,6 +117,76 @@ def test_resume_and_tags_track_the_provider(tmp_path):
     assert written["year"] == "2025"
 
 
+# PTL-DAT-009 (MUST, formats.md:95) wants min/max/mean/stddev embedded in every
+# COG band; PTL-DAT-010 adds the valid percent (SHOULD here — these bands declare
+# no nodata). write_score has the whole array in memory, so it writes all five
+# exactly rather than approximately.
+STAT_KEYS = ("STATISTICS_MINIMUM", "STATISTICS_MAXIMUM", "STATISTICS_MEAN",
+             "STATISTICS_STDDEV", "STATISTICS_VALID_PERCENT")
+
+
+def score_fixture():
+    """Two bands with different, non-degenerate statistics, and their transform."""
+    rng = np.random.default_rng(20261004)
+    data = np.stack([
+        rng.integers(0, 256, (64, 128), dtype=np.uint8),
+        rng.integers(10, 60, (64, 128), dtype=np.uint8),
+    ])
+    return data, Affine(2.5, 0, 500000, 0, -2.5, 1000000)
+
+
+def test_score_cog_embeds_exact_band_statistics(tmp_path):
+    """Every band carries all five STATISTICS_* **inside the file**, and they are exact.
+
+    Read with ``GDAL_PAM_ENABLED=NO``, which is how rashid reads them: statistics
+    that live only in a ``.aux.xml`` sidecar do not satisfy PTL-DAT-009, and a
+    sidecar does not travel to the bucket either. The 2e generation of score COGs
+    was written without this block (accepted, docs/conformance.md) — this test is
+    what keeps the next generation from repeating it.
+    """
+    data, tr = score_fixture()
+    dst = tmp_path / "score.tif"
+    write_score(dst, data, "EPSG:32631", tr, {})
+    assert not dst.with_name(dst.name + ".aux.xml").exists(), (
+        "statistics must be in the file, not in a PAM sidecar"
+    )
+    with rasterio.Env(GDAL_PAM_ENABLED="NO"), rasterio.open(dst) as ds:
+        assert ds.count == len(data)
+        for bidx in range(1, ds.count + 1):
+            tags = ds.tags(bidx)
+            assert [k for k in STAT_KEYS if k not in tags] == [], (
+                f"band {bidx} is missing statistics: {sorted(tags)}"
+            )
+            band = data[bidx - 1]
+            assert float(tags["STATISTICS_MINIMUM"]) == float(band.min())
+            assert float(tags["STATISTICS_MAXIMUM"]) == float(band.max())
+            assert float(tags["STATISTICS_MEAN"]) == pytest.approx(float(band.mean()))
+            assert float(tags["STATISTICS_STDDEV"]) == pytest.approx(float(band.std()))
+            # No nodata is declared on these COGs, so every pixel is valid.
+            assert float(tags["STATISTICS_VALID_PERCENT"]) == 100.0
+            assert ds.nodatavals[bidx - 1] is None
+    # Band 2's range differs from band 1's, so a per-dataset copy would show here.
+    with rasterio.Env(GDAL_PAM_ENABLED="NO"), rasterio.open(dst) as ds:
+        assert ds.tags(1)["STATISTICS_MAXIMUM"] != ds.tags(2)["STATISTICS_MAXIMUM"]
+
+
+def test_rashid_finds_no_statistics_defect_in_a_score_cog(tmp_path):
+    """The validator's own PTL-DAT-009/010 check, run over the real writer's output.
+
+    Skipped where rashid is not importable: the repo ``.venv`` carries it, the
+    interpreter that usually runs these tests does not.
+    """
+    checks = pytest.importorskip(
+        "rashid.data.checks",
+        reason="rashid is not installed for this interpreter (it lives in the repo .venv)",
+    )
+    data, tr = score_fixture()
+    dst = tmp_path / "score.tif"
+    write_score(dst, data, "EPSG:32631", tr, {})
+    defects = checks._check_cog_stats("data", checks.Locator(is_remote=False, source=str(dst)))
+    assert defects == [], [d.message for d in defects]
+
+
 def stack(path, *, descriptions=BAND_DESCRIPTIONS, tags=None):
     """A minimal 16-band 10 m north-up stack, optionally described and/or tagged."""
     tr = Affine(10, 0, 500000, 0, -10, 1000000)
