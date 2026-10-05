@@ -1,22 +1,26 @@
 #!/usr/bin/env python3
-"""Render collection thumbnails from the index footprints.
+"""Render the raster collection thumbnails from the index footprints.
 
 Portolan (PTL-VIZ-001) wants every geospatial collection to carry a
-``thumbnail`` asset. Until the styled products exist (Phase 3 PMTiles renders
-via chiitiler, Phase 4 per-year COG mosaics), the honest render available is
-the data's own shape from the ``index/*.parquet`` manifests, over the FTW
-app's dark background, framed 3:2 for the browser card:
+``thumbnail`` asset. For the raster tree the honest render available is the
+data's own shape from the ``index/raster.parquet`` manifest, over the FTW
+app's dark background, framed 3:2 for the browser card: the ~7,466 tile
+footprints per year, shaded by ``field_frac`` (the fraction of field pixels
+in the tile) — a real low-res field-density map of the world. Phase 4's
+per-year COG mosaics will replace it with a render of the pixels themselves.
 
-- ``vector``: the 54 UTM-zone footprints per year, shaded by parcel count.
-- ``raster``: the ~7,466 tile footprints per year, shaded by ``field_frac``
-  (the fraction of field pixels in the tile) — a real low-res field-density
-  map of the world.
-
-    .venv/bin/python3 tools/make_index_thumbnails.py vector
     .venv/bin/python3 tools/make_index_thumbnails.py raster
 
-Writes ``catalog/{tree}/{year}/thumbnail.png``. The item builders register
-the asset and stamp its ``file:size``/``file:checksum``.
+The vector tree is **not** rendered here. It has PMTiles and published styles,
+so ``tools/render_thumbnails.py`` renders each year through chiitiler from the
+style its collection titles — and running this script over ``vector`` would
+overwrite those nine renders with a UTM-zone bar chart while the titles kept
+promising the styled render. That is the exact defect PR #18 fixed, so the
+mode is gone rather than merely discouraged; ``tests/test_thumbnails.py``
+fails if the bytes stop being the style's render.
+
+Writes ``catalog/raster/{year}/thumbnail.png``. The item builders register the
+asset and stamp its ``file:size``/``file:checksum``.
 """
 from __future__ import annotations
 
@@ -42,7 +46,8 @@ CMAP = LinearSegmentedColormap.from_list(
 
 TREES = {
     # tree -> (weight column, vmax percentile of the weight, edge width)
-    "vector": ("n_parcels", 100.0, 0.3),
+    # `vector` is deliberately absent: tools/render_thumbnails.py owns those
+    # nine images. See the module docstring.
     "raster": ("field_frac", 98.0, 0.0),
 }
 
