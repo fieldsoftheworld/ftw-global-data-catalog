@@ -310,7 +310,15 @@ zone**, so a partial run never produces a browse layer with a hole in it.
   so insetting even one overview row to hide it would open visible gaps on
   the grid, which is worse. Four other tiles checked (38KQU, 50SQJ, 43RCQ,
   10TFL) show no edge anomaly, so it is edge- and tile-specific rather
-  than universal.
+  than universal. It reaches the **vector** product too, as of the
+  MGRS-square ownership fix: the earlier square inset 5 km from the raster
+  origin, which masked these outermost rows by accident, and the true
+  100 km square comes within 80 m of the raster's own north edge. Nothing
+  downstream filters them — `merge_polygons` keeps on `in_utm_zone AND
+  in_mgrs_square AND area_m2 <= 5 km²`, and neither `frac_water` nor
+  `frac_crops_ever` survives into the released columns — so the parcels
+  these pixels produce are published. Dropping the outermost rows from
+  `frac_water` at conversion time is the fix if it proves material.
 
 ### Expected costs
 

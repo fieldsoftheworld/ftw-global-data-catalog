@@ -52,7 +52,10 @@ def test_band_x_is_rejected_not_guessed():
 REAL_TILES = [
     ("15TVG_0_0", 399_960.0, 4_700_040.0, (400_000.0, 4_600_000.0, 500_000.0, 4_700_000.0)),
     ("01KFS_0_0", 600_000.0, 7_700_020.0, (600_000.0, 7_600_000.0, 700_000.0, 7_700_000.0)),
-    # southern hemisphere, the two tiles the origin rounding was suspected of mis-owning
+    # southern hemisphere, the two tiles the origin rounding was suspected of mis-owning.
+    # 59GQQ_0_1 is a stacked sub-tile: its square is the 59GQP cell, NOT the one its key
+    # names -- see test_a_stacked_sub_tile_owns_the_cell_its_key_does_not_name.
+    ("59GQQ_0_0", 699_960.0, 5_500_000.0, (700_000.0, 5_400_000.0, 800_000.0, 5_500_000.0)),
     ("59GQQ_0_1", 699_960.0, 5_399_920.0, (700_000.0, 5_300_000.0, 800_000.0, 5_400_000.0)),
     ("60GTU_0_0", 199_980.0, 5_400_040.0, (200_000.0, 5_300_000.0, 300_000.0, 5_400_000.0)),
     # Norway, band 32V (the tiles the 31V/32V exception exists for)
@@ -75,8 +78,56 @@ def _old_square(c: float, f: float) -> tuple[float, float, float, float]:
 
 
 @pytest.mark.parametrize("tile,c,f,expected", REAL_TILES, ids=[t[0] for t in REAL_TILES])
-def test_mgrs_square_is_the_true_100km_square_on_real_rasters(tile, c, f, expected):
+def test_mgrs_square_is_the_100km_cell_the_raster_covers(tile, c, f, expected):
+    "The cell the pixels snap to -- for a `_r_c` sub-tile not the cell its key names."
     assert _real(c, f) == expected, tile
+
+
+#: MGRS 100 km row letters, A-V without I and O, repeating every 2,000 km of northing.
+ROW_LETTERS = "ABCDEFGHJKLMNPQRSTUV"
+
+
+def _row_letter(y: float) -> str:
+    "The MGRS row letter of the 100 km band starting at northing `y`."
+    return ROW_LETTERS[int(y // 100_000) % 20]
+
+
+def test_a_stacked_sub_tile_owns_the_cell_its_key_does_not_name():
+    """59GQQ_0_1 owns the 59GQ**P** cell, and that is correct, not a bug to fix.
+
+    A `_0_1` sub-tile starts 100,080 m below `_0_0`, so its origin rounds to the
+    *neighbouring* row: the square follows the raster's pixels, which is what
+    in_mgrs_square must test, while the tile key still carries `_0_0`'s letters.
+    27 published items are of this shape (scanned over all 67,197 raster items);
+    reconciling the square with the key would hand each of them a 100 km cell its
+    raster does not cover.
+    """
+    x0, y0, x1, y1 = _real(699_960.0, 5_399_920.0)
+    assert (y0, y1) == (5_300_000.0, 5_400_000.0)
+    assert _row_letter(y0) == "P", "the raster covers the P row; the key says Q"
+    # the sibling above it is the tile whose key the letters do match
+    assert _row_letter(_real(699_960.0, 5_500_000.0)[1]) == "Q"
+
+
+def test_stacked_sub_tiles_abut_but_leave_an_80m_unowned_seam():
+    """Measured loss: the 80 m strip between two stacked sub-tiles belongs to nobody.
+
+    The squares abut exactly at y = 5,400,000, but the rasters abut 80 m lower, at
+    5,399,920: that band has pixels only in `_0_0` while belonging to `_0_1`'s
+    square, so its parcels get in_mgrs_square=False in `_0_0` and have no pixels at
+    all in `_0_1`, and merge_polygons drops them. ~8 km2 per affected item; only
+    59GQQ has both siblings published, so 9 items, one per year. Everywhere else the
+    80 m raster overhang covers the seam -- this is the one gap the snapping leaves.
+    """
+    upper = _real(699_960.0, 5_500_000.0)  # 59GQQ_0_0
+    lower = _real(699_960.0, 5_399_920.0)  # 59GQQ_0_1
+    assert upper[1] == lower[3] == 5_400_000.0, "distinct, exactly abutting squares"
+    seam = 5_500_000.0 - SIDE * 2.5  # _0_0's south data edge == _0_1's north edge
+    assert seam == 5_399_920.0
+    mid = (seam + 5_400_000.0) / 2  # a centroid in the 80 m strip
+    assert lower[1] < mid <= lower[3], "the strip is in the lower tile's square ..."
+    assert mid > seam, "... but above the lower raster's north edge, so it has no pixels there"
+    assert not upper[1] < mid <= upper[3], "and the upper tile, whose pixels cover it, disclaims it"
 
 
 @pytest.mark.parametrize("tile,c,f,expected", REAL_TILES, ids=[t[0] for t in REAL_TILES])
@@ -99,6 +150,30 @@ def test_neighbouring_tiles_own_exactly_abutting_squares():
     south = _real(300_000.0, 6_500_040.0)  # 32VLK-like, one square south
     assert west[2] == east[0]
     assert west[1] == south[3]
+
+
+def test_a_parcel_straddling_a_same_zone_seam_is_claimed_by_both_neighbours():
+    """Abutting squares make the cross-tile seam union load-bearing, not optional.
+
+    Under the old 5 km inset no owned parcel could reach the raster edge. Now the
+    two rasters share only a 40-120 m overlap band (here 400,000-400,040), so a
+    field spanning the seam is cut at each raster's own data edge -- which
+    `touches_window_edge` does not flag, by construction (outlines only marks the
+    *window* borders interior to the raster) -- and each clipped half's pixel mass
+    centroid falls inside its own tile's square. Both halves are therefore owned
+    and published, and only fiboa_convert's seam union collapses them into one
+    field; above ~1.2 km each side of the seam even that fails (see
+    test_a_wide_field_across_a_same_zone_seam_is_not_rejoined).
+    """
+    west = _real(300_000.0, 6_600_000.0)   # 32VLL, data 300,000-400,080
+    east = _real(399_960.0, 6_600_000.0)   # its eastern neighbour, data 399,960-500,040
+    assert west[2] == east[0] == 400_000.0
+    inside = lambda sq, x: sq[0] <= x < sq[2]  # noqa: E731
+    # a 4 km field centred on the seam: each tile sees a ~2 km half clipped at its edge
+    w_half, e_half = (398_000.0 + 400_040.0) / 2, (399_960.0 + 402_000.0) / 2
+    assert inside(west, w_half) and not inside(east, w_half)
+    assert inside(east, e_half) and not inside(west, e_half)
+    assert w_half != e_half, "two different parcels, one field: the union must rejoin them"
 
 
 @pytest.mark.parametrize("dx,dy", [(-80.0, 0.0), (-40.0, 0.0), (0.0, 80.0), (0.0, -80.0), (40.0, 40.0)])
