@@ -84,10 +84,17 @@ IO_RETRY_WAIT_S = 60
 REPORT_EVERY = 50
 
 
-#: Half-width of a Sentinel-2 tile's overlap with its neighbours, metres: the 110 km
-#: raster carries a 100 km MGRS square centred in it.
+#: Side of an MGRS grid square, metres.
 MGRS_SQUARE_M = 100_000.0
-MGRS_PAD_M = 5_000.0
+#: A tile's square must sit inside its raster; allow this much slack (the published rasters
+#: overhang the square by 0-80 m, and a padded raster by its pad).
+MGRS_FIT_TOLERANCE_M = 250.0
+#: Version of the parcel-ownership rules (``in_utm_zone`` and ``in_mgrs_square``). It is part
+#: of the outline fingerprint, so a changed rule rewrites every tile on the next run instead
+#: of resuming onto parquet written under the old one -- otherwise a release silently mixes
+#: vintages and the parquet does not say which. Bump it with every rule change.
+#: 1: ``origin + 5 km`` / ``extent - 5 km`` (a 90.08 km square). 2: the raster's own 100 km cell.
+OWNERSHIP_RULES = 2
 
 
 def lon_in_zone(zn: int, band: str, lon: float) -> bool:
@@ -113,20 +120,55 @@ def lon_in_zone(zn: int, band: str, lon: float) -> bool:
 
 
 def mgrs_square(tr, height: int, width: int) -> tuple[float, float, float, float]:
-    """The tile's own 100 km square as (x0, y0, x1, y1), from the raster's bounds.
+    """The 100 km UTM/MGRS cell the raster's north-west corner snaps to, as (x0, y0, x1, y1).
 
-    Rounding the nominal square off the origin -- ``floor((tr.c + 5000) / 1e5)``
-    -- is unstable at the exact boundary it always lands on: a sub-pixel origin
-    offset moves the claimed square by a WHOLE 100 km. Two live CDSE tiles have
-    such offsets (59GQQ_0_1 dy = -80 m, 60GTU_0_1 dy = -40 m), and measured, a
-    -80 m easting offset turns sq_x0 = 400000 into 300000, so the tile claims its
-    western neighbour's square and owns none of its own parcels. Deriving the
-    square from the raster's actual bounds removes the rounding step entirely.
+    The published score rasters are 100.08 km (40,032 px x 2.5 m) with their origin 0-80 m
+    off the square, so the square is the 100 km grid cell that the raster's north-west corner
+    snaps to: ``round(origin / 100 km)``. Rounding to the *nearest* cell is stable for any
+    offset or padding under 50 km, which a floor/ceil of ``origin +/- pad`` is not (a sub-pixel
+    offset flips floor/ceil by a whole 100 km at the exact boundary the origin sits on).
+
+    It is the cell the raster's *pixels* cover, which for a stacked ``_r_c`` sub-tile is not
+    the cell its key names: 59GQQ_0_1 begins 100,080 m below 59GQQ_0_0 and so owns the 59GQP
+    cell (27 published items are of that shape). The square follows the pixels, not the key;
+    a mismatch between the two is correct and must not be "fixed" back to the key.
+
+    Two stacked sub-tiles therefore claim abutting squares whose shared edge sits 80 m north
+    of where their rasters abut, so an 80 m x 100 km strip (~8 km2) has pixels only in the
+    upper tile while belonging to the lower tile's square, and is owned by neither. Only
+    59GQQ has both siblings present, so that costs 9 items -- one per year.
+
+    Neighbouring squares abut exactly, which makes ``fiboa_convert``'s cross-tile seam union
+    load-bearing for parcels on the boundary: such a parcel is truncated at each raster's own
+    data edge -- not flagged, since ``touches_window_edge`` deliberately excludes the raster
+    boundary -- and each neighbour's piece is centred inside its own square, so both publish a
+    partial copy unless the union rejoins them. Same-zone rasters overlap by only 40-120 m and
+    ``MIN_OVERLAP`` wants 10% of the smaller piece, so a field reaching more than ~1.2 km each
+    side of a same-zone seam stays two overlapping halves (recorded in test_fiboa_convert).
+
+    An earlier version took ``origin + 5 km`` and ``extent - 5 km`` as the square, which
+    assumes a 110 km raster with a 5 km pad. On the real 100.08 km rasters that claims a
+    90.08 km square (81% of the true area): the outer ~5 km frame of every tile is owned by
+    nobody and silently dropped. The square is checked against the raster extent so a
+    raster that cannot contain it fails loudly instead of owning a wrong square.
+
+    Recovering that frame is not pure gain: it also admits the inference edge artifact
+    pipeline/README.md measures -- spurious high field probability in the outermost rows of
+    some score COGs, e.g. ~640 m of DN 109 over open North Sea on 31UET_0_0 -- which the
+    5 km inset had been masking by accident. Nothing downstream filters it, so the vector
+    product now carries those parcels.
     """
-    x0 = tr.c + MGRS_PAD_M
-    y1 = tr.f - MGRS_PAD_M
-    x1 = tr.c + width * abs(tr.a) - MGRS_PAD_M
-    y0 = tr.f - height * abs(tr.e) + MGRS_PAD_M
+    x0 = round(tr.c / MGRS_SQUARE_M) * MGRS_SQUARE_M
+    y1 = round(tr.f / MGRS_SQUARE_M) * MGRS_SQUARE_M
+    x1, y0 = x0 + MGRS_SQUARE_M, y1 - MGRS_SQUARE_M
+    west, north = tr.c, tr.f
+    east, south = tr.c + width * abs(tr.a), tr.f - height * abs(tr.e)
+    tol = MGRS_FIT_TOLERANCE_M
+    if x0 < west - tol or y1 > north + tol or x1 > east + tol or y0 < south - tol:
+        raise ValueError(
+            f"raster extent x {west:.0f}-{east:.0f}, y {south:.0f}-{north:.0f} does not contain "
+            f"the 100 km MGRS square x {x0:.0f}-{x1:.0f}, y {y0:.0f}-{y1:.0f} its origin snaps to"
+        )
     return x0, y0, x1, y1
 
 
@@ -251,6 +293,32 @@ GEO_META = json.dumps(
 ).encode()
 
 
+#: The score-COG layouts inference writes under ``{--scores}/{year}/``: the per-item
+#: folder (``--layout item``) and the bucket's grouped key (``--layout hive``). Both end
+#: in ``{tile}/{tile}.tif``; only the depth above it differs, so discovery accepts either
+#: and a half-migrated tree needs no flag here.
+SCORE_GLOBS = ("*/*.tif", "zone=*/gzd=*/*/*.tif")
+
+
+def score_paths(src: Path, names: list[str] | None) -> list[Path]:
+    """The score COGs under one year directory, in either inference layout.
+
+    The stem==folder filter keeps a sidecar such as 31UFS/31UFS.thumb.tif or a
+    stray from being treated as a score COG. A named tile resolves to whichever
+    layout holds it, preferring the grouped key, and otherwise keeps the per-item
+    path so the missing-input message names the default layout.
+    """
+    if names is None:
+        return sorted(
+            {p for g in SCORE_GLOBS for p in src.glob(g) if p.stem == p.parent.name}
+        )
+    found = []
+    for n in names:
+        grouped = src / f"zone={n[:2]}" / f"gzd={n[:3]}" / n / f"{n}.tif"
+        found.append(grouped if grouped.exists() else src / n / f"{n}.tif")
+    return found
+
+
 def fingerprint(src: Path, year: int, core: int, halo: int, backend: str, simplify_m: float) -> str:
     """Identity of the source COG plus every flag that changes the output.
 
@@ -261,6 +329,11 @@ def fingerprint(src: Path, year: int, core: int, halo: int, backend: str, simpli
     simplify_polygons.simplify_fingerprint (tol, size, mtime). The COG's own
     inference_fingerprint tag is preferred when PR2 stamped one, because it
     identifies the model and inputs as well as the bytes.
+
+    OWNERSHIP_RULES is in here too, because which parcels a tile claims is as
+    result-affecting as any flag: without it a resumed run after an ownership
+    change keeps the previous rule's parquet, and the release silently mixes
+    vintages that the parquet cannot be asked to tell apart.
     """
     st = src.stat()
     ident: object = [st.st_size, st.st_mtime_ns]
@@ -271,7 +344,9 @@ def fingerprint(src: Path, year: int, core: int, halo: int, backend: str, simpli
             ident = tag
     except rasterio.errors.RasterioIOError:
         pass
-    return json.dumps([ident, year, core, halo, backend, simplify_m], sort_keys=True)
+    return json.dumps(
+        [ident, year, core, halo, backend, simplify_m, OWNERSHIP_RULES], sort_keys=True
+    )
 
 
 def is_current(dst: Path, fp: str) -> bool:
@@ -303,6 +378,16 @@ def source_provenance(src: Path, year: int) -> dict:
         raise ValueError(f"{src.name}: score COG is year {stamped}, run asked for {year}")
     keep = ("model_sha256", "inference_fingerprint", "input_bands", "normalization", "overlap")
     return {k: tags[k] for k in keep if k in tags}
+
+
+def outline_provenance(src: Path, year: int, method, backend: str) -> dict:
+    """The stamp written into every outline file: the COG's tags plus the method actually run.
+
+    merge_polygons reads the spec into ``_summary.json`` and fiboa_convert writes it into
+    ``determination:details``, so a release states the spec (and backend, e.g. ``+q1``) that
+    produced it instead of a hardcoded one.
+    """
+    return {**source_provenance(src, year), "spec": method.id, "backend": backend}
 
 
 def process_tile(
@@ -337,8 +422,8 @@ def _run_tile(
     from polygons import simplify_coverage
 
     fp = fingerprint(Path(path), year, core, halo, backend, simplify_m)
-    prov = source_provenance(Path(path), year)
     method = method_for(backend)
+    prov = outline_provenance(Path(path), year, method, backend)
     prof = {
         "tile_key": tk,
         "spec": method.id,
@@ -537,9 +622,10 @@ def main() -> None:
     )
     ap.add_argument("--year", type=int, required=True)
     ap.add_argument("--scores", type=Path, default=Path("staging-data/raster"),
-                    help="hierarchy root holding {year}/{tile}/{tile}.tif "
+                    help="hierarchy root holding {year}/{tile}/{tile}.tif or the "
+                         "grouped {year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif "
                          "(what inference run.py writes under "
-                         "{output-dir}/raster)")
+                         "{output-dir}/raster, either --layout)")
     ap.add_argument("--out-root", type=Path, default=Path("outlines"))
     ap.add_argument("--index-dir", type=Path, default=Path("index"))
     ap.add_argument("--tiles", nargs="*", default=None)
@@ -571,14 +657,7 @@ def main() -> None:
     names = a.tiles if a.tiles is not None else None
     if names is None and a.tile_list is not None:
         names = a.tile_list.read_text().split()
-    # Per-item folders ({tile}/{tile}.tif): the stem==folder filter keeps a
-    # sidecar such as 31UFS/31UFS.thumb.tif or a stray from being treated as
-    # a score COG.
-    paths = (
-        sorted(p for p in src.glob("*/*.tif") if p.stem == p.parent.name)
-        if names is None
-        else [src / n / f"{n}.tif" for n in names]
-    )
+    paths = score_paths(src, names)
     if (
         a.core <= 0
         or a.halo < 0

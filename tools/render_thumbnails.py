@@ -20,10 +20,15 @@ Then:
     .venv/bin/python3 tools/render_thumbnails.py            # every year
     .venv/bin/python3 tools/render_thumbnails.py --year 2020
 
-Each render is gated against a background-only render of the same frame: an
-image that matches the blank one drew no data and is not written. Re-run
-`tools/build_vector_items.py` afterwards to refresh `file:size` and
-`file:checksum`.
+Each render is gated against a background-only render of **the same frame**,
+compared pixel by pixel: an image that draws over less than `MIN_INK` of the
+blank one drew no data and is not written. Comparing byte counts instead
+cannot do that job — a solid-colour 1024 px PNG still encodes to about 3 KB,
+comfortably more than any threshold a smaller blank probe suggests, so a dead
+tile source or a style that resolves to nothing would have been written and
+then stamped. Re-run `tools/build_vector_items.py` afterwards to refresh
+`file:size` and `file:checksum`, and `tests/test_thumbnails.py` to check that
+each image really is its own style's render.
 """
 from __future__ import annotations
 
@@ -32,6 +37,10 @@ import json
 import sys
 import urllib.request
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+from png_stats import diff_fraction  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
 VECTOR = ROOT / "catalog" / "vector"
@@ -54,6 +63,11 @@ STYLE_BY_YEAR = {
 # cropping them keeps the populated latitudes legible in a small card.
 BBOX = (-180.0, -58.0, 180.0, 78.0)
 SIZE = 1024
+# Measured over the nine accepted renders: each draws over 0.149-0.152 of the
+# frame. The floor is well under that and well over nothing at all, so it
+# catches an empty render without tracking how much land each year covers.
+# tests/test_thumbnails.py holds the same floor for the committed images.
+MIN_INK = 0.05
 PORT = 13579
 UA = "Mozilla/5.0 (ftw-global-data-catalog thumbnails)"
 
@@ -66,7 +80,7 @@ def pmtiles_zooms(url: str) -> tuple[int, int]:
     with urllib.request.urlopen(request, timeout=60) as resp:
         header = resp.read()
     if header[:7] != b"PMTiles":
-        sys.exit(f"{url}: not a PMTiles archive")
+        raise ValueError(f"{url}: not a PMTiles archive")
     return header[100], header[101]
 
 
@@ -109,7 +123,13 @@ def post_clip(style: dict, bbox: tuple[float, ...], size: int) -> bytes:
         return resp.read()
 
 
-def render_year(year: int, name: str) -> None:
+def render_year(year: int, name: str) -> str | None:
+    """Render one year, or return why it was rejected.
+
+    A rejected year leaves the committed image alone and does not stop the
+    others: aborting mid-loop would leave the early years rewritten and the
+    late years stale, which is a worse catalog than either end of the run.
+    """
     style_path = VECTOR / str(year) / "styles" / f"{name}.json"
     style = json.loads(style_path.read_text())
     url = next(iter(style["sources"].values()))["url"].removeprefix("pmtiles://")
@@ -117,15 +137,18 @@ def render_year(year: int, name: str) -> None:
 
     image = post_clip(render_style(style, minzoom, maxzoom), BBOX, SIZE)
     blank = post_clip(
-        {"version": 8, "sources": {}, "layers": [WHITE]}, BBOX, 256
+        {"version": 8, "sources": {}, "layers": [WHITE]}, BBOX, SIZE
     )
-    if len(image) < len(blank) * 2:
-        sys.exit(f"{year}: render is blank or near-blank ({len(image)} bytes)")
+    ink = diff_fraction(image, blank)
+    if ink < MIN_INK:
+        return (f"{year}: render draws over {ink:.4f} of the blank frame "
+                f"(floor {MIN_INK}) — no data reached the renderer")
 
     dest = VECTOR / str(year) / "thumbnail.png"
     dest.write_bytes(image)
     print(f"{year}: {name} -> {dest.relative_to(ROOT)} "
-          f"({len(image) / 1024:.0f} KB)")
+          f"({len(image) / 1024:.0f} KB, ink {ink:.3f})")
+    return None
 
 
 def main() -> int:
@@ -133,8 +156,19 @@ def main() -> int:
     parser.add_argument("--year", type=int, choices=sorted(STYLE_BY_YEAR))
     args = parser.parse_args()
     years = [args.year] if args.year else sorted(STYLE_BY_YEAR)
+    failures = []
     for year in years:
-        render_year(year, STYLE_BY_YEAR[year])
+        try:
+            problem = render_year(year, STYLE_BY_YEAR[year])
+        except Exception as exc:  # noqa: BLE001 - one bad year, not the run
+            problem = f"{year}: {exc}"
+        if problem:
+            print(f"error  {problem}", file=sys.stderr)
+            failures.append(year)
+    if failures:
+        print(f"error  {len(failures)} year(s) not written: "
+              + ", ".join(str(y) for y in failures), file=sys.stderr)
+        return 1
     return 0
 
 
