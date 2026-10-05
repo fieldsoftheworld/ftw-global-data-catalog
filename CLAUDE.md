@@ -87,6 +87,11 @@ by `rashid>=0.1.8,<0.2.0` — installed in `.venv/` (with stac-check + pyflakes)
 widen `ACCEPTED` in `tests/test_portolan_conformance.py` without a row in
 `docs/conformance.md`.
 
+The two index gates (`tests/test_indexes.py`, `tests/test_raster_index_lite.py`) also need
+`pyarrow numpy duckdb shapely pyproj rasterio` — the same list `.github/workflows/ci.yml`
+installs. Without them each gate prints one `skip` line and exits 0, so the metadata gates
+still run in a checkout that has only rashid.
+
 ## Rails cluster (account `bgtj-tgirails`)
 Claude runs on the **login node** (compute nodes lack internet) and drives Slurm via
 `sbatch`/`squeue`/`sacct` + log tailing. Partitions `cpu` (512G/2TB) and `cpu_amd`
