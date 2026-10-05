@@ -150,6 +150,30 @@ _TRUE_DETAIL = (
 )
 
 
+#: The 2026-10 rerun (r1) footers name the water and sea rules this sentence denies.
+_R1_MARKER = "io-lulc 2024 water"
+
+
+def water_filtered(meta: dict) -> bool:
+    "True for a year built by the r1 rerun, whose footer lists the water and sea rules."
+    return _R1_MARKER in meta.get("determination:details", "")
+
+
+def filter_note(meta: dict) -> str:
+    "What post-processing removed inside a processed tile, from the year's own footer."
+    if water_filtered(meta):
+        return (
+            "Inside a processed tile, parcels at least 70% io-lulc 2024 water (inland water, "
+            "aquaculture ponds, salt pans) and parcels with less than half their area on "
+            "OpenStreetMap land (sea) were removed; no other land-cover or terrain rule applies, "
+            "so scrub and built-up ground can still carry predicted parcels."
+        )
+    return (
+        "Inside a processed tile nothing is filtered by land cover, so water, scrub "
+        "and built-up ground can carry predicted parcels."
+    )
+
+
 def fix_details(details: str) -> str:
     """Correct the land-cover sentence the published parquet footers carry."""
     if _STALE_DETAIL not in details:
@@ -734,9 +758,8 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         "The collection's `data` asset carries both forms.", "",
         "Coverage is not global. Only MGRS tiles with at least 1% cropland "
         "were processed, so a region below that threshold has no parcels "
-        "here and an absence is not a prediction of absence. Inside a "
-        "processed tile nothing is filtered by land cover, so water, scrub "
-        "and built-up ground can carry predicted parcels. Filter on `score` "
+        "here and an absence is not a prediction of absence. "
+        f"{filter_note(meta)} Filter on `score` "
         "(the model's field probability × 100) to trade precision against "
         "recall.", "",
     ]
@@ -772,9 +795,7 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         "parcels cleanly (measured: zero shared ids or geometries in the "
         "6°E utm31/utm32 boundary strip).",
         "- `metrics:area` is m². Post-processing kept parcels between "
-        "900 m² and 5 km². Inside a processed tile nothing was removed on "
-        "land-cover, water or slope grounds, so non-agricultural ground can "
-        "carry parcels.",
+        f"900 m² and 5 km². {filter_note(meta)}",
         "- Coverage is cropland-gated: only MGRS tiles with at least 1% "
         "cropland were processed. Treat an empty region as unprocessed, not "
         "as a prediction that no fields exist there.",
