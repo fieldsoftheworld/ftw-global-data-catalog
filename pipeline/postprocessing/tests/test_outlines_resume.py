@@ -223,12 +223,27 @@ def test_a_populated_tile_list_is_honoured(tmp_path):
     assert "1 tiles" in r.stdout, r.stdout + r.stderr
 
 
-def test_outline_stamp_names_the_method_that_ran(tmp_path):
-    from types import SimpleNamespace
+def test_outline_stamp_names_the_method_that_ran(tmp_path, monkeypatch):
+    """The stamp must carry the id ``method_for`` really built, ``+q1`` backend and all.
+
+    ``fbp`` is not installable here, so stand a module in for it: ``method_for`` imports
+    ``fbp.methods`` lazily inside the function, and the id it returns is the spec string it
+    passed to ``parse``. Asserting on a hand-made method object (or on a docstring) passes
+    against an ``outlines.py`` that drops the suffix -- measured.
+    """
+    from types import ModuleType, SimpleNamespace
+
+    fbp = ModuleType("fbp")
+    methods = ModuleType("fbp.methods")
+    methods.parse = lambda s: SimpleNamespace(id=s)
+    fbp.methods = methods
+    monkeypatch.setitem(sys.modules, "fbp", fbp)
+    monkeypatch.setitem(sys.modules, "fbp.methods", methods)
+
+    assert ol.method_for("fast").id == ol.SPEC + "+q1"
+    assert ol.method_for("exact").id == ol.SPEC
 
     src = tmp_path / "tile.tif"  # unreadable on purpose: no COG tags, the spec must still stamp
     src.write_bytes(b"not a tif")
-    method = SimpleNamespace(id="nbg-pb-h0.01-t0.3+R35+F10+G2+A900+q1")
-    stamp = ol.outline_provenance(src, 2025, method, "fast")
-    assert stamp["spec"] == method.id and stamp["backend"] == "fast"
-    assert ol.method_for.__doc__ and "+q1" in ol.method_for.__doc__
+    stamp = ol.outline_provenance(src, 2025, ol.method_for("fast"), "fast")
+    assert stamp["spec"] == ol.SPEC + "+q1" and stamp["backend"] == "fast"

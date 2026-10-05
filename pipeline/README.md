@@ -422,8 +422,18 @@ This directory is the pipeline as it runs, and the catalog prose describes it
 on those terms. Three strings in the published collection descriptions predate
 it and will change the next time a year is rebuilt.
 
-- The BoundaryVote spec here is `nbg-pb-h0.01-t0.3+R35+F10+G2+A900`, while
-  every published collection records `nbg-pb-h0.01-t0.3+A900`.
+- Every published collection records the BoundaryVote spec
+  `nbg-pb-h0.01-t0.3+A900`, and that id is no longer written from a constant.
+  `outlines.py` stamps `{spec, backend}` into each tile's `outline_provenance`,
+  `merge_polygons.py` unions those into `_summary.json`'s `spec`/`specs` (with
+  `tiles_unrecorded_spec` counting the tiles that carry no id), and
+  `fiboa_convert.py` writes whatever is there. So a year rebuilt from the outline
+  stage under `--backend fast` records
+  `nbg-pb-h0.01-t0.3+R35+F10+G2+A900+q1` — the `+q1` the old constant omitted —
+  while a year merged from the existing pre-stamp outlines reads `method id not
+  recorded in the run` for them, since resume keeps those tiles as current and
+  never restamps them. `fiboa_convert --spec nbg-pb-h0.01-t0.3+A900` states the
+  known id for that case, marked as supplied rather than recorded.
 - The band order here is B04/B03/B02/B08, while the published descriptions
   list B02/B03/B04/B08. The order in the code is the one the model requires,
   and `inference/run.py` refuses a stack that declares anything else.

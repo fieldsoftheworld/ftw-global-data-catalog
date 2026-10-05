@@ -32,6 +32,23 @@ def _tile(path: Path, tk: str, n: int, area: float = 1000.0) -> None:
     con.close()
 
 
+def _stamped(cwd: Path, tk: str, n: int = 3, stamp: bytes | None = None) -> None:
+    """An input tile carrying ``stamp`` as its ``outline_provenance``, or none at all.
+
+    ``stamp=None`` is an outline written before the stamp existed: a resumed run keeps
+    those as current (``fingerprint`` does not cover the stamp), so they are the realistic
+    mixed-year case, not a hypothetical one.
+    """
+    src = cwd / "simplified/2025" / f"{tk}.parquet"
+    _tile(src, tk, n)
+    if stamp is None:
+        return
+    t = pq.read_table(src)
+    md = dict(t.schema.metadata or {})
+    md[mp.OUTLINE_PROVENANCE] = stamp
+    pq.write_table(t.replace_schema_metadata(md), src)
+
+
 def _aux(path: Path, tk: str, n: int, dup: bool = False) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     body = (
@@ -295,18 +312,80 @@ def test_details_state_the_spec_the_run_used_not_a_hardcoded_one():
 
 def test_merge_summary_carries_the_outline_spec(tmp_path):
     """outlines stamps {spec, backend} in the provenance; merge records it in _summary.json."""
-    import json
-
-    import pyarrow.parquet as pq
-
-    src = tmp_path / "simplified/2025/31UFS.parquet"
-    _tile(src, "31UFS", 3)
-    t = pq.read_table(src)
-    md = dict(t.schema.metadata or {})
-    md[mp.OUTLINE_PROVENANCE] = json.dumps({"spec": "SPEC+q1", "backend": "fast"}).encode()
-    pq.write_table(t.replace_schema_metadata(md), src)
+    _stamped(tmp_path, "31UFS", stamp=json.dumps({"spec": "SPEC+q1", "backend": "fast"}).encode())
     r = _run(tmp_path, "--no-aux", *_lists(tmp_path, "31UFS\n"))
     assert r.returncode == 0, r.stdout + r.stderr
     s = _summary(tmp_path)
     assert s["spec"] == "SPEC+q1" and s["specs"] == ["SPEC+q1"]
+    assert s["tiles_unrecorded_spec"] == 0
     assert s["provenance"]["backend"] == "fast"
+
+
+def test_a_mixed_year_states_both_methods_not_the_first_one(tmp_path):
+    """Two zones built by different methods: the release says so, in both ids.
+
+    With one spec the `" / ".join` is indistinguishable from "first spec wins", which is
+    the behaviour the union exists to prevent -- measured: reducing the join to
+    `specs[0]` left the whole suite green.
+    """
+    import fiboa_convert as fc
+
+    _stamped(tmp_path, "31UFS", stamp=json.dumps({"spec": "SPEC_A"}).encode())
+    _stamped(tmp_path, "32ULB", stamp=json.dumps({"spec": "SPEC_B"}).encode())
+    r = _run(tmp_path, "--no-aux", *_lists(tmp_path, "31UFS\n32ULB\n"))
+    assert r.returncode == 0, r.stdout + r.stderr
+    s = _summary(tmp_path)
+    assert s["specs"] == ["SPEC_A", "SPEC_B"]
+    assert s["spec"] == "SPEC_A / SPEC_B"
+    details = fc.collection_metadata("ftw-s2-2025", 2025, s)["determination:details"]
+    assert "SPEC_A / SPEC_B" in details
+
+
+@pytest.mark.parametrize(
+    "stamp",
+    [None, b'{"spec": "SPEC_B", "backe', json.dumps({"model_sha256": "deadbeef"}).encode()],
+    ids=["unstamped", "truncated", "pre-stamp-payload"],
+)
+def test_tiles_with_no_readable_spec_are_not_attributed_to_the_stamped_one(tmp_path, stamp):
+    """A tile whose method is unknown must not inherit the method of the tiles beside it.
+
+    Resume is keyed on `fingerprint(src, year, core, halo, backend, simplify_m)`, which
+    does not cover the stamp, so outlines written before it stay "current" and are never
+    restamped. Attributing a whole year to the one id the scan found is exactly the
+    plausible-looking single id this stage exists to avoid. The truncated case also guards
+    the merge itself: an unguarded `json.loads` aborted it hours in, after some zone
+    partitions had been rewritten and before `_summary.json` was.
+    """
+    import fiboa_convert as fc
+
+    _stamped(tmp_path, "31UFS", stamp=json.dumps({"spec": "SPEC_A"}).encode())
+    _stamped(tmp_path, "31UFT", stamp=stamp)
+    r = _run(tmp_path, "--no-aux", *_lists(tmp_path, "31UFS\n31UFT\n"))
+    assert r.returncode == 0, r.stdout + r.stderr
+    s = _summary(tmp_path)
+    assert s["specs"] == ["SPEC_A"] and s["tiles_unrecorded_spec"] == 1
+    assert s["spec"] == f"SPEC_A / {fc.SPEC_UNRECORDED}"
+    details = fc.collection_metadata("ftw-s2-2025", 2025, s)["determination:details"]
+    assert f"(SPEC_A / {fc.SPEC_UNRECORDED})" in details
+
+
+def test_spec_override_states_the_known_method_without_claiming_the_run_recorded_it(tmp_path):
+    """`--spec` fills only the unrecorded slot, and says that is where it came from.
+
+    Re-running fiboa_convert over the released merged tree is the natural way to pick up a
+    downstream change, and every one of those `_summary.json` files predates the stamp.
+    Without this the release replaces a method id the repo knows with a non-claim.
+    """
+    import fiboa_convert as fc
+
+    known = "nbg-pb-h0.01-t0.3+A900"
+    for s in ({}, {"spec": fc.SPEC_UNRECORDED}):
+        details = fc.collection_metadata("ftw-s2-2025", 2025, s, known)["determination:details"]
+        assert f"({fc.SPEC_SUPPLIED.format(spec=known)})" in details
+        assert fc.SPEC_UNRECORDED not in details
+    # A recorded id is never overridden; only the unrecorded part of a mixed year is filled.
+    mixed = {"spec": f"SPEC_A / {fc.SPEC_UNRECORDED}"}
+    details = fc.collection_metadata("ftw-s2-2025", 2025, mixed, known)["determination:details"]
+    assert f"SPEC_A / {fc.SPEC_SUPPLIED.format(spec=known)}" in details
+    recorded = fc.collection_metadata("ftw-s2-2025", 2025, {"spec": "SPEC_A"}, known)
+    assert "(SPEC_A)" in recorded["determination:details"]
