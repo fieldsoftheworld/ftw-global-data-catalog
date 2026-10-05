@@ -158,6 +158,45 @@ def test_genuine_seam_duplicate_still_merges(tmp_path, monkeypatch):
     assert rows[0][1] > 6000, rows[0][1]  # the union of two ~4,668 m2 halves
 
 
+#: One field cut by a same-zone tile seam at lon -3.0, each half clipped at its own raster
+#: edge so the two share only the rasters' ~120 m overlap band (-3.0007 .. -2.9993).
+#: `half` is the field's reach each side of the seam, in degrees; 0.0012 deg ~ 100 m at 41N.
+def _clipped_seam_pair(half: float) -> list[tuple]:
+    o, h = 0.0007, 0.0045
+    return [
+        ("30TXM_0_0", 1, -3.0 - half, 41.0, -3.0 + o, 41.0 + h, 0.6, False),
+        ("30TYM_0_0", 1, -3.0 - o, 41.0, -3.0 + half, 41.0 + h, 0.8, False),
+    ]
+
+
+def test_a_narrow_field_across_a_same_zone_seam_is_rejoined(tmp_path, monkeypatch):
+    "The abutting-squares case the seam union does handle: both halves are one field."
+    rows = _convert(tmp_path, monkeypatch, _clipped_seam_pair(0.005))  # ~420 m each side
+    assert [r[0] for r in rows] == ["30TXM_0_0-1"], "one field, published once"
+
+
+def test_a_wide_field_across_a_same_zone_seam_is_not_rejoined(tmp_path, monkeypatch):
+    """Recorded loss: MIN_OVERLAP's 10% rule cannot rejoin a wide seam-crossing field.
+
+    Since outlines' MGRS square became the raster's own 100 km cell, both halves of
+    a field straddling a same-zone tile seam are owned and published (the old 90.08 km
+    square dropped them with the 5 km frame, so nothing downstream had ever had to
+    handle this). Rejoining them is now the seam union's job, but same-zone rasters
+    overlap by only 40-120 m, so the shared area is a fixed ~120 m band while the
+    smaller half grows with the field: past roughly 1.2 km each side of the seam the
+    band is under WINDOW_MIN_OVERLAP_FRAC of it and the pair is never grouped, so the
+    field is published as two overlapping clipped halves.
+
+    This test records the limit rather than blessing it: loosening the cross-tile
+    branch for a shared tile boundary is the fix, and it must land before the next
+    generation runs. Keep the narrow control above passing when it does.
+    """
+    rows = _convert(tmp_path, monkeypatch, _clipped_seam_pair(0.024))  # ~2 km each side
+    assert [r[0] for r in rows] == ["30TXM_0_0-1", "30TYM_0_0-1"], "known: two halves"
+    assert min(r[1] for r in rows) > 900, "both clear the floor, so neither is dropped"
+    assert rows[0][8] > rows[1][6], "and they genuinely overlap: a duplicated strip"
+
+
 def test_minimum_area_applies_after_the_seam_union(tmp_path, monkeypatch):
     """A field cut into two sub-900 m2 halves must publish its ~1,300 m2 union.
 

@@ -53,8 +53,27 @@ unlisted year fails rather than silently borrowing another year's vintages.
 Core/halo defaults are 8192/512 pixels. Core centroid ownership reduces window
 duplicates, but parcels wider than the halo may be truncated or duplicated;
 `touches_window_edge` identifies candidates and conversion joins seam parcels.
+Outline tiles resume on a fingerprint covering the source COG's identity, the
+flags **and** `OWNERSHIP_RULES`, so changing which parcels a tile claims rewrites
+every tile on the next run rather than resuming onto the previous rule's parquet;
+bump that constant with every `in_utm_zone`/`in_mgrs_square` change.
 Ownership uses the tile raster's own bounds for its MGRS square and the MGRS
 longitude bands, including the 31V/32V exception the Sentinel-2 grid follows.
+The square is the 100 km cell the raster's north-west corner snaps to, so for a
+stacked `_r_c` sub-tile it is not the cell the tile key names (59GQQ_0_1 owns the
+59GQP cell) — the square follows the pixels. Two consequences are known and
+measured: stacked sub-tiles claim abutting squares whose shared edge sits 80 m
+north of where their rasters abut, leaving an 80 m × 100 km strip (~8 km², nine
+items) owned by neither; and because neighbouring squares abut exactly, the
+cross-tile seam union is load-bearing for parcels on a tile boundary. Such a
+parcel is truncated at each raster's own data edge — which `touches_window_edge`
+does not flag, as it marks only window borders interior to the raster — and each
+half is centred in its own square, so both are owned. Same-zone rasters overlap
+by only 40–120 m while `MIN_OVERLAP` wants 10% of the smaller half, so a field
+reaching more than ~1.2 km each side of a same-zone seam is published as two
+overlapping halves; `test_a_wide_field_across_a_same_zone_seam_is_not_rejoined`
+records it, and loosening the cross-tile branch for a shared tile boundary should
+land before the next generation runs.
 Simplification uses 5 m in UTM over the **whole** coverage in one pass, so shared
 edges stay shared; results are repaired, never re-simplified per geometry, and
 attributes are preserved. The Rust implementation is provided by the `coarsen`

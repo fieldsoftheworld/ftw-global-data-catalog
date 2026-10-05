@@ -86,6 +86,21 @@ def test_every_result_affecting_flag_is_in_the_fingerprint(tmp_path, over):
     assert not ol.is_current(dst, _fp(src, **over)), over
 
 
+def test_a_changed_ownership_rule_is_not_current(tmp_path, monkeypatch):
+    """Which parcels a tile claims is result-affecting, so it belongs in the fingerprint.
+
+    Without OWNERSHIP_RULES a resumed run after the MGRS-square fix kept every
+    parquet written under the 90.08 km square, publishing a mix of fixed and
+    5-km-cropped tiles that nothing in the parquet distinguishes.
+    """
+    src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
+    dst = tmp_path / "outlines/2025/31UFS.parquet"
+    _stamp(dst, _fp(src))
+    assert ol.is_current(dst, _fp(src))
+    monkeypatch.setattr(ol, "OWNERSHIP_RULES", ol.OWNERSHIP_RULES + 1)
+    assert not ol.is_current(dst, _fp(src))
+
+
 def test_a_regenerated_score_cog_is_not_current(tmp_path):
     src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
     dst = tmp_path / "outlines/2025/31UFS.parquet"
