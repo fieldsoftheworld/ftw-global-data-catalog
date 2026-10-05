@@ -109,10 +109,15 @@ no stale generation survives into conversion. Missing inputs fail unless
 and the next stage stamps "INCOMPLETE" into the metadata.
 
 `fiboa_convert.py` repairs geometry, joins parcels split across tile seams,
-and then, on the unioned geometry, drops parts and parcels below 900 m² and
-re-applies the 5 km² cap. The order matters. Filtering before the union
-deleted fields that a seam had cut into two sub-minimum halves, and a cap
-applied to the pre-union pixel area let an over-cap union through. All metric
+and then, on the unioned geometry, fills interior rings under 20 m², drops
+parts and parcels below 900 m² and re-applies the 5 km² cap. The order
+matters. Filtering before the union deleted fields that a seam had cut into
+two sub-minimum halves, and a cap applied to the pre-union pixel area let an
+over-cap union through; the hole fill runs before both size tests, so a part
+and a standalone parcel of the same shape are judged on the same area.
+Polygonizing the 2.5 m probability raster leaves half-pixel (3.125 m²) holes
+inside roughly 40% of parcels — 20 m² is about three pixels, and larger holes
+(farm buildings, ponds, a neighbouring field) are kept. All metric
 work uses the zone's north UTM CRS, so the two halves of a field straddling
 the equator stay comparable. Output is
 `{year}/zone={NN}/utm{NN}.parquet`, sorted by Hilbert index, carrying fiboa
@@ -379,7 +384,10 @@ of them land cover. The retention test in `merge_polygons.py` is
 `in_utm_zone AND in_mgrs_square AND area_m2 <= 5e6`, which drops parcels a
 neighboring tile owns and parcels over the area cap. `fiboa_convert.py` then
 drops parts and whole parcels under 900 m² after the seam union, and
-re-applies the cap to the unioned geometry. The cap is read from merge's
+re-applies the cap to the unioned geometry. One geometry change is not a
+removal: interior rings under 20 m² are filled rather than published, so a
+parcel keeps its outline but loses the pixel-scale holes polygonization left
+in it. Nothing is removed by that step. The cap is read from merge's
 `_summary.json` rather than hard-coded, so it traces back to merge's
 `--max-km2`; the 5 km² constant in `fiboa_convert.py` is only the fallback for
 a missing summary.
@@ -419,7 +427,7 @@ once per tile. The other three post-processing scripts run without it.
 ### Where the published descriptions lag this code
 
 This directory is the pipeline as it runs, and the catalog prose describes it
-on those terms. Three strings in the published collection descriptions predate
+on those terms. Four strings in the published collection descriptions predate
 it and will change the next time a year is rebuilt.
 
 - The BoundaryVote spec here is `nbg-pb-h0.01-t0.3+R35+F10+G2+A900`, while
@@ -429,6 +437,14 @@ it and will change the next time a year is rebuilt.
   and `inference/run.py` refuses a stack that declares anything else.
 - `fiboa_convert.py` writes "parcels and parts under 900 m2 removed", and no
   published description carries that sentence.
+- `fiboa_convert.py` writes "interior holes under 20 m2 filled", and no
+  published description carries that sentence either, although the released
+  files were filled: every interior ring measured in the published 2017, 2021,
+  2024 and 2025 zone files is at least 21.875 m² (3.5 px at 2.5 m), with none
+  below the 20 m² threshold. The rule was in force when the data was made; only
+  the prose predates it. Both this bullet and the one above resolve the same
+  way — the next rebuild stamps the real sentence into the parquet footer, and
+  `tools/build_vector_items.py` regenerates the descriptions from it.
 
 All nine collections carry byte-identical provenance text, so it records the
 revision that wrote the metadata rather than how any individual year was
