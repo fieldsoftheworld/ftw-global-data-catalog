@@ -618,8 +618,9 @@ def main() -> int:
               "to upload without looking.", file=sys.stderr)
         return 1
     changed = [u for u in uploads if args.force or not is_unchanged(u, index)]
+    snapshot = {} if args.force else load_snapshot()
     conflicts = set() if args.force else set(snapshot_conflicts(
-        changed, index, prefix, load_snapshot()))
+        changed, index, prefix, snapshot))
     # Skipped, not fatal: one out-of-band raster year object must not block
     # publishing the rest of the catalog. The run still exits non-zero so the
     # operator cannot miss that something was left behind.
@@ -641,6 +642,13 @@ def main() -> int:
               "(tools/raster_snapshot.py), or pass --force to overwrite them.",
               file=sys.stderr)
 
+    unrecorded = unrecorded_raster_keys(uploads, prefix, snapshot)
+    if unrecorded and not args.force:
+        print(f"note: {len(unrecorded)} raster year key(s) are not in "
+              f"{SNAPSHOT_FILE.name} (e.g. {', '.join(unrecorded[:3])}); the "
+              "snapshot guard cannot speak for them — re-record it with "
+              "tools/raster_snapshot.py")
+
     if not args.confirm:
         for upload in changed[:20]:
             print(f"  would upload  {upload.key}  ({upload.content_type})")
@@ -658,8 +666,9 @@ def main() -> int:
         sys.exit("aws CLI is required to upload and was not found on PATH")
 
     failed = upload_all(changed, bucket, region, aws, args.retries)
+    lost = set(failed)
     touched = record_published(
-        [u for u in changed if u.key not in set(failed)], prefix)
+        [u for u in changed if u.key not in lost], prefix)
     if touched:
         print(f"re-recorded {len(touched)} raster year ETag(s) in "
               f"{SNAPSHOT_FILE.name}; commit it")

@@ -557,17 +557,22 @@ with tempfile.TemporaryDirectory() as tmp:
 # The guard can only speak for keys it recorded, so every local
 # catalog/raster/{year}/ file must appear in tools/raster_snapshot.json.
 snapshot_on_disk = publish.load_snapshot()
-local_year_keys = sorted(
-    f"raster/{d.name}/{f.name}"
-    for d in (ROOT / "catalog" / "raster").iterdir()
+year_uploads = [
+    Upload(f, f"pre/raster/{d.name}/{f.name}", "application/json")
+    for d in sorted((ROOT / "catalog" / "raster").iterdir())
     if d.is_dir() and re.fullmatch(r"\d{4}", d.name)
     for f in sorted(d.iterdir()) if f.is_file()
-)
-check(bool(local_year_keys), "there are raster year files to check")
-missing = [k for k in local_year_keys if k not in snapshot_on_disk]
+]
+check(bool(year_uploads), "there are raster year files to check")
+missing = publish.unrecorded_raster_keys(year_uploads, "pre", snapshot_on_disk)
 check(not missing,
       "tools/raster_snapshot.json does not record " + ", ".join(missing)
       + " — re-record it with tools/raster_snapshot.py")
+check(publish.unrecorded_raster_keys(
+    [Upload(Path("x"), "pre/raster/2099/collection.json", "application/json"),
+     Upload(Path("x"), "pre/vector/2099/collection.json", "application/json")],
+    "pre", snapshot_on_disk) == ["raster/2099/collection.json"],
+    "an unrecorded raster year key is reported, a vector one is not")
 check(all(v is None or re.fullmatch(r"[0-9a-f]{32}(-\d+)?", v)
           for v in snapshot_on_disk.values()),
       "every recorded value is an ETag or null (known absent)")
