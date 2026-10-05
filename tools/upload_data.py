@@ -40,7 +40,6 @@ from publish import (  # noqa: E402
     aws_cli,
     content_type_for,
     is_publishable,
-    ListingError,
     is_unchanged,
     load_config,
     remote_index,
@@ -48,6 +47,47 @@ from publish import (  # noqa: E402
     unedited_sentinels,
     upload_all,
 )
+
+
+def remote_data_index(
+    uploads: list[Upload], config: dict[str, str],
+) -> dict[str, tuple[int, str]]:
+    """Size and ETag for the staged keys' prefixes, listed recursively.
+
+    publish.py lists per directory because catalog/ directories share the
+    bucket prefix with the data tree. The data tree is the opposite shape:
+    tens of thousands of per-item directories under a handful of top-level
+    prefixes (raster/, vector/, index/), where one recursive paginated
+    listing per prefix costs ~1 request per 1,000 objects and a per-directory
+    walk costs one subprocess per directory. Falls back to the per-directory
+    walk when boto3 is unavailable, and to {} (everything looks new) when a
+    listing fails — same erring-toward-upload contract as remote_index.
+    """
+    try:
+        import boto3
+    except ImportError:
+        return remote_index(uploads, config)
+    bucket, prefix = split_s3_uri(config["write_prefix"])
+    region = config.get("region", "us-west-2")
+    # Upload.key is the full object key; the top-level data prefix is the
+    # first segment after the write prefix (raster/, vector/, index/).
+    tops = {u.key[len(prefix) + 1:].split("/", 1)[0] for u in uploads}
+    index: dict[str, tuple[int, str]] = {}
+    s3 = boto3.client("s3", region_name=region)
+    try:
+        for top in sorted(tops):
+            paginator = s3.get_paginator("list_objects_v2")
+            for page in paginator.paginate(
+                Bucket=bucket, Prefix=f"{prefix}/{top}/"
+            ):
+                for obj in page.get("Contents", []):
+                    # Full keys, prefix included — Upload.key is the full key.
+                    index[obj["Key"]] = (obj["Size"], obj["ETag"].strip('"'))
+    except Exception as exc:  # noqa: BLE001 — same contract as remote_index
+        print(f"note: could not list s3://{bucket}/{prefix} ({exc}); "
+              "treating every file as changed")
+        return {}
+    return index
 
 # The suffixes that may reach the bucket. This is an allow-list, and it names
 # what may pass rather than what may not. A staging tree grows new scratch
@@ -58,6 +98,9 @@ PUBLISHABLE_SUFFIXES = {
     ".pmtiles",
     ".tif",
     ".tiff",
+    # Phase 4 browse artifacts: per-item thumbnails and overview thumbnails.
+    ".png",
+    ".webp",
 }
 
 
@@ -153,14 +196,14 @@ def main() -> int:
         print(f"nothing under {base}/ to upload", file=sys.stderr)
         return 1
 
-    try:
-        index = {} if args.force else remote_index(
-            uploads, config, strict=args.confirm)
-    except ListingError as exc:
-        print(f"refusing to upload: {exc}. A failed listing is not proof "
-              "that nothing exists; pass --force to upload without looking.",
-              file=sys.stderr)
-        return 1
+    index = {} if args.force else remote_data_index(uploads, config)
+    if not index and not args.force and args.confirm:
+        # Err-toward-upload is right for a dry run; on --confirm it just
+        # re-uploaded ~30 GB of unchanged data after one failed listing
+        # (2026-10-02). A confirm with no listing is a blind upload: refuse,
+        # and let the operator retry or say --force to mean it.
+        sys.exit("remote listing failed or empty; refusing blind --confirm "
+                 "(retry, or pass --force to upload everything)")
     changed = [
         u for u in uploads
         if args.force
