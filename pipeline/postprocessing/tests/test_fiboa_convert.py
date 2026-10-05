@@ -7,6 +7,7 @@ import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
 import pytest
+import shapely
 
 sys.path.insert(0, str(Path(__file__).parents[1]))
 
@@ -155,6 +156,45 @@ def test_genuine_seam_duplicate_still_merges(tmp_path, monkeypatch):
     rows = _convert(tmp_path, monkeypatch, _seam_pair(-3.0, 41.0, 0.001, 0.0005, "30TXM", "30TYM"))
     assert [r[0] for r in rows] == ["30TXM_0_0-1"]
     assert rows[0][1] > 6000, rows[0][1]  # the union of two ~4,668 m2 halves
+
+
+#: One field cut by a same-zone tile seam at lon -3.0, each half clipped at its own raster
+#: edge so the two share only the rasters' ~120 m overlap band (-3.0007 .. -2.9993).
+#: `half` is the field's reach each side of the seam, in degrees; 0.0012 deg ~ 100 m at 41N.
+def _clipped_seam_pair(half: float) -> list[tuple]:
+    o, h = 0.0007, 0.0045
+    return [
+        ("30TXM_0_0", 1, -3.0 - half, 41.0, -3.0 + o, 41.0 + h, 0.6, False),
+        ("30TYM_0_0", 1, -3.0 - o, 41.0, -3.0 + half, 41.0 + h, 0.8, False),
+    ]
+
+
+def test_a_narrow_field_across_a_same_zone_seam_is_rejoined(tmp_path, monkeypatch):
+    "The abutting-squares case the seam union does handle: both halves are one field."
+    rows = _convert(tmp_path, monkeypatch, _clipped_seam_pair(0.005))  # ~420 m each side
+    assert [r[0] for r in rows] == ["30TXM_0_0-1"], "one field, published once"
+
+
+def test_a_wide_field_across_a_same_zone_seam_is_not_rejoined(tmp_path, monkeypatch):
+    """Recorded loss: MIN_OVERLAP's 10% rule cannot rejoin a wide seam-crossing field.
+
+    Since outlines' MGRS square became the raster's own 100 km cell, both halves of
+    a field straddling a same-zone tile seam are owned and published (the old 90.08 km
+    square dropped them with the 5 km frame, so nothing downstream had ever had to
+    handle this). Rejoining them is now the seam union's job, but same-zone rasters
+    overlap by only 40-120 m, so the shared area is a fixed ~120 m band while the
+    smaller half grows with the field: past roughly 1.2 km each side of the seam the
+    band is under WINDOW_MIN_OVERLAP_FRAC of it and the pair is never grouped, so the
+    field is published as two overlapping clipped halves.
+
+    This test records the limit rather than blessing it: loosening the cross-tile
+    branch for a shared tile boundary is the fix, and it must land before the next
+    generation runs. Keep the narrow control above passing when it does.
+    """
+    rows = _convert(tmp_path, monkeypatch, _clipped_seam_pair(0.024))  # ~2 km each side
+    assert [r[0] for r in rows] == ["30TXM_0_0-1", "30TYM_0_0-1"], "known: two halves"
+    assert min(r[1] for r in rows) > 900, "both clear the floor, so neither is dropped"
+    assert rows[0][8] > rows[1][6], "and they genuinely overlap: a duplicated strip"
 
 
 def test_minimum_area_applies_after_the_seam_union(tmp_path, monkeypatch):
@@ -369,3 +409,145 @@ def test_window_seam_duplicates_join(tmp_path, monkeypatch):
     assert rows[0][1] == 70  # area-weighted mean of the two copies
     assert abs(rows[0][2] - 41.0) < 1e-9
     assert abs(rows[0][3] - 41.0014) < 1e-9
+
+
+def _holed_parcel(root: Path) -> None:
+    """One 0.002 x 0.002 deg parcel (~37,000 m2) with a ~11 m2 hole and a ~1,130 m2 hole."""
+    src = root / "2025" / "zone=30" / "part-0.parquet"
+    src.parent.mkdir(parents=True)
+    wkt = (
+        "POLYGON((-3.0 41.0, -2.998 41.0, -2.998 41.002, -3.0 41.002, -3.0 41.0),"
+        "(-2.9995 41.0005, -2.99995 41.0005, -2.99995 41.00077, -2.9995 41.00077, -2.9995 41.0005),"
+        "(-2.9990 41.001, -2.99896 41.001, -2.99896 41.00103, -2.9990 41.00103, -2.9990 41.001))"
+    )
+    con = duckdb.connect()
+    con.sql("load spatial")
+    con.sql(
+        f"""COPY (SELECT '30TXM_0_0' AS tile_key, 1::BIGINT AS parcel_id,
+          -3.0 AS xmin, 41.0 AS ymin, -2.998 AS xmax, 41.002 AS ymax, 0.6 AS pf_mean,
+          false AS touches_window_edge, ST_GeomFromText('{wkt}') AS geometry)
+        TO '{src}' (FORMAT parquet)"""
+    )
+    con.close()
+
+
+def test_small_interior_holes_are_filled_and_large_ones_kept(tmp_path, monkeypatch):
+    """Polygonizing leaves ~3 m2 pixel holes; they are filled, a 1,100 m2 gap is not."""
+    _holed_parcel(tmp_path / "merged")
+    monkeypatch.setattr(fc, "IN_ROOT", tmp_path / "merged")
+    monkeypatch.setattr(fc, "TMP_ROOT", tmp_path / "duck")
+    dst = fc.convert(2025, "30", 1, "1GB", tmp_path / "out")
+    row = pq.read_table(dst).to_pylist()[0]
+    geom = shapely.from_wkb(row["geometry"])
+    holes = sum(len(p.interiors) for p in getattr(geom, "geoms", [geom]))
+    assert holes == 1, "the ~11 m2 hole is filled, the ~1,130 m2 hole stays"
+    con = duckdb.connect()
+    con.sql("load spatial")
+    full = con.sql(
+        "select ST_Area(ST_Transform(ST_MakeEnvelope(-3.0, 41.0, -2.998, 41.002), "
+        "'EPSG:4326', 'EPSG:32630', true))"
+    ).fetchone()[0]
+    assert 1000 < full - row["metrics:area"] < 1250, "metrics:area excludes only the kept hole"
+
+
+def _utm_box_wkt(zone_epsg: int, cx: float, cy: float, w: float, h: float, hole=None) -> str:
+    """A UTM box (w x h metres, centred on cx, cy) as lon/lat WKT; ``hole`` is (dx, dy, w, h)."""
+    from pyproj import Transformer
+
+    tr = Transformer.from_crs(zone_epsg, 4326, always_xy=True)
+
+    def ring(x0, y0, x1, y1):
+        pts = [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)]
+        return "(" + ", ".join("{:.9f} {:.9f}".format(*tr.transform(x, y)) for x, y in pts) + ")"
+
+    rings = [ring(cx - w / 2, cy - h / 2, cx + w / 2, cy + h / 2)]
+    if hole:
+        dx, dy, hw, hh = hole
+        rings.append(ring(cx + dx - hw / 2, cy + dy - hh / 2, cx + dx + hw / 2, cy + dy + hh / 2))
+    return "(" + ", ".join(rings) + ")"
+
+
+def _write_wkt_zone(root: Path, tile_key: str, wkts: list[str], lon: float, lat: float) -> None:
+    src = root / "2025" / "zone=30" / "part-0.parquet"
+    src.parent.mkdir(parents=True)
+    values = ", ".join(
+        f"('{tile_key}', {i}, {lon}::DOUBLE, {lat}::DOUBLE, {lon + 0.01}::DOUBLE, "
+        f"{lat + 0.01}::DOUBLE, 0.7::DOUBLE, false, ST_GeomFromText('{w}'))"
+        for i, w in enumerate(wkts)
+    )
+    con = duckdb.connect()
+    con.sql("load spatial")
+    con.sql(f"COPY (SELECT * FROM (VALUES {values}) {BOX_COLS}) TO '{src}' (FORMAT parquet)")
+    con.close()
+
+
+def _holes_by_id(dst: Path) -> dict[str, list[int]]:
+    "id -> interior-ring count of each part, for every published row."
+    out = {}
+    for row in pq.read_table(dst).to_pylist():
+        g = shapely.from_wkb(row["geometry"])
+        out[row["id"]] = [len(p.interiors) for p in getattr(g, "geoms", [g])]
+    return out
+
+
+@pytest.mark.parametrize(
+    ("tile_key", "lon", "lat", "cy"),
+    [("30TXM_0_0", -3.0, 41.0, 4_540_000.0), ("30HXM_0_0", -3.0, -41.0, -4_540_000.0)],
+    ids=["north", "south"],
+)
+def test_hole_fill_keeps_every_geometry_shape(tmp_path, monkeypatch, tile_key, lon, lat, cy):
+    """One-part and two-part MULTIPOLYGONs survive hole filling; a ring just under 20 m2
+    is filled and one just over is kept, in either hemisphere of the zone."""
+    cx = 500_000.0  # zone 30 central meridian is -3 deg
+    box = (300.0, 300.0)
+    small, large = (4.3, 4.3), (4.6, 4.6)  # 18.5 m2 and 21.2 m2
+    wkts = [
+        f"POLYGON{_utm_box_wkt(32630, cx, cy, *box, hole=(0, 0, *small))}",  # 0: filled
+        f"POLYGON{_utm_box_wkt(32630, cx, cy + 1000, *box, hole=(0, 0, *large))}",  # 1: kept
+        # 2: single-part MULTIPOLYGON with a small hole (used to be dropped)
+        f"MULTIPOLYGON({_utm_box_wkt(32630, cx, cy + 2000, *box, hole=(0, 0, *small))})",
+        # 3: single-part MULTIPOLYGON with a large hole
+        f"MULTIPOLYGON({_utm_box_wkt(32630, cx, cy + 3000, *box, hole=(0, 0, *large))})",
+        # 4: two parts, each with a hole: small filled, large kept
+        "MULTIPOLYGON("
+        + _utm_box_wkt(32630, cx, cy + 4000, *box, hole=(0, 0, *small))
+        + ", "
+        + _utm_box_wkt(32630, cx + 600, cy + 4000, *box, hole=(0, 0, *large))
+        + ")",
+    ]
+    _write_wkt_zone(tmp_path / "merged", tile_key, wkts, lon, lat)
+    monkeypatch.setattr(fc, "IN_ROOT", tmp_path / "merged")
+    monkeypatch.setattr(fc, "TMP_ROOT", tmp_path / "duck")
+    dst = fc.convert(2025, "30", 1, "1GB", tmp_path / "out")
+    holes = _holes_by_id(dst)
+    assert holes == {
+        f"{tile_key}-0": [0],
+        f"{tile_key}-1": [1],
+        f"{tile_key}-2": [0],
+        f"{tile_key}-3": [1],
+        f"{tile_key}-4": [0, 1],
+    }, holes
+
+
+def test_the_part_filter_sees_the_filled_part_like_the_parcel_filter(tmp_path, monkeypatch):
+    """MIN_PART_M2 is tested after the fill, so a part and a standalone parcel of the
+    identical shape share one fate: 906 m2 gross, 891 m2 net of a 15 m2 hole, both kept."""
+    cx, cy = 500_000.0, 4_540_000.0
+    small = (30.1, 30.1)  # 906.0 m2 gross, 890.8 m2 net of the hole below
+    hole = (0, 0, 3.9, 3.9)  # 15.2 m2, under MIN_HOLE_M2
+    wkts = [
+        "MULTIPOLYGON("
+        + _utm_box_wkt(32630, cx, cy, 300.0, 300.0)
+        + ", "
+        + _utm_box_wkt(32630, cx + 400, cy, *small, hole=hole)
+        + ")",
+        f"POLYGON{_utm_box_wkt(32630, cx, cy + 2000, *small, hole=hole)}",
+    ]
+    _write_wkt_zone(tmp_path / "merged", "30TXM_0_0", wkts, -3.0, 41.0)
+    monkeypatch.setattr(fc, "IN_ROOT", tmp_path / "merged")
+    monkeypatch.setattr(fc, "TMP_ROOT", tmp_path / "duck")
+    dst = fc.convert(2025, "30", 1, "1GB", tmp_path / "out")
+    assert _holes_by_id(dst) == {"30TXM_0_0-0": [0, 0], "30TXM_0_0-1": [0]}
+    areas = {r["id"]: r["metrics:area"] for r in pq.read_table(dst).to_pylist()}
+    assert abs(areas["30TXM_0_0-1"] - 906.0) < 1.0, "the standalone keeps its filled area"
+    assert abs(areas["30TXM_0_0-0"] - (90_000.0 + 906.0)) < 2.0, "the part is kept, filled"

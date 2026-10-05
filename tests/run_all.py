@@ -18,6 +18,8 @@ TESTS = [
     "test_thumbnails.py",
     "test_publish.py",
     "test_upload_data.py",
+    "test_raster_index_lite.py",
+    "test_indexes.py",
     "test_stac_valid.py",
     "test_portolan_conformance.py",
 ]
@@ -26,6 +28,9 @@ failed = []
 for name in TESTS:
     path = HERE / name
     if not path.exists():
+        # A listed gate that is absent must fail loudly; skipping reports green for a gate nobody ran.
+        print(f"\nerror  {name} is listed in TESTS but does not exist")
+        failed.append(f"{name} (missing)")
         continue
     print(f"\n=== {name} " + "=" * (60 - len(name)), flush=True)
     if subprocess.run([sys.executable, str(path)]).returncode != 0:
