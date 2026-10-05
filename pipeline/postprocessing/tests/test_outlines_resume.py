@@ -226,6 +226,23 @@ def test_an_empty_tile_list_file_means_zero_tiles_not_every_tile(tmp_path):
     assert "3 tiles" not in r.stdout
 
 
+def test_both_inference_layouts_are_discovered(tmp_path):
+    """The inference -> outlines handoff, for `--layout item` and `--layout hive`.
+
+    run.py writes either `{year}/{tile}/{tile}.tif` or the bucket's grouped
+    `{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif`; a tree in one layout that this
+    glob cannot see would make the whole stage die with "no input scores".
+    """
+    src = tmp_path / "staging-data/raster/2025"
+    item = _score_cog(src / "31UFS/31UFS.tif")
+    hive = _score_cog(src / "zone=31/gzd=31U/31UFT/31UFT.tif")
+    _score_cog(src / "31UFS/31UFS.thumb.tif")  # a sidecar is not a score COG
+    assert ol.score_paths(src, None) == [item, hive]
+    assert ol.score_paths(src, ["31UFS", "31UFT"]) == [item, hive]
+    r = _run(tmp_path, "--tiles", "31UFT")
+    assert "no input scores" not in r.stdout + r.stderr, r.stdout + r.stderr
+
+
 def test_a_populated_tile_list_is_honoured(tmp_path):
     for tk in ("31UFS", "31UFT", "31UFU"):
         _score_cog(tmp_path / f"staging-data/raster/2025/{tk}/{tk}.tif")

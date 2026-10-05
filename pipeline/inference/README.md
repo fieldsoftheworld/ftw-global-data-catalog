@@ -9,7 +9,9 @@ is refused rather than assumed — the tag is the durable half,
 since GDAL does not always preserve band descriptions. Divide by 3000;
 bilinear upsample ×4; 512 px patches, 25% overlap, positive Hann blending.
 The model emits background/field/boundary logits; outputs retain field and
-boundary probabilities as uint8 (scale 1/255) at 2.5 m in a COG.
+boundary probabilities as uint8 (scale 1/255, offset 0) at 2.5 m in a COG with
+overviews 4-64 (10-160 m) and exact per-band `STATISTICS_*` tags (Portolan
+PTL-DAT-009).
 
 ```sh
 uv venv
@@ -21,7 +23,18 @@ uv pip install -r pipeline/inference/requirements.txt
 Scores land directly in the published per-item hierarchy,
 `staging-data/raster/{year}/{tile}/{tile}.tif`, so a finished year uploads
 with `tools/upload_data.py` as-is — no relayout step between inference and
-the bucket.
+the bucket. `--layout hive` writes the bucket's own grouped key instead,
+`staging-data/raster/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif` (the
+`GROUPED_PATH` of `tools/build_raster_items.py`), which also skips the
+server-side regrouping; `--year` names the year in either layout, and
+`pipeline/postprocessing/outlines.py` discovers both.
+
+The COG is written in two steps — a tiled GTiff that gets the overviews, then
+a COG copy that reuses them — so peak scratch while a tile is in flight is
+about twice the final COG (~1.8 GB for a 40,032² two-band tile). The staged
+GTiff is removed as soon as the copy returns, and a previous run's
+`.stage-*`/`.tmp-*` leftovers are reclaimed before each write, so a
+SIGKILLed task does not accumulate them.
 
 Use the model trained for this exact band order and normalization. Model weights
 and their model card are released separately; no checkpoint is downloaded here.

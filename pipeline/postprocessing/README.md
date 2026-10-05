@@ -32,9 +32,11 @@ it fails with one message naming that need rather than once per tile. Only
 ```
 
 Install DuckDB's spatial extension once (`INSTALL spatial`) before running
-conversion offline. Score inputs are `{scores}/{year}/{tile}/{tile}.tif` (the
-published per-item hierarchy, exactly as inference writes it): two uint8
-bands (field/boundary), probabilities /255, north-up UTM at 2.5 m.
+conversion offline. Score inputs are `{scores}/{year}/{tile}/{tile}.tif` or the
+grouped `{scores}/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif` (the published
+hierarchy in either of the layouts inference writes — both are discovered, so a
+half-migrated tree needs no flag): two uint8 bands (field/boundary),
+probabilities /255, north-up UTM at 2.5 m.
 QA context requires `index/tile_index_{year}*.parquet` with `tile_key`, `quarter`,
 `b04_s3_href` and `b04_s3_endpoint`: four source mosaic B04 objects per tile. The
 mosaic downloader can emit this index with `--index-output`. `b04_s3_href` is an
