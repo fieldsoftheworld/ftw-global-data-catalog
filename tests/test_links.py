@@ -14,7 +14,10 @@ disk — the bytes live only at ``public_base``. Two modes:
   a third-party host being up.
 - unset (locally, on rails): each data href is resolved against
   ``public_base`` and HEAD-checked over HTTP, concurrently. This is the real
-  check that every advertised object actually exists in the bucket.
+  check that every advertised object actually exists in the bucket — and, for
+  an asset that declares ``file:size``, that the object is that many bytes.
+  Presence and size are one round trip, so the size comes free; without it a
+  stale ``file:size``/``file:checksum`` pair passes every gate forever.
 
 Since the raster items were committed, that second mode has 134,394 bucket
 hrefs to check — two per item across 67,197 items — which is half an hour of
@@ -96,16 +99,33 @@ def published_url(doc_path: Path, href: str) -> str:
     return f"{PUBLIC_BASE}/{rel.as_posix()}"
 
 
-def head_ok(url: str) -> str | None:
-    """None when the object exists; otherwise the failure detail."""
+def head_ok(url: str, expect_size: int | None = None) -> str | None:
+    """None when the object exists and is the size the asset claims; else the detail.
+
+    The HEAD is already being made, and its Content-Length is the one fact about the
+    bytes a HEAD can tell you, so it is compared against ``file:size`` here rather than
+    left unchecked. Nothing else in the gates looks at the bytes: rashid checks that
+    ``file:size``/``file:checksum`` are present and well-formed, and this gate checked
+    only that the href resolved, so a stale number could sit under a resolving href
+    indefinitely — which is exactly what happened to the 2e pmtiles and cells assets,
+    whose sizes were hand-merged from a run that was later redone.
+    """
     request = urllib.request.Request(
         url, method="HEAD", headers={"User-Agent": UA}
     )
     try:
         with urllib.request.urlopen(request, timeout=60) as resp:
-            if resp.status == 200:
+            if resp.status != 200:
+                return f"HTTP {resp.status}"
+            length = resp.headers.get("Content-Length")
+            if expect_size is None or length is None:
                 return None
-            return f"HTTP {resp.status}"
+            if int(length) != expect_size:
+                return (
+                    f"file:size {expect_size} but the object is {int(length)} "
+                    "bytes (file:checksum is stale too, then)"
+                )
+            return None
     except Exception as exc:  # noqa: BLE001 - any failure is a finding
         return str(exc)
 
@@ -167,8 +187,8 @@ def sample(entries: list[tuple], limit: int | None) -> tuple[list, int]:
 
 documents = stac_documents()
 checked = 0
-# (family, doc, asset key, url)
-to_head: list[tuple[tuple[str, ...], Path, str, str]] = []
+# (family, doc, asset key, url, declared file:size or None)
+to_head: list[tuple[tuple[str, ...], Path, str, str, int | None]] = []
 
 for path, doc in documents:
     rel_path = path.relative_to(ROOT)
@@ -194,7 +214,7 @@ for path, doc in documents:
             else:
                 key = f"link:{link.get('rel')}"
                 to_head.append((family(path, key), rel_path, key,
-                                published_url(path, href)))
+                                published_url(path, href), None))
             continue
         checked += 1
         errors.append(
@@ -217,8 +237,10 @@ for path, doc in documents:
             if CI_LIGHT:
                 skipped += 1
             else:
+                size = asset.get("file:size")
                 to_head.append((family(path, key), rel_path, key,
-                                published_url(path, href)))
+                                published_url(path, href),
+                                size if isinstance(size, int) else None))
             continue
         checked += 1
         errors.append(f"{rel_path}: asset {key} -> {href} does not exist")
@@ -226,12 +248,13 @@ for path, doc in documents:
 if to_head:
     total = len(to_head)
     to_head, sampled_out = sample(to_head, SAMPLE)
+    sized = sum(1 for entry in to_head if entry[4] is not None)
     print(f"HEAD-checking {len(to_head)} of {total} data href(s) against "
-          f"{PUBLIC_BASE} ...")
+          f"{PUBLIC_BASE} ({sized} also against their file:size) ...")
     with ThreadPoolExecutor(max_workers=HEAD_WORKERS) as pool:
         futures = {
-            pool.submit(head_ok, url): (rel_path, key, url)
-            for _fam, rel_path, key, url in to_head
+            pool.submit(head_ok, url, expect): (rel_path, key, url)
+            for _fam, rel_path, key, url, expect in to_head
         }
         for future in as_completed(futures):
             rel_path, key, url = futures[future]

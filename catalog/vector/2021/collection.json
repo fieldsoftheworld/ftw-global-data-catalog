@@ -528,8 +528,8 @@
       "roles": [
         "visual"
       ],
-      "file:size": 27891518785,
-      "file:checksum": "1220a29a443f23f4ed764e52377c5a9e462c512719937043f4962e0a3f9692f2757e"
+      "file:size": 27894977465,
+      "file:checksum": "12205cbe5fd49eff9a9a0c4950fdc49c39835d5f38875ade73b90082b9b703eb940b"
     },
     "cells": {
       "href": "./cells_a5r7_2021.parquet",
@@ -539,8 +539,8 @@
       "roles": [
         "data"
       ],
-      "file:size": 1650863,
-      "file:checksum": "1220561256a53d4055ba9a9eb66353b4d393505f98012b6146fcab04f9fc938b3e4c"
+      "file:size": 1651374,
+      "file:checksum": "1220ba0ed2ab8b316674a64a903e8819748ad130da43064bc81b3e6a9808a262a6b4"
     },
     "styles/count": {
       "href": "./styles/count.json",
@@ -602,8 +602,8 @@
         "collection-mirror",
         "metadata"
       ],
-      "file:size": 34409,
-      "file:checksum": "1220e6638a0cb6a91f028943f7240445bda02430fe7328273141a76785e6e2156bfa"
+      "file:size": 34411,
+      "file:checksum": "1220b38a084feee8b733416e6ec182fe9cbbd561212406e2e3381292cb443408e4bd"
     }
   }
 }

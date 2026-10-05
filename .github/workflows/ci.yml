@@ -41,3 +41,8 @@ jobs:
         env:
           CI_LIGHT: "1"
         run: python3 tests/run_all.py
+
+      - name: Pipeline script tests
+        run: |
+          python -m pip install pytest boto3
+          python -m pytest -q pipeline/test_s3_put_retry.py
