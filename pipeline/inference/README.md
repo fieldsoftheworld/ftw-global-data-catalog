@@ -20,14 +20,15 @@ uv pip install -r pipeline/inference/requirements.txt
   --output-dir staging-data --year 2025 --model model_fp32.onnx
 ```
 
-Scores land directly in the published per-item hierarchy,
-`staging-data/raster/{year}/{tile}/{tile}.tif`, so a finished year uploads
-with `tools/upload_data.py` as-is — no relayout step between inference and
-the bucket. `--layout hive` writes the bucket's own grouped key instead,
+Scores land directly in the bucket's own grouped key,
 `staging-data/raster/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif` (the
-`GROUPED_PATH` of `tools/build_raster_items.py`), which also skips the
-server-side regrouping; `--year` names the year in either layout, and
-`pipeline/postprocessing/outlines.py` discovers both.
+`GROUPED_PATH` of `tools/build_raster_items.py`), so a finished year uploads
+with `tools/upload_data.py` as-is and lands where the catalog's items point —
+no relayout or server-side regrouping. `--layout item` writes the older
+per-item-folder key `staging-data/raster/{year}/{tile}/{tile}.tif`, which no
+catalog references any more; use it only to reproduce an older run. `--year`
+names the year in either layout, and `pipeline/postprocessing/outlines.py`
+discovers both.
 
 The COG is written in two steps — a tiled GTiff that gets the overviews, then
 a COG copy that reuses them — so peak scratch while a tile is in flight is
