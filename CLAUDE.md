@@ -69,13 +69,22 @@ python3 tools/upload_data.py [--confirm]    # staged data files
 - Change detection: local size+MD5 vs the object's size+ETag; the remote side is listed
   **non-recursively** per catalog directory (a recursive listing of the prefix would walk
   every COG/parquet sharing it). A changed content-type mapping needs `--force`.
+- `--confirm` refuses to guess. It aborts if ANY listing fails — the per-directory walk and
+  the recursive path past 64 directories both raise — or if there is no lister at all: a
+  failed listing is not proof that objects are absent. A dry run still works and shows every
+  file as changed. `upload_data.py` refuses a blind `--confirm` the same way (an empty or
+  failed listing).
+- **Raster year snapshot:** `publish.py` overwrites a `raster/{year}/*` object only while the
+  bucket still holds the ETag recorded in `tools/raster_snapshot.json`. One that changed
+  out of band is **skipped** — the rest of the catalog still publishes — and the run exits
+  non-zero; the dry run marks the same keys. A successful upload re-records them (commit the
+  file), so a publish this repo made is not mistaken for a third-party one next time. Re-record
+  the whole file with `AWS_PROFILE=source-coop AWS_ENDPOINT_URL=https://data.source.coop python3
+  tools/raster_snapshot.py` (read-only). The guard covers the ~54 year-level files only, not the
+  generated item/zone tree below them; `--force` lifts it along with the listing.
+  `tests/test_publish.py` fails if a local `raster/{year}/*` key is missing from the snapshot,
+  so it cannot rot silently.
 - Publishing **never deletes**, and never delete bucket objects without asking Chris.
-- **Stale raster subtree:** `catalog/raster/{year}/{README.md,AGENTS.md,collection.json}` are
-  older than the published ones (flat `{tile_key}.tif` paths, no `zone=NN` child links). The
-  bucket's hive raster tree (per-zone/per-gzd catalogs, newer collections) was built by tooling
-  that is not in this repo. A full `publish.py --confirm` overwrites those 27 objects with the
-  stale copies; if that happens, restore them from the published versions (2026-10-03 copies in
-  `/projects/bgtj/isaaccorley/tmp/meta2e/{year}/`). Fix: bring the raster tree generator in here.
 - CI (`.github/workflows/ci.yml`) sets `CI_LIGHT=1`: asset hrefs with data suffixes are
   exempt from the link check there (bytes live in the bucket, not git). Run gates locally
   without `CI_LIGHT` where the bytes are reachable.

@@ -28,6 +28,26 @@ listing can tell you:
   object predates this publisher: it re-uploads to be safe.
 - ``--force`` skips the listing entirely.
 
+Two guards make ``--confirm`` refuse rather than guess (both lifted by ``--force``):
+
+- **A failed listing aborts.** A dry run without credentials still works and
+  shows every file as changed, but ``--confirm`` stops if ANY listing failed —
+  on either path, the per-directory walk or the recursive one — or if there is
+  no lister at all. A failed listing is not evidence that the objects are
+  absent.
+- **Raster year files are checked against a recorded snapshot.**
+  ``catalog/raster/{year}/*`` is generated in this repo by
+  ``tools/build_raster_items.py``, but those few year-level files are the hinge
+  of the raster tree and the bucket is the only place an out-of-band change to
+  them survives. Each is overwritten only while the object in the bucket still
+  has the ETag recorded in ``tools/raster_snapshot.json``; one that changed
+  since is **skipped** (the rest of the catalog still publishes) and the run
+  exits non-zero. A successful upload re-records the key, so a publish this
+  repo made does not look like a third-party one next time. Re-record the whole
+  file with ``python3 tools/raster_snapshot.py``. The guard covers
+  ``raster/{year}/`` year-level files only — not the ~71k generated item and
+  zone objects below them.
+
 **It never deletes.** Removing a file from the published directory does not
 unpublish it. Delete the object yourself if that is what you meant.
 
@@ -263,38 +283,58 @@ def _list_dir(aws: str, bucket: str, prefix: str, region: str) -> list:
     return json.loads(out) or []
 
 
+class ListingError(RuntimeError):
+    """A remote listing failed, so what exists in the bucket is unknown."""
+
+
+def rel_key(key: str, prefix: str) -> str:
+    """The object key with write_prefix stripped (prefix may be empty)."""
+    return key[len(prefix) + 1:] if prefix else key
+
+
 # Above this many distinct directories, per-directory listing costs more
-# subprocesses than one recursive listing costs pages: the committed raster
+# subprocesses than one recursive listing costs pages: the generated raster
 # item tree alone is ~71k directories, and a recursive listing of its
 # top-level prefixes is a few hundred paginated calls.
 RECURSIVE_LISTING_THRESHOLD = 64
 
 
 def remote_index_recursive(
-    uploads: list[Upload], config: dict[str, str],
+    uploads: list[Upload], config: dict[str, str], strict: bool = False,
 ) -> dict[str, tuple[int, str]] | None:
     """One recursive listing per top-level prefix, via boto3.
 
     Returns None when boto3 is unavailable (caller falls back to the
     per-directory walk) and {} when a listing fails — the same
-    err-toward-upload contract as the per-directory path.
+    err-toward-upload contract as the per-directory path. With ``strict``
+    (used for ``--confirm``) both raise ListingError instead: this path is
+    the one a real publish takes, so an unreadable bucket must not reach the
+    caller as an empty one.
     """
     try:
         import boto3
     except ImportError:
+        if strict:
+            raise ListingError(
+                f"boto3 is not installed and this upload set spans more than "
+                f"{RECURSIVE_LISTING_THRESHOLD} directories, so the only "
+                "listing left is one subprocess per directory. Install boto3, "
+                "scope the run with --only/--skip-generated, or pass --force"
+            ) from None
         return None
     bucket, prefix = split_s3_uri(config["write_prefix"])
     region = config.get("region", "us-west-2")
     tops = set()
     for u in uploads:
-        rel = u.key[len(prefix) + 1:] if prefix else u.key
-        first, sep, _ = rel.partition("/")
+        first, sep, _ = rel_key(u.key, prefix).partition("/")
         # A root-level file is its own prefix; a directory gets the slash so
         # "raster/" cannot also match a sibling named "raster.json".
         tops.add(f"{first}/" if sep else first)
     index: dict[str, tuple[int, str]] = {}
-    s3 = boto3.client("s3", region_name=region)
     try:
+        # Client construction itself can fail (NoRegionError,
+        # ProfileNotFound), which is a listing failure like any other.
+        s3 = boto3.client("s3", region_name=region)
         for top in sorted(tops):
             head = f"{prefix}/{top}" if prefix else top
             paginator = s3.get_paginator("list_objects_v2")
@@ -302,6 +342,10 @@ def remote_index_recursive(
                 for obj in page.get("Contents", []):
                     index[obj["Key"]] = (obj["Size"], obj["ETag"].strip('"'))
     except Exception as exc:  # noqa: BLE001 — same contract as remote_index
+        if strict:
+            raise ListingError(
+                f"could not list s3://{bucket}/{prefix} ({exc})"
+            ) from exc
         print(f"note: could not list s3://{bucket}/{prefix} ({exc}); "
               "treating every file as changed")
         return {}
@@ -310,7 +354,7 @@ def remote_index_recursive(
 
 def remote_index(
     uploads: list[Upload], config: dict[str, str],
-    workers: int = MAX_UPLOAD_WORKERS,
+    workers: int = MAX_UPLOAD_WORKERS, strict: bool = False,
 ) -> dict[str, tuple[int, str]]:
     """Size and ETag for every published object, or {} when unreadable.
 
@@ -318,17 +362,22 @@ def remote_index(
     Returns {} if any listing fails, so a dry run still works without
     credentials; every file then simply looks new, which errs toward
     uploading. It never silently skips. Past RECURSIVE_LISTING_THRESHOLD
-    distinct directories (the committed raster item tree is ~71k of them),
-    one recursive listing per top-level prefix replaces the walk.
+    distinct directories (the generated raster item tree is ~71k of them),
+    one recursive listing per top-level prefix replaces the walk. With
+    ``strict`` (used for ``--confirm``) a failed listing or a missing lister
+    raises ListingError instead, on either path: an unreadable bucket must
+    not be read as an empty one.
     """
     if len(key_dirs(uploads)) > RECURSIVE_LISTING_THRESHOLD:
-        recursive = remote_index_recursive(uploads, config)
+        recursive = remote_index_recursive(uploads, config, strict=strict)
         if recursive is not None:
             return recursive
         print("note: boto3 not available; falling back to per-directory "
               "listing — this will be slow for a tree this size")
     aws = aws_cli()
     if aws is None:
+        if strict:
+            raise ListingError("aws CLI not found; cannot list the bucket")
         print("note: aws CLI not found; treating every file as changed")
         return {}
     bucket, _ = split_s3_uri(config["write_prefix"])
@@ -344,6 +393,11 @@ def remote_index(
                 rows = future.result()
             except (subprocess.CalledProcessError, OSError) as exc:
                 detail = (getattr(exc, "stderr", "") or str(exc)).strip()
+                if strict:
+                    raise ListingError(
+                        f"could not list s3://{bucket}/{futures[future]} "
+                        f"({detail})"
+                    ) from exc
                 print(
                     f"note: could not list s3://{bucket}/{futures[future]} "
                     f"({detail}); treating every file as changed"
@@ -411,6 +465,91 @@ def upload_all(
     return failures
 
 
+SNAPSHOT_FILE = ROOT / "tools" / "raster_snapshot.json"
+RASTER_YEAR_FILE = re.compile(r"^raster/\d{4}/[^/]+$")
+
+
+def load_snapshot(path: Path | None = None) -> dict[str, str | None]:
+    """{key relative to write_prefix: the object's ETag when snapshotted}.
+
+    A recorded ``null`` means "known absent from the bucket" — every local
+    raster year key is recorded, so a key missing from the file means the
+    snapshot has rotted, not that the object is new.
+    """
+    path = SNAPSHOT_FILE if path is None else path
+    if not path.is_file():
+        return {}
+    try:
+        return json.loads(path.read_text())
+    except json.JSONDecodeError as exc:
+        sys.exit(f"{path} is not valid JSON ({exc}); re-record it with "
+                 "tools/raster_snapshot.py")
+
+
+def snapshot_conflicts(
+    changed: list[Upload], index: dict[str, tuple[int, str]], prefix: str,
+    snapshot: dict[str, str | None],
+) -> list[str]:
+    """Keys under raster/{year}/ whose bucket object is not the one we recorded.
+
+    These few year-level files are the hinge of the raster tree, and the
+    bucket is the only place a hand-published or out-of-band change to them
+    survives. Overwriting is fine while the bucket still holds the version
+    this repo last recorded (its ETag equals the recorded one). If it holds
+    anything else, something published since, and uploading would silently
+    revert it. Keys absent from the bucket are new and fine.
+    """
+    out = []
+    for upload in changed:
+        rel = rel_key(upload.key, prefix)
+        if not RASTER_YEAR_FILE.match(rel) or upload.key not in index:
+            continue
+        remote_etag = index[upload.key][1].strip('"')
+        if snapshot.get(rel) != remote_etag:
+            out.append(upload.key)
+    return sorted(out)
+
+
+def unrecorded_raster_keys(
+    uploads: list[Upload], prefix: str, snapshot: dict[str, str | None],
+) -> list[str]:
+    """Local raster/{year}/ keys the snapshot does not mention at all.
+
+    The guard can only speak for keys it recorded, so a local file it has
+    never seen is snapshot rot. ``tests/test_publish.py`` fails on this so it
+    cannot go unnoticed between publishes.
+    """
+    out = []
+    for upload in uploads:
+        rel = rel_key(upload.key, prefix)
+        if RASTER_YEAR_FILE.match(rel) and rel not in snapshot:
+            out.append(rel)
+    return sorted(out)
+
+
+def record_published(
+    published: list[Upload], prefix: str, path: Path | None = None,
+) -> list[str]:
+    """Re-record the raster year keys this run just uploaded. Returns them.
+
+    Without this the guard fires falsely on every second edit: after a
+    successful publish the bucket holds *our* bytes, so the recorded ETag has
+    to become the local MD5 — otherwise the next edit looks like a
+    third-party publish.
+    """
+    path = SNAPSHOT_FILE if path is None else path
+    snapshot = load_snapshot(path)
+    touched = []
+    for upload in published:
+        rel = rel_key(upload.key, prefix)
+        if RASTER_YEAR_FILE.match(rel):
+            snapshot[rel] = md5(upload.local)
+            touched.append(rel)
+    if touched:
+        path.write_text(json.dumps(snapshot, indent=2, sort_keys=True) + "\n")
+    return sorted(touched)
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="Sync the published directory to object storage, 1:1.",
@@ -470,13 +609,45 @@ def main() -> int:
               file=sys.stderr)
         return 1
 
-    index = {} if args.force else remote_index(uploads, config)
+    try:
+        index = {} if args.force else remote_index(
+            uploads, config, strict=args.confirm)
+    except ListingError as exc:
+        print(f"refusing to upload: {exc}. A failed listing is not proof "
+              "that nothing exists. Fix access and retry, or pass --force "
+              "to upload without looking.", file=sys.stderr)
+        return 1
     changed = [u for u in uploads if args.force or not is_unchanged(u, index)]
+    snapshot = {} if args.force else load_snapshot()
+    conflicts = set() if args.force else set(snapshot_conflicts(
+        changed, index, prefix, snapshot))
+    # Skipped, not fatal: one out-of-band raster year object must not block
+    # publishing the rest of the catalog. The run still exits non-zero so the
+    # operator cannot miss that something was left behind.
+    changed = [u for u in changed if u.key not in conflicts]
 
     print(f"publish_dir: {config['publish_dir']}/")
     print(f"target:      s3://{bucket}/{prefix}")
     print(f"{len(uploads)} file(s) published, {len(changed)} to upload")
     print("this never deletes; removing a file here does not unpublish it")
+
+    if conflicts:
+        print(f"{len(conflicts)} raster year file(s) differ in the bucket from "
+              "the recorded snapshot; they are SKIPPED and everything else "
+              "still publishes:", file=sys.stderr)
+        for key in sorted(conflicts):
+            print(f"  {key}", file=sys.stderr)
+        print("Inspect the bucket's copies, fold any change into "
+              "catalog/raster, re-record the snapshot "
+              "(tools/raster_snapshot.py), or pass --force to overwrite them.",
+              file=sys.stderr)
+
+    unrecorded = unrecorded_raster_keys(uploads, prefix, snapshot)
+    if unrecorded and not args.force:
+        print(f"note: {len(unrecorded)} raster year key(s) are not in "
+              f"{SNAPSHOT_FILE.name} (e.g. {', '.join(unrecorded[:3])}); the "
+              "snapshot guard cannot speak for them — re-record it with "
+              "tools/raster_snapshot.py")
 
     if not args.confirm:
         for upload in changed[:20]:
@@ -484,17 +655,23 @@ def main() -> int:
         if len(changed) > 20:
             print(f"  ... and {len(changed) - 20} more")
         print("\ndry run. re-run with --confirm to upload.")
-        return 0
+        return 1 if conflicts else 0
 
     if not changed:
         print("nothing to upload")
-        return 0
+        return 1 if conflicts else 0
 
     aws = aws_cli()
     if aws is None:
         sys.exit("aws CLI is required to upload and was not found on PATH")
 
     failed = upload_all(changed, bucket, region, aws, args.retries)
+    lost = set(failed)
+    touched = record_published(
+        [u for u in changed if u.key not in lost], prefix)
+    if touched:
+        print(f"re-recorded {len(touched)} raster year ETag(s) in "
+              f"{SNAPSHOT_FILE.name}; commit it")
     if failed:
         print(f"\n{len(failed)} of {len(changed)} file(s) failed:",
               file=sys.stderr)
@@ -504,7 +681,7 @@ def main() -> int:
               "skipped as unchanged.", file=sys.stderr)
         return 1
     print(f"\nuploaded {len(changed)} file(s)")
-    return 0
+    return 1 if conflicts else 0
 
 
 if __name__ == "__main__":
