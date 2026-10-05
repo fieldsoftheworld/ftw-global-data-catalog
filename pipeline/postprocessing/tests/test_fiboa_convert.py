@@ -488,3 +488,27 @@ def test_hole_fill_keeps_every_geometry_shape(tmp_path, monkeypatch, tile_key, l
         f"{tile_key}-3": [1],
         f"{tile_key}-4": [0, 1],
     }, holes
+
+
+def test_the_part_filter_sees_the_filled_part_like_the_parcel_filter(tmp_path, monkeypatch):
+    """MIN_PART_M2 is tested after the fill, so a part and a standalone parcel of the
+    identical shape share one fate: 906 m2 gross, 891 m2 net of a 15 m2 hole, both kept."""
+    cx, cy = 500_000.0, 4_540_000.0
+    small = (30.1, 30.1)  # 906.0 m2 gross, 890.8 m2 net of the hole below
+    hole = (0, 0, 3.9, 3.9)  # 15.2 m2, under MIN_HOLE_M2
+    wkts = [
+        "MULTIPOLYGON("
+        + _utm_box_wkt(32630, cx, cy, 300.0, 300.0)
+        + ", "
+        + _utm_box_wkt(32630, cx + 400, cy, *small, hole=hole)
+        + ")",
+        f"POLYGON{_utm_box_wkt(32630, cx, cy + 2000, *small, hole=hole)}",
+    ]
+    _write_wkt_zone(tmp_path / "merged", "30TXM_0_0", wkts, -3.0, 41.0)
+    monkeypatch.setattr(fc, "IN_ROOT", tmp_path / "merged")
+    monkeypatch.setattr(fc, "TMP_ROOT", tmp_path / "duck")
+    dst = fc.convert(2025, "30", 1, "1GB", tmp_path / "out")
+    assert _holes_by_id(dst) == {"30TXM_0_0-0": [0, 0], "30TXM_0_0-1": [0]}
+    areas = {r["id"]: r["metrics:area"] for r in pq.read_table(dst).to_pylist()}
+    assert abs(areas["30TXM_0_0-1"] - 906.0) < 1.0, "the standalone keeps its filled area"
+    assert abs(areas["30TXM_0_0-0"] - (90_000.0 + 906.0)) < 2.0, "the part is kept, filled"

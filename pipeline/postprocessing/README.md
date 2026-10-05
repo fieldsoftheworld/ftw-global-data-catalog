@@ -84,11 +84,16 @@ discovery. DuckDB spills to `--tmp-dir` (pid-scoped, outside `--out-root`), and
 the per-zone temp is `part-0.parquet.tmp-<pid>`, which no `*.parquet` glob matches.
 Empty outline tiles write readable empty Parquet files.
 
-Conversion repairs geometry, joins seams, then — on the unioned geometry — drops
-parts and parcels below 900 m², re-applies merge's km² cap, computes
-area/perimeter, and derives the bbox covering. The order matters: filtering before
+Conversion repairs geometry, joins seams, then — on the unioned geometry — fills
+interior rings under 20 m², drops parts and parcels below 900 m², re-applies
+merge's km² cap, computes area/perimeter, and derives the bbox covering. The order
+matters: filtering before
 the union deleted fields cut by a seam into two sub-minimum halves, and a cap
-applied to merge's pre-union pixel area let a union over the cap through. Two
+applied to merge's pre-union pixel area let a union over the cap through. The hole
+fill precedes both size tests, so a part of a multipart parcel and a standalone
+parcel of the same shape are judged on the same post-fill area. Polygonizing the
+2.5 m raster leaves half-pixel (3.125 m²) holes inside ~40% of parcels; 20 m² is
+~3 px, and larger holes (buildings, ponds, a neighbouring field) are kept. Two
 pieces merge only when they genuinely overlap; a shared edge is adjacency, not
 duplication. All metric work uses the zone's north UTM CRS so an
 equator-straddling field's halves are comparable — a per-row hemisphere EPSG put
@@ -104,6 +109,29 @@ reports the real spec, tolerance and cap read from merge's `_summary.json`, and
 says INCOMPLETE when the merge ran with `--allow-missing`. It releases the
 documented nine-column schema; QA fields remain in intermediate files. These
 geometric operations do not guarantee defect-free coverage.
+
+Two scripts stand beside conversion rather than in it. `validate_vector.py` checks
+a staged tree before publication — schema, ZSTD, row-group size, CRS metadata,
+sampled geometry validity, ids, area and score, hive layout and zone count — and
+reports every problem it finds rather than stopping at the first:
+
+```sh
+python validate_vector.py --root fiboa 2024 2025 --expect-zones 54
+```
+
+`fill_small_holes.py` is the contingency for a staged tree converted before the
+hole rule existed: it fills the small rings, moves `metrics:area` /
+`metrics:perimeter` by the filled rings, and stamps the hole clause into the
+footer. It is **verified a no-op on the 2e release** (no published zone file has a
+ring under 20 m²), and it writes nothing when a file has no small holes, because a
+rewrite changes the bytes the catalog commits as `file:size` and `file:checksum`.
+Its docstring lists the four places that must be regenerated if a patched file is
+ever published.
+
+```sh
+python fill_small_holes.py --in-root fiboa --out-root fiboa-filled \
+    --index $SLURM_ARRAY_TASK_ID        # one (year, zone) file per array task
+```
 
 ```sh
 uv pip install pytest

@@ -36,7 +36,8 @@ def check_file(path: Path, sample: int, rng: random.Random) -> tuple[int, int, l
     errs = []
     f = pq.ParquetFile(path)
     md = f.metadata
-    if f.schema_arrow.names != COLUMNS:
+    schema_ok = f.schema_arrow.names == COLUMNS
+    if not schema_ok:
         errs.append(f"columns {f.schema_arrow.names}")
     for rg in range(md.num_row_groups):
         r = md.row_group(rg)
@@ -48,7 +49,10 @@ def check_file(path: Path, sample: int, rng: random.Random) -> tuple[int, int, l
     geo = json.loads((f.schema_arrow.metadata or {}).get(b"geo", b"{}"))
     if not geo.get("columns", {}).get("geometry", {}).get("crs"):
         errs.append("no geometry crs in geo metadata")
-    if md.num_rows:
+    # Only sample when the columns are the ones below: schema drift is the likeliest
+    # real defect, and reading named columns out of a drifted file raises instead of
+    # reporting it, losing this file's problems and every later file's.
+    if md.num_rows and schema_ok:
         rg = rng.randrange(md.num_row_groups)
         t = f.read_row_group(rg, columns=["id", "geometry", "metrics:area", "score"])
         n = min(sample, t.num_rows)
@@ -58,9 +62,11 @@ def check_file(path: Path, sample: int, rng: random.Random) -> tuple[int, int, l
         empty = int(shapely.is_empty(geoms).sum())
         if invalid or empty:
             errs.append(f"sample: {invalid} invalid, {empty} empty of {n}")
+        # metrics:area is nullable, and a null arrives here as NaN, for which
+        # `area <= 0` is False -- so test the positive case and negate it.
         area = t["metrics:area"].to_numpy(zero_copy_only=False)
-        if (area <= 0).any():
-            errs.append("non-positive area in sample")
+        if not (area > 0).all():
+            errs.append("non-positive or null area in sample")
         sc = pc.min_max(t["score"]).as_py()
         if sc["min"] is not None and not (sc["min"] >= 0 and sc["max"] <= 100):
             errs.append(f"score range {sc}")
@@ -79,7 +85,11 @@ def check_year(root: Path, year: str, sample: int, expect_zones: int, rng: rando
     for p in files:
         if p.parent.name != f"zone={p.stem[3:]}":
             errs.append(f"{p.relative_to(root)}: not in its hive dir")
-        n, g, e = check_file(p, sample, rng)
+        try:
+            n, g, e = check_file(p, sample, rng)
+        except Exception as exc:  # an unreadable file is a problem, not the end of the run
+            errs.append(f"{p.relative_to(root)}: unreadable: {exc!r}")
+            continue
         rows, groups, nbytes = rows + n, groups + g, nbytes + p.stat().st_size
         errs += [f"{p.relative_to(root)}: {x}" for x in e]
     return len(files), rows, groups, nbytes, errs
