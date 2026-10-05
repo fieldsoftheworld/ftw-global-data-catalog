@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent))
 from fiboa_common import (
     MIN_HOLE_M2,
     MIN_PART_M2,
+    SPEC_UNRECORDED,
     connect,
     discover_zones,
     final_select,
@@ -39,8 +40,10 @@ GEOMETRY_METRICS = "https://vecorel.org/geometry-metrics-extension/v0.1.0/schema
 
 #: Band order PR1 stacks and PR2's run.py stamps as ``input_bands``.
 INPUT_BANDS = "B04/B03/B02/B08"
-#: Fallback only; the real spec is ``outlines.SPEC`` and reaches us via _summary.json.
-DEFAULT_SPEC = "nbg-pb-h0.01-t0.3+R35+F10+G2+A900"
+#: How ``--spec`` reads in the details, so a hand-supplied id is never mistaken for one the
+#: run recorded. Used for the released years, whose outlines predate the stamp but whose
+#: method is on record in pipeline/README.md.
+SPEC_SUPPLIED = "{spec}, stated with --spec because the run did not record it"
 #: Fallback parcel-area cap when merge's ``_summary.json`` is absent, m2.
 MAX_PARCEL_M2 = 5.0e6
 
@@ -61,7 +64,24 @@ def require_geo_metadata(src: Path) -> None:
         )
 
 
-def collection_metadata(cid: str, year: int, summary: dict | None = None) -> dict:
+def method_ids(summary: dict | None = None, spec: str | None = None) -> str:
+    """The BoundaryVote method ids behind a year, as ``determination:details`` states them.
+
+    merge already joined them: one id normally, several for a mixed year, and
+    ``SPEC_UNRECORDED`` as one of them when some tiles carried no readable stamp. A
+    ``_summary.json`` written before the stamp existed has no ``spec`` at all. ``spec``
+    (from ``--spec``) names the method for the unrecorded tiles -- and only those --
+    without claiming the run recorded it.
+    """
+    stated = (summary or {}).get("spec") or SPEC_UNRECORDED
+    if spec:
+        stated = stated.replace(SPEC_UNRECORDED, SPEC_SUPPLIED.format(spec=spec))
+    return stated
+
+
+def collection_metadata(
+    cid: str, year: int, summary: dict | None = None, spec: str | None = None
+) -> dict:
     "Collection metadata; the numbers come from merge's ``_summary.json``, not literals."
     s = summary or {}
     max_km2 = s.get("max_km2", MAX_PARCEL_M2 / 1e6)
@@ -78,7 +98,7 @@ def collection_metadata(cid: str, year: int, summary: dict | None = None) -> dic
             "Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics "
             f"(CDSE sentinel-2-global-mosaics, {year} Q1-Q4, 4 quarters x {INPUT_BANDS}), "
             "2.5 m field/boundary probabilities, BoundaryVote instance post-processing "
-            f"({s.get('spec', DEFAULT_SPEC)}), {simplify}parcels > {max_km2:g} km2 removed, "
+            f"({method_ids(s, spec)}), {simplify}parcels > {max_km2:g} km2 removed, "
             f"parcels and parts under {MIN_PART_M2:g} m2 removed, "
             f"interior holes under {MIN_HOLE_M2:g} m2 filled. "
             "Attributes are for filtering; no land-cover masking was applied." + partial
@@ -271,12 +291,23 @@ def merge_summary(year: int) -> dict:
     "merge_polygons' ``_summary.json``, which records what the inputs actually are."
     p = IN_ROOT / str(year) / "_summary.json"
     if not p.is_file():
-        print(f"no {p}: falling back to documented defaults for provenance", flush=True)
+        print(
+            f"no {p}: default parcel cap, and the method id reads as not recorded "
+            "(pass --spec to state the one that ran)",
+            flush=True,
+        )
         return {}
     return json.loads(p.read_text())
 
 
-def convert(year: int, zone: str, threads: int, memory_limit: str, out_root: Path) -> Path:
+def convert(
+    year: int,
+    zone: str,
+    threads: int,
+    memory_limit: str,
+    out_root: Path,
+    spec: str | None = None,
+) -> Path:
     cid = f"ftw-s2-{year}"
     src = IN_ROOT / str(year) / f"zone={zone}" / "part-0.parquet"
     # Hive layout: the published catalog documents vector/{year}/zone=NN/utm{NN}.parquet
@@ -302,7 +333,7 @@ def convert(year: int, zone: str, threads: int, memory_limit: str, out_root: Pat
         join_seams(con, src)
         schema = arrow_schema(cid).with_metadata(
             {
-                b"collection": json.dumps(collection_metadata(cid, year, summary)).encode(),
+                b"collection": json.dumps(collection_metadata(cid, year, summary, spec)).encode(),
                 b"geo": json.dumps(geo_metadata(bbox)).encode(),
             }
         )
@@ -356,13 +387,18 @@ def main() -> None:
     ap.add_argument("--threads", type=int, default=int(os.environ.get("SLURM_CPUS_PER_TASK", "4")))
     ap.add_argument("--memory-limit", default="12GB", help="DuckDB memory limit (spills beyond)")
     ap.add_argument("--out-root", type=Path, default=OUT_ROOT)
+    ap.add_argument(
+        "--spec",
+        help="BoundaryVote method id for tiles whose outlines predate the provenance "
+        "stamp; stated in determination:details as supplied, not as recorded",
+    )
     a = ap.parse_args()
     IN_ROOT, TMP_ROOT = a.in_root, a.tmp_dir
     zones = discover_zones(IN_ROOT, a.year)
     if a.zone is None and a.zone_index is None:
         sys.exit(f"pass --zone or --zone-index (0-{len(zones) - 1})")
     zone = a.zone or zone_at(zones, a.zone_index)
-    convert(a.year, zone, a.threads, a.memory_limit, a.out_root)
+    convert(a.year, zone, a.threads, a.memory_limit, a.out_root, a.spec)
 
 
 if __name__ == "__main__":

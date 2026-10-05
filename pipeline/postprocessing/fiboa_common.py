@@ -65,6 +65,11 @@ MIN_PART_M2 = 900.0
 #: leaves half-pixel (3.125 m2) holes inside ~40% of parcels; larger holes (farm
 #: buildings, ponds, a neighbouring field) are kept.
 MIN_HOLE_M2 = 20.0
+#: Stands in for a BoundaryVote method id no tile recorded -- outlines written before the
+#: stamp existed, or a stamp that would not parse. Said by both the stage that finds the
+#: gap (``merge_polygons``) and the one that publishes it (``fiboa_convert``), so the two
+#: cannot drift: better an admitted unknown than a plausible-looking hardcoded string.
+SPEC_UNRECORDED = "method id not recorded in the run"
 
 
 def drop_small_holes(poly: str) -> str:

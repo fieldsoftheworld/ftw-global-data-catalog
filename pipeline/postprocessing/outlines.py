@@ -305,6 +305,16 @@ def source_provenance(src: Path, year: int) -> dict:
     return {k: tags[k] for k in keep if k in tags}
 
 
+def outline_provenance(src: Path, year: int, method, backend: str) -> dict:
+    """The stamp written into every outline file: the COG's tags plus the method actually run.
+
+    merge_polygons reads the spec into ``_summary.json`` and fiboa_convert writes it into
+    ``determination:details``, so a release states the spec (and backend, e.g. ``+q1``) that
+    produced it instead of a hardcoded one.
+    """
+    return {**source_provenance(src, year), "spec": method.id, "backend": backend}
+
+
 def process_tile(
     path: Path,
     year: int,
@@ -337,8 +347,8 @@ def _run_tile(
     from polygons import simplify_coverage
 
     fp = fingerprint(Path(path), year, core, halo, backend, simplify_m)
-    prov = source_provenance(Path(path), year)
     method = method_for(backend)
+    prov = outline_provenance(Path(path), year, method, backend)
     prof = {
         "tile_key": tk,
         "spec": method.id,
