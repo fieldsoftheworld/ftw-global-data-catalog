@@ -15,8 +15,13 @@ boundary probabilities as uint8 (scale 1/255) at 2.5 m in a COG.
 uv venv
 uv pip install -r pipeline/inference/requirements.txt
 .venv/bin/python pipeline/inference/run.py --input-dir stacks/2025 \
-  --output-dir scores/2025 --model model_fp32.onnx
+  --output-dir staging-data --year 2025 --model model_fp32.onnx
 ```
+
+Scores land directly in the published per-item hierarchy,
+`staging-data/raster/{year}/{tile}/{tile}.tif`, so a finished year uploads
+with `tools/upload_data.py` as-is — no relayout step between inference and
+the bucket.
 
 Use the model trained for this exact band order and normalization. Model weights
 and their model card are released separately; no checkpoint is downloaded here.
