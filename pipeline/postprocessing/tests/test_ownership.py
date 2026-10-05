@@ -156,7 +156,7 @@ def test_a_parcel_straddling_a_same_zone_seam_is_claimed_by_both_neighbours():
     """Abutting squares make the cross-tile seam union load-bearing, not optional.
 
     Under the old 5 km inset no owned parcel could reach the raster edge. Now the
-    two rasters share only a 40-120 m overlap band (here 400,000-400,040), so a
+    two rasters share only a 40-120 m overlap band (here 399,960-400,080), so a
     field spanning the seam is cut at each raster's own data edge -- which
     `touches_window_edge` does not flag, by construction (outlines only marks the
     *window* borders interior to the raster) -- and each clipped half's pixel mass
