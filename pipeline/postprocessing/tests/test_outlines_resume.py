@@ -86,6 +86,21 @@ def test_every_result_affecting_flag_is_in_the_fingerprint(tmp_path, over):
     assert not ol.is_current(dst, _fp(src, **over)), over
 
 
+def test_a_changed_ownership_rule_is_not_current(tmp_path, monkeypatch):
+    """Which parcels a tile claims is result-affecting, so it belongs in the fingerprint.
+
+    Without OWNERSHIP_RULES a resumed run after the MGRS-square fix kept every
+    parquet written under the 90.08 km square, publishing a mix of fixed and
+    5-km-cropped tiles that nothing in the parquet distinguishes.
+    """
+    src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
+    dst = tmp_path / "outlines/2025/31UFS.parquet"
+    _stamp(dst, _fp(src))
+    assert ol.is_current(dst, _fp(src))
+    monkeypatch.setattr(ol, "OWNERSHIP_RULES", ol.OWNERSHIP_RULES + 1)
+    assert not ol.is_current(dst, _fp(src))
+
+
 def test_a_regenerated_score_cog_is_not_current(tmp_path):
     src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
     dst = tmp_path / "outlines/2025/31UFS.parquet"
@@ -211,6 +226,23 @@ def test_an_empty_tile_list_file_means_zero_tiles_not_every_tile(tmp_path):
     assert "3 tiles" not in r.stdout
 
 
+def test_both_inference_layouts_are_discovered(tmp_path):
+    """The inference -> outlines handoff, for `--layout item` and `--layout hive`.
+
+    run.py writes either `{year}/{tile}/{tile}.tif` or the bucket's grouped
+    `{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif`; a tree in one layout that this
+    glob cannot see would make the whole stage die with "no input scores".
+    """
+    src = tmp_path / "staging-data/raster/2025"
+    item = _score_cog(src / "31UFS/31UFS.tif")
+    hive = _score_cog(src / "zone=31/gzd=31U/31UFT/31UFT.tif")
+    _score_cog(src / "31UFS/31UFS.thumb.tif")  # a sidecar is not a score COG
+    assert ol.score_paths(src, None) == [item, hive]
+    assert ol.score_paths(src, ["31UFS", "31UFT"]) == [item, hive]
+    r = _run(tmp_path, "--tiles", "31UFT")
+    assert "no input scores" not in r.stdout + r.stderr, r.stdout + r.stderr
+
+
 def test_a_populated_tile_list_is_honoured(tmp_path):
     for tk in ("31UFS", "31UFT", "31UFU"):
         _score_cog(tmp_path / f"staging-data/raster/2025/{tk}/{tk}.tif")
@@ -221,3 +253,29 @@ def test_a_populated_tile_list_is_honoured(tmp_path):
     )
     r = _run(tmp_path, "--tile-list", "one.txt")
     assert "1 tiles" in r.stdout, r.stdout + r.stderr
+
+
+def test_outline_stamp_names_the_method_that_ran(tmp_path, monkeypatch):
+    """The stamp must carry the id ``method_for`` really built, ``+q1`` backend and all.
+
+    ``fbp`` is not installable here, so stand a module in for it: ``method_for`` imports
+    ``fbp.methods`` lazily inside the function, and the id it returns is the spec string it
+    passed to ``parse``. Asserting on a hand-made method object (or on a docstring) passes
+    against an ``outlines.py`` that drops the suffix -- measured.
+    """
+    from types import ModuleType, SimpleNamespace
+
+    fbp = ModuleType("fbp")
+    methods = ModuleType("fbp.methods")
+    methods.parse = lambda s: SimpleNamespace(id=s)
+    fbp.methods = methods
+    monkeypatch.setitem(sys.modules, "fbp", fbp)
+    monkeypatch.setitem(sys.modules, "fbp.methods", methods)
+
+    assert ol.method_for("fast").id == ol.SPEC + "+q1"
+    assert ol.method_for("exact").id == ol.SPEC
+
+    src = tmp_path / "tile.tif"  # unreadable on purpose: no COG tags, the spec must still stamp
+    src.write_bytes(b"not a tif")
+    stamp = ol.outline_provenance(src, 2025, ol.method_for("fast"), "fast")
+    assert stamp["spec"] == ol.SPEC + "+q1" and stamp["backend"] == "fast"
