@@ -109,11 +109,15 @@ def final_select(rows: str, cid: str, year: int, bbox: list[float], max_m2: floa
     # ST_NumGeometries = 1 but is not a Polygon, so the ring functions in
     # ``drop_small_holes`` return NULL for it and the row would vanish at the
     # ``g IS NOT NULL`` filter below. Every MULTIPOLYGON is dumped, however many parts.
+    # Fill first, then filter: MIN_PART_M2 has to see the same post-fill part area
+    # that MIN_PARCEL_M2, the metrics and the bbox see, or a part just under 900 m2
+    # net of a small hole is deleted while the identical standalone Polygon -- filled
+    # by the ELSE branch before its own size test -- is published.
     parts = (
         f"SELECT id, tile_key, pf_mean, CASE WHEN ST_GeometryType(g) = 'MULTIPOLYGON' "
-        f"THEN ST_Collect(list_transform(list_filter(ST_Dump(g), "
-        f"x -> ST_Area({zone_utm('x.geom')}) >= {MIN_PART_M2}), "
-        f"x -> {drop_small_holes('x.geom')})) "
+        f"THEN ST_Collect(list_filter(list_transform(ST_Dump(g), "
+        f"x -> {drop_small_holes('x.geom')}), "
+        f"p -> ST_Area({zone_utm('p')}) >= {MIN_PART_M2})) "
         f"ELSE {drop_small_holes('g')} END AS g FROM ({rows})"
     )
     metric = (

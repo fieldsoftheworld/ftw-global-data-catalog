@@ -266,6 +266,7 @@ def test_incomplete_summary_reaches_the_published_metadata(tmp_path):
     assert "INCOMPLETE" in meta["determination:details"]
     assert "2 missing input tiles" in meta["determination:details"]
     assert "5 m coverage simplification" in meta["determination:details"]
+    assert f"interior holes under {fc.MIN_HOLE_M2:g} m2 filled" in meta["determination:details"]
     clean = fc.collection_metadata("ftw-s2-2025", 2025, {"max_km2": 5.0})
     assert "INCOMPLETE" not in clean["determination:details"]
 
