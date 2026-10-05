@@ -5,12 +5,16 @@ import hashlib
 import json
 import os
 import shutil
+import sys
 import time
 from pathlib import Path
 
 import duckdb
 import pyarrow as pa
 import pyarrow.parquet as pq
+
+sys.path.insert(0, str(Path(__file__).parent))
+from fiboa_common import SPEC_UNRECORDED
 
 IN_ROOT = Path("simplified")
 AUX_ROOT = Path("aux")
@@ -154,13 +158,47 @@ def simplify_tolerance(files: list[Path]) -> float | None:
     return None
 
 
+def _stamp(path: Path) -> dict:
+    """The outline stage's stamp on ``path``, or ``{}``.
+
+    Guarded like ``_metadata``: one tile with a truncated stamp -- a worker killed
+    mid-write -- used to abort the merge with a bare JSONDecodeError hours in, after
+    some zone partitions had been rewritten and before ``_summary.json`` was, which
+    is the incomplete-merge state ``clear_partition`` exists to prevent.
+    """
+    raw = _metadata(path).get(OUTLINE_PROVENANCE)
+    if not raw:
+        return {}
+    try:
+        d = json.loads(raw)
+    except json.JSONDecodeError:
+        return {}
+    return d if isinstance(d, dict) else {}
+
+
 def provenance(files: list[Path]) -> dict:
     "The outline stage's stamp, so a release can name the model it came from."
     for p in files:
-        raw = _metadata(p).get(OUTLINE_PROVENANCE)
-        if raw:
-            return json.loads(raw)
+        if stamp := _stamp(p):
+            return stamp
     return {}
+
+
+def outline_specs(files: list[Path]) -> tuple[set[str], int]:
+    """``(method ids the outline stage stamped, tiles carrying no readable id)``.
+
+    Every file is opened, not just the first: ``fingerprint`` does not cover the stamp,
+    so a resumed run keeps outlines written before the stamp existed as "current" and
+    rewrites only the rest. Counting those is what lets the release say a year is mixed
+    instead of attributing all of it to the one id the scan happened to find.
+    """
+    out, unrecorded = set(), 0
+    for p in files:
+        if spec := _stamp(p).get("spec"):
+            out.add(spec)
+        else:
+            unrecorded += 1
+    return out, unrecorded
 
 
 def clear_partition(part: Path) -> None:
@@ -232,6 +270,9 @@ def main() -> None:
         "aux": str(aux),
         "simplify_tolerance_m": None,
         "provenance": {},
+        "spec": None,
+        "specs": [],
+        "tiles_unrecorded_spec": 0,
         "allow_missing": bool(a.allow_missing),
         "missing": gaps,
         "tiles_expected": len(expected - empty),
@@ -253,6 +294,9 @@ def main() -> None:
                 summary["simplify_tolerance_m"] or simplify_tolerance(files)
             )
             summary["provenance"] = summary["provenance"] or provenance(files)
+            specs, unrecorded = outline_specs(files)
+            summary["specs"] = sorted(set(summary["specs"]) | specs)
+            summary["tiles_unrecorded_spec"] += unrecorded
             axf = aux_files(aux, tiles)
             if aux and axf:
                 check_aux_unique(con, axf)
@@ -323,6 +367,13 @@ def main() -> None:
         con.close()
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
+    # One method for the whole year is the normal case. A mixed year -- tiles rerun with a
+    # newer method, or outlines kept from before the stamp existed -- is stated as such
+    # rather than hidden behind whichever id the stamped tiles happen to carry.
+    ids = list(summary["specs"])
+    if summary["tiles_unrecorded_spec"] or not ids:
+        ids.append(SPEC_UNRECORDED)
+    summary["spec"] = " / ".join(ids)
     keys = ("parcels_in", "parcels_out", "km2_in", "km2_out")
     counted = [v for v in summary["zones"].values() if all(k in v for k in keys)]
     tot = {k: sum(v[k] for v in counted) for k in keys}
