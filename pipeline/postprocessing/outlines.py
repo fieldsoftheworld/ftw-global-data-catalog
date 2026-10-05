@@ -536,7 +536,10 @@ def main() -> None:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     ap.add_argument("--year", type=int, required=True)
-    ap.add_argument("--scores", type=Path, default=Path("scores"))
+    ap.add_argument("--scores", type=Path, default=Path("staging-data/raster"),
+                    help="hierarchy root holding {year}/{tile}/{tile}.tif "
+                         "(what inference run.py writes under "
+                         "{output-dir}/raster)")
     ap.add_argument("--out-root", type=Path, default=Path("outlines"))
     ap.add_argument("--index-dir", type=Path, default=Path("index"))
     ap.add_argument("--tiles", nargs="*", default=None)
@@ -568,7 +571,14 @@ def main() -> None:
     names = a.tiles if a.tiles is not None else None
     if names is None and a.tile_list is not None:
         names = a.tile_list.read_text().split()
-    paths = sorted(src.glob("*.tif")) if names is None else [src / f"{n}.tif" for n in names]
+    # Per-item folders ({tile}/{tile}.tif): the stem==folder filter keeps a
+    # sidecar such as 31UFS/31UFS.thumb.tif or a stray from being treated as
+    # a score COG.
+    paths = (
+        sorted(p for p in src.glob("*/*.tif") if p.stem == p.parent.name)
+        if names is None
+        else [src / n / f"{n}.tif" for n in names]
+    )
     if (
         a.core <= 0
         or a.halo < 0
