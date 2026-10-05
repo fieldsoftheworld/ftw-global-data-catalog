@@ -2,7 +2,7 @@
 
 Guidance for AI agents. Every claim here is quoted from the dataset's embedded metadata or measured from the data.
 
-- 134,085,099 parcels in 54 per-UTM-zone GeoParquet files at `https://data.source.coop/ftw/global-data-2e/vector/2025/zone=NN/utm{NN}.parquet` (anonymous read, hive-partitioned by `zone`).
+- 134,101,708 parcels in 54 per-UTM-zone GeoParquet files at `https://data.source.coop/ftw/global-data-2e/vector/2025/zone=NN/utm{NN}.parquet` (anonymous read, hive-partitioned by `zone`).
 - Whole-year queries glob the partitions over s3 with anonymous access and `hive_partitioning=1` (http URLs cannot glob):
   ```python
   import duckdb
