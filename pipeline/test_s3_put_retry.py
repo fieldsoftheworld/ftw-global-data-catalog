@@ -164,6 +164,25 @@ def test_complete_that_never_succeeds_aborts(tmp_path, monkeypatch):
     assert s3.events[-1] == "abort"
 
 
+def test_a_failing_abort_does_not_hide_why_the_upload_failed(tmp_path, monkeypatch):
+    """The abort goes through the same failing proxy, so it must not become the error raised.
+
+    Otherwise the operator reading the job log sees "abort 520" and never learns which
+    part failed or why, which is the one thing this module is for.
+    """
+    f = _file(tmp_path, monkeypatch)
+
+    class AbortAlsoFailsS3(FakeS3):
+        def abort_multipart_upload(self, **kw):
+            self.events.append("abort-failed")
+            raise RuntimeError("abort 520 from the proxy")
+
+    s3 = AbortAlsoFailsS3(part_fail=True)
+    with pytest.raises(RuntimeError, match="part 520"):
+        sp.upload(s3, f, "b", "k")
+    assert s3.events == ["create", "abort-failed"]
+
+
 def test_empty_file_is_refused_before_creating_an_upload(tmp_path, monkeypatch):
     f = _file(tmp_path, monkeypatch, data=b"")
     s3 = FakeS3()

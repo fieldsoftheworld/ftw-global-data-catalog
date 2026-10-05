@@ -171,7 +171,19 @@ def upload(
             )
         complete(s3, bucket, key, upload_id, parts, size)
     except BaseException:
-        s3.abort_multipart_upload(Bucket=bucket, Key=key, UploadId=upload_id)
+        # The abort goes through the same proxy that just failed the transfer, so it can
+        # fail too. Letting it propagate would replace the error that explains the failure
+        # with one about the cleanup, which is the diagnosis this module exists to print.
+        # The orphaned upload id costs some storage until the bucket's lifecycle rule
+        # reaps it; the lost error costs the next debugging session.
+        try:
+            s3.abort_multipart_upload(Bucket=bucket, Key=key, UploadId=upload_id)
+        except Exception as abort_error:  # noqa: BLE001 - the original error is the finding
+            print(
+                f"abort_multipart_upload for s3://{bucket}/{key} also failed: {abort_error}; "
+                f"upload id {upload_id} is left open",
+                flush=True,
+            )
         raise
     remote = with_retries(lambda: s3.head_object(Bucket=bucket, Key=key), "head_object")[
         "ContentLength"
