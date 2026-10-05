@@ -139,6 +139,8 @@ check(content_type_for(Path("a/catalog.json")) == "application/json",
       "catalog.json is plain json")
 check(content_type_for(Path("a/collection.json")) == "application/json",
       "collection.json is plain json")
+check(content_type_for(Path("a/versions.json")) == "application/json",
+      "versions.json is the version ledger, not GeoJSON")
 check(content_type_for(Path("a/utm31.json")) == "application/geo+json",
       "an item is geo+json")
 check(

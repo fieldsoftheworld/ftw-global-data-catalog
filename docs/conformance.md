@@ -34,19 +34,36 @@ something.
 
 ## Accepted deviations
 
-None.
-
-<!--
-When you accept one, add a row and a section explaining it, like this:
-
 | Rule | Where | Why accepted | Tracking |
 |---|---|---|---|
+| PTL-VIZ-002 | `raster/{2017..2025}/collection.json` | The visualization derivative is a pre-rendered RGB JPEG COG; its styling is baked into the pixels, so no style document exists for a `style` asset to name. See the section below. | [rashid#202](https://github.com/portolan-sdi/rashid/issues/202) |
+
+That is the whole list, and it matches `ACCEPTED` in
+`tests/test_portolan_conformance.py` exactly.
+
+<!--
+When you accept another, add a row and a section explaining it, like this:
+
 | PTL-VIZ-001 | all thumbnails | WebP is not yet permitted; the size saving is 4x | portolan-spec#121 |
-| PTL-VIZ-002 | `raster/{2017..2025}/collection.json` | The visualization derivative is a pre-rendered RGB JPEG COG (roles `visual`,`overview`,`cloud-optimized`); its styling is baked into the pixels at build time, so no client-side style document exists for a `style` asset to name. The colormap is documented in each README and in `pipeline/make_overview.py`. | rashid#202 |
 
 Then add the rule id to ACCEPTED in tests/test_portolan_conformance.py. Both, or
 neither.
 -->
+
+### PTL-VIZ-002: the raster browse overview has no style document
+
+Each raster year collection carries an `overview.tif` with roles `visual`,
+`overview`, `cloud-optimized`. PTL-VIZ-002 wants a visualization asset to name
+the style that renders it, and this one has none to name: it is a pre-rendered
+RGB JPEG COG, so the colormap is applied at build time and baked into the
+pixels rather than evaluated by a client. A `style` asset pointing at a
+MapLibre document would be a false claim about how the image is drawn.
+
+The colormap is documented instead — in each year's README.md and in
+`pipeline/make_overview.py`, which is the code that applies it. The rule as
+written does not distinguish a client-styled asset from a baked one; filed as
+[rashid#202](https://github.com/portolan-sdi/rashid/issues/202). Nine
+findings, one per year.
 
 ## Policy: no `file:checksum` on the raster COG assets
 

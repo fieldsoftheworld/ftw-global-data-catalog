@@ -87,6 +87,11 @@ RAILS_AWS = "/u/cholmes/micromamba/envs/ftw/bin/aws"
 _CT_BY_NAME = {
     "catalog.json": "application/json",
     "collection.json": "application/json",
+    # The Portolan version ledger (spec_version/current_version/versions[]).
+    # It is not GeoJSON, and a client that dispatches on the media type — the
+    # Source Cooperative browser's map preview among them — should not be told
+    # to read it as a feature document.
+    "versions.json": "application/json",
 }
 _CT_BY_SUFFIX = {
     ".json": "application/geo+json",  # items; catalog/collection by name above
