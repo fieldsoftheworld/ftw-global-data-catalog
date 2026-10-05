@@ -251,6 +251,32 @@ GEO_META = json.dumps(
 ).encode()
 
 
+#: The score-COG layouts inference writes under ``{--scores}/{year}/``: the per-item
+#: folder (``--layout item``) and the bucket's grouped key (``--layout hive``). Both end
+#: in ``{tile}/{tile}.tif``; only the depth above it differs, so discovery accepts either
+#: and a half-migrated tree needs no flag here.
+SCORE_GLOBS = ("*/*.tif", "zone=*/gzd=*/*/*.tif")
+
+
+def score_paths(src: Path, names: list[str] | None) -> list[Path]:
+    """The score COGs under one year directory, in either inference layout.
+
+    The stem==folder filter keeps a sidecar such as 31UFS/31UFS.thumb.tif or a
+    stray from being treated as a score COG. A named tile resolves to whichever
+    layout holds it, preferring the grouped key, and otherwise keeps the per-item
+    path so the missing-input message names the default layout.
+    """
+    if names is None:
+        return sorted(
+            {p for g in SCORE_GLOBS for p in src.glob(g) if p.stem == p.parent.name}
+        )
+    found = []
+    for n in names:
+        grouped = src / f"zone={n[:2]}" / f"gzd={n[:3]}" / n / f"{n}.tif"
+        found.append(grouped if grouped.exists() else src / n / f"{n}.tif")
+    return found
+
+
 def fingerprint(src: Path, year: int, core: int, halo: int, backend: str, simplify_m: float) -> str:
     """Identity of the source COG plus every flag that changes the output.
 
@@ -536,7 +562,11 @@ def main() -> None:
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter
     )
     ap.add_argument("--year", type=int, required=True)
-    ap.add_argument("--scores", type=Path, default=Path("scores"))
+    ap.add_argument("--scores", type=Path, default=Path("staging-data/raster"),
+                    help="hierarchy root holding {year}/{tile}/{tile}.tif or the "
+                         "grouped {year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif "
+                         "(what inference run.py writes under "
+                         "{output-dir}/raster, either --layout)")
     ap.add_argument("--out-root", type=Path, default=Path("outlines"))
     ap.add_argument("--index-dir", type=Path, default=Path("index"))
     ap.add_argument("--tiles", nargs="*", default=None)
@@ -568,7 +598,7 @@ def main() -> None:
     names = a.tiles if a.tiles is not None else None
     if names is None and a.tile_list is not None:
         names = a.tile_list.read_text().split()
-    paths = sorted(src.glob("*.tif")) if names is None else [src / f"{n}.tif" for n in names]
+    paths = score_paths(src, names)
     if (
         a.core <= 0
         or a.halo < 0

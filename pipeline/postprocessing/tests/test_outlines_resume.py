@@ -62,7 +62,7 @@ def test_resume_requires_a_matching_fingerprint(tmp_path):
     parcels. Built like PR2's run.py inference_fingerprint and
     simplify_polygons' simplify_fingerprint.
     """
-    src = _score_cog(tmp_path / "scores/2025/31UFS.tif")
+    src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
     dst = tmp_path / "outlines/2025/31UFS.parquet"
     assert not ol.is_current(dst, _fp(src))
     _stamp(dst, _fp(src))
@@ -80,14 +80,14 @@ def test_resume_requires_a_matching_fingerprint(tmp_path):
     ],
 )
 def test_every_result_affecting_flag_is_in_the_fingerprint(tmp_path, over):
-    src = _score_cog(tmp_path / "scores/2025/31UFS.tif")
+    src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
     dst = tmp_path / "outlines/2025/31UFS.parquet"
     _stamp(dst, _fp(src))
     assert not ol.is_current(dst, _fp(src, **over)), over
 
 
 def test_a_regenerated_score_cog_is_not_current(tmp_path):
-    src = _score_cog(tmp_path / "scores/2025/31UFS.tif")
+    src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
     dst = tmp_path / "outlines/2025/31UFS.parquet"
     _stamp(dst, _fp(src))
     assert ol.is_current(dst, _fp(src))
@@ -97,7 +97,7 @@ def test_a_regenerated_score_cog_is_not_current(tmp_path):
 
 def test_the_cogs_inference_fingerprint_identifies_the_source(tmp_path):
     "Prefer PR2's tag: it identifies the model and inputs, not just the bytes."
-    src = _score_cog(tmp_path / "scores/2025/31UFS.tif", tags={"inference_fingerprint": "A"})
+    src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif", tags={"inference_fingerprint": "A"})
     fp_a = _fp(src)
     assert "A" in fp_a
     _score_cog(src, tags={"inference_fingerprint": "B"})
@@ -106,7 +106,7 @@ def test_the_cogs_inference_fingerprint_identifies_the_source(tmp_path):
 
 @pytest.mark.parametrize("corrupt", [b"", b"PAR1 truncated"])
 def test_truncated_or_unstamped_output_is_not_current(tmp_path, corrupt):
-    src = _score_cog(tmp_path / "scores/2025/31UFS.tif")
+    src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
     dst = tmp_path / "outlines/2025/31UFS.parquet"
     dst.parent.mkdir(parents=True)
     pq.write_table(pa.Table.from_pylist([], schema=ol.SCHEMA), dst)  # unstamped
@@ -172,14 +172,14 @@ def test_geo_footer_is_present_so_duckdb_can_read_the_geometry():
 
 
 def test_year_mismatch_between_cog_and_run_fails(tmp_path):
-    src = _score_cog(tmp_path / "scores/2025/31UFS.tif", tags={"year": "2024"})
+    src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif", tags={"year": "2024"})
     with pytest.raises(ValueError, match="score COG is year 2024, run asked for 2025"):
         ol.source_provenance(src, 2025)
 
 
 def test_provenance_carries_the_model_identity(tmp_path):
     src = _score_cog(
-        tmp_path / "scores/2025/31UFS.tif",
+        tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif",
         tags={"model_sha256": "deadbeef", "input_bands": "Q1,Q2,Q3,Q4 x B04,B03,B02,B08"},
     )
     prov = ol.source_provenance(src, 2025)
@@ -203,7 +203,7 @@ def test_an_empty_tile_list_file_means_zero_tiles_not_every_tile(tmp_path):
     "no input scores" guard could not fire either.
     """
     for tk in ("31UFS", "31UFT", "31UFU"):
-        _score_cog(tmp_path / f"scores/2025/{tk}.tif")
+        _score_cog(tmp_path / f"staging-data/raster/2025/{tk}/{tk}.tif")
     (tmp_path / "empty-list.txt").write_text("")
     r = _run(tmp_path, "--tile-list", "empty-list.txt")
     assert r.returncode != 0
@@ -211,9 +211,26 @@ def test_an_empty_tile_list_file_means_zero_tiles_not_every_tile(tmp_path):
     assert "3 tiles" not in r.stdout
 
 
+def test_both_inference_layouts_are_discovered(tmp_path):
+    """The inference -> outlines handoff, for `--layout item` and `--layout hive`.
+
+    run.py writes either `{year}/{tile}/{tile}.tif` or the bucket's grouped
+    `{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif`; a tree in one layout that this
+    glob cannot see would make the whole stage die with "no input scores".
+    """
+    src = tmp_path / "staging-data/raster/2025"
+    item = _score_cog(src / "31UFS/31UFS.tif")
+    hive = _score_cog(src / "zone=31/gzd=31U/31UFT/31UFT.tif")
+    _score_cog(src / "31UFS/31UFS.thumb.tif")  # a sidecar is not a score COG
+    assert ol.score_paths(src, None) == [item, hive]
+    assert ol.score_paths(src, ["31UFS", "31UFT"]) == [item, hive]
+    r = _run(tmp_path, "--tiles", "31UFT")
+    assert "no input scores" not in r.stdout + r.stderr, r.stdout + r.stderr
+
+
 def test_a_populated_tile_list_is_honoured(tmp_path):
     for tk in ("31UFS", "31UFT", "31UFU"):
-        _score_cog(tmp_path / f"scores/2025/{tk}.tif")
+        _score_cog(tmp_path / f"staging-data/raster/2025/{tk}/{tk}.tif")
     (tmp_path / "one.txt").write_text("31UFT\n")
     (tmp_path / "index").mkdir()
     pq.write_table(

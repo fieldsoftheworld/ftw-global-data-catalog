@@ -1,3 +1,6 @@
+import sys
+from pathlib import Path
+
 import numpy as np
 import pytest
 import rasterio
@@ -11,8 +14,8 @@ from run import (
     current,
     device_available,
     fingerprint,
-    hive_key,
     model_contract,
+    output_key,
     output_path,
     output_tags,
     read_stack,
@@ -97,6 +100,20 @@ def test_cog_contract(tmp_path):
         assert ds.descriptions == ("field", "boundary")
         assert ds.tags(ns="IMAGE_STRUCTURE")["LAYOUT"] == "COG"
         assert ds.overviews(1) == [4, 8, 16, 32, 64], "10-160 m, no 5 m level"
+    # PTL-DAT-009 wants the statistics *embedded*: read them with PAM off, since a
+    # .aux.xml sidecar neither counts nor travels to the bucket. The two-step write
+    # puts them on the staged GTiff, so this also pins that the COG copy keeps them.
+    with rasterio.Env(GDAL_PAM_ENABLED="NO"), rasterio.open(dst) as ds:
+        for bidx, band in enumerate(data, start=1):
+            got = {k: v for k, v in ds.tags(bidx).items() if k.startswith("STATISTICS_")}
+            assert got == {
+                "STATISTICS_MINIMUM": str(int(band.min())),
+                "STATISTICS_MAXIMUM": str(int(band.max())),
+                "STATISTICS_MEAN": str(float(band.mean())),
+                "STATISTICS_STDDEV": str(float(band.std())),
+                "STATISTICS_VALID_PERCENT": "100.0",
+            }
+    assert not dst.with_name(dst.name + ".aux.xml").exists()
     assert current(dst, "fixture")
     assert not current(dst, "changed")
 
@@ -317,8 +334,8 @@ def test_write_score_refuses_a_cog_that_does_not_read_back(tmp_path, monkeypatch
     assert list(tmp_path.iterdir()) == []
 
 
-def test_released_output_tags_and_hive_layout(tmp_path):
-    """The tags and path the published tiles carry; hive needs the stack's year."""
+def test_released_output_tags(tmp_path):
+    """The provenance tags the published tiles carry."""
     tags = output_tags(
         {"year": "2025"}, "h", "fp", 3000.0, 0.25, "CPUExecutionProvider",
         model_name="unet_balanced_fp32.onnx", tile_key="15TVG_0_0",
@@ -327,20 +344,115 @@ def test_released_output_tags_and_hive_layout(tmp_path):
     assert tags["quantization"] == "uint8 = p*255"
     assert tags["zstd_level"] == "9"
     assert tags["tile_key"] == "15TVG_0_0"
-    assert hive_key(2025, "15TVG_0_0") == "2025/zone=15/gzd=15T/15TVG_0_0/15TVG_0_0.tif"
+
+
+def test_output_path_is_the_published_key_in_both_layouts(tmp_path):
+    """Both layouts are object keys under raster/, and --year is the only year."""
     src = tmp_path / "15TVG_0_0.tif"
-    assert output_path(tmp_path / "out", src, {"year": "2025"}, "hive") == (
-        tmp_path / "out" / "2025/zone=15/gzd=15T/15TVG_0_0/15TVG_0_0.tif"
+    assert output_key(2025, "15TVG_0_0", "item") == "raster/2025/15TVG_0_0/15TVG_0_0.tif"
+    assert output_key(2025, "15TVG_0_0", "hive") == (
+        "raster/2025/zone=15/gzd=15T/15TVG_0_0/15TVG_0_0.tif"
     )
-    assert output_path(tmp_path / "out", src, {}, "flat") == tmp_path / "out" / src.name
-    with pytest.raises(ValueError, match="year"):
-        output_path(tmp_path / "out", src, {}, "hive")
+    out = tmp_path / "out"
+    assert output_path(out, src, 2025, "item") == out / "raster/2025/15TVG_0_0/15TVG_0_0.tif"
+    assert output_path(out, src, 2025, "hive") == (
+        out / "raster/2025/zone=15/gzd=15T/15TVG_0_0/15TVG_0_0.tif"
+    )
+    # A stack with no year tag is legal (main() supplies --year), so nothing here
+    # may depend on the tag: the year in the path is --year, full stop.
+    assert "2019" in str(output_path(out, src, 2019, "hive"))
 
 
-def test_failed_write_leaves_no_stage_or_tmp_files(tmp_path):
+def test_hive_key_matches_the_catalog_tools_rule():
+    """The hive key is the catalog's GROUPED_PATH, not a private copy of it.
+
+    run.py cannot import tools/build_raster_items.py at runtime — the pipeline
+    ships as a self-contained tree with its own venv — so the two spellings of
+    the rule are pinned against each other here instead.
+    """
+    tools = Path(__file__).resolve().parents[2] / "tools"
+    if not (tools / "build_raster_items.py").exists():
+        pytest.skip("standalone pipeline copy: no tools/ beside it")
+    sys.path.insert(0, str(tools))
+    try:
+        import build_raster_items as bri
+    finally:
+        sys.path.remove(str(tools))
+    tile = "15TVG_0_0"
+    assert output_key(2025, tile, "hive") == bri.GROUPED_PATH.format(
+        year=2025, ZZ=bri.zone_of(tile), GZD=bri.gzd_of(tile), tile=tile
+    )
+
+
+def _fake_run(monkeypatch, tmp_path, argv):
+    """Drive run.main() with the model, session and inference stubbed out."""
+    import run
+
+    src = tmp_path / "in" / "15TVG_0_0.tif"
+    src.parent.mkdir(parents=True)
+    src.write_bytes(b"stack")
+    model = tmp_path / "m.onnx"
+    model.write_bytes(b"model")
+    tr = Affine(10, 0, 500000, 0, -10, 1000000)
+    written = []
+    monkeypatch.setattr(run.ort, "InferenceSession", lambda *a, **k: object())
+    monkeypatch.setattr(run, "device_available", lambda dev: None)
+    monkeypatch.setattr(run, "active_provider", lambda s, p: None)
+    monkeypatch.setattr(run, "model_contract", lambda s: None)
+    monkeypatch.setattr(
+        run, "read_stack", lambda p: (np.zeros((16, 8, 8), np.float32), tr, "EPSG:32615", {})
+    )
+    monkeypatch.setattr(
+        run, "predict_tile", lambda *a, **k: (np.zeros((2, 32, 32), np.uint8), 1)
+    )
+    monkeypatch.setattr(run, "write_score", lambda dst, *a, **k: written.append(dst))
+    monkeypatch.setattr(
+        sys,
+        "argv",
+        ["run.py", "--input-dir", str(src.parent), "--output-dir", str(tmp_path / "out"),
+         "--year", "2025", "--model", str(model), "--device", "cpu", *argv],
+    )
+    run.main()
+    return written
+
+
+def test_main_writes_into_the_published_hierarchy(tmp_path, monkeypatch):
+    """The dst main() actually chooses — the default must stay the hierarchy."""
+    out = tmp_path / "out"
+    assert _fake_run(monkeypatch, tmp_path, []) == [
+        out / "raster/2025/15TVG_0_0/15TVG_0_0.tif"
+    ]
+
+
+def test_main_hive_layout_writes_the_grouped_key(tmp_path, monkeypatch):
+    out = tmp_path / "out"
+    assert _fake_run(monkeypatch, tmp_path, ["--layout", "hive"]) == [
+        out / "raster/2025/zone=15/gzd=15T/15TVG_0_0/15TVG_0_0.tif"
+    ]
+
+
+def test_failed_cog_copy_leaves_no_stage_or_tmp_files(tmp_path, monkeypatch):
+    """Cleanup after the two steps the COG write adds, not before them."""
+    import run
+
+    def boom(*a, **k):
+        raise RuntimeError("copy failed")
+
+    monkeypatch.setattr(run.rasterio.shutil, "copy", boom)
     dst = tmp_path / "score.tif"
     tr = Affine(2.5, 0, 500000, 0, -2.5, 1000000)
-    with pytest.raises(Exception):
-        write_score(dst, np.zeros((3, 64, 128), np.uint8), "EPSG:32631", tr, {})
+    with pytest.raises(RuntimeError, match="copy failed"):
+        run.write_score(dst, np.zeros((2, 64, 128), np.uint8), "EPSG:32631", tr, {})
     assert not dst.exists()
     assert list(tmp_path.iterdir()) == []
+
+
+def test_write_score_sweeps_a_killed_runs_leftovers(tmp_path):
+    """A SIGKILLed task cannot run the cleanup, so the next write reclaims it."""
+    dst = tmp_path / "score.tif"
+    orphan = dst.with_name(f"{dst.name}.stage-999999")
+    orphan.write_bytes(b"x" * 1024)
+    tr = Affine(2.5, 0, 500000, 0, -2.5, 1000000)
+    write_score(dst, np.zeros((2, 64, 128), np.uint8), "EPSG:32631", tr, {})
+    assert not orphan.exists()
+    assert list(tmp_path.iterdir()) == [dst]

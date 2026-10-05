@@ -1,4 +1,11 @@
-"""Run an FP32 ONNX model over stacked quarterly mosaic tiles."""
+"""Run an FP32 ONNX model over stacked quarterly mosaic tiles.
+
+Outputs land directly in the published per-item hierarchy:
+``{output-dir}/raster/{year}/{tile}/{tile}.tif``, so a finished year uploads
+with ``tools/upload_data.py`` without a relayout step (point ``--output-dir``
+at the repo's ``staging-data/``). ``--layout hive`` writes the bucket's own
+grouped key instead, ``raster/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif``.
+"""
 
 import argparse
 import hashlib
@@ -58,19 +65,33 @@ def fingerprint(
     return json.dumps([st.st_size, st.st_mtime_ns, model_hash, batch, overlap, norm, provider])
 
 
-def hive_key(year: str | int, tile_key: str) -> str:
-    """Where a tile's COG lives under ``raster/``: ``{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif``."""
-    return f"{year}/zone={tile_key[:2]}/gzd={tile_key[:3]}/{tile_key}/{tile_key}.tif"
+#: Object keys under the publish prefix, relative to ``--output-dir``. ``item`` is what
+#: the released 2e tiles were uploaded from; ``hive`` is the key the bucket itself uses
+#: (``tools/build_raster_items.py``'s ``GROUPED_PATH``), so a hive run needs no
+#: server-side regrouping. The zone/GZD slices are that module's ``zone_of``/``gzd_of``:
+#: every one of the 67,197 tile keys matches ``\d{2}[A-Z]{3}_\d+_\d+``.
+LAYOUTS = {
+    "item": "raster/{year}/{tile}/{tile}.tif",
+    "hive": "raster/{year}/zone={zone}/gzd={gzd}/{tile}/{tile}.tif",
+}
 
 
-def output_path(output_dir: Path, src: Path, src_tags: dict, layout: str) -> Path:
-    """Flat ``{output_dir}/{name}`` or the published hive layout (needs the stack's year tag)."""
-    if layout == "flat":
-        return output_dir / src.name
-    year = src_tags.get("year")
-    if not year:
-        raise ValueError(f"{src}: --layout hive needs a 'year' tag on the input stack")
-    return output_dir / hive_key(year, src.stem)
+def output_key(year: int, tile_key: str, layout: str) -> str:
+    """Where a tile's COG lives under ``--output-dir``, for one of ``LAYOUTS``."""
+    return LAYOUTS[layout].format(
+        year=year, tile=tile_key, zone=tile_key[:2], gzd=tile_key[:3]
+    )
+
+
+def output_path(output_dir: Path, src: Path, year: int, layout: str) -> Path:
+    """The COG path for one input stack. ``--year`` is the only year authority.
+
+    The stack's own ``year`` tag is not consulted here: the processing loop's
+    fail-closed guard rejects a tag that disagrees with ``--year`` and supplies
+    ``--year`` when the tag is absent, so a second source would only let the
+    path and the guard drift apart.
+    """
+    return output_dir / output_key(year, src.stem, layout)
 
 
 def output_tags(
@@ -185,6 +206,11 @@ def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> No
     levels 2-128, including a 5 m level, and cannot be told otherwise.
     """
     dst.parent.mkdir(parents=True, exist_ok=True)
+    # A SIGKILLed task (a Slurm timeout or OOM, the usual failure here) never runs the
+    # `finally` below, so a full-size leftover outlives it and resume ignores it. Shards
+    # are disjoint by tile, so nothing else is mid-write on this name.
+    for orphan in (*dst.parent.glob(f"{dst.name}.stage-*"), *dst.parent.glob(f"{dst.name}.tmp-*")):
+        orphan.unlink(missing_ok=True)
     stage = dst.with_name(f"{dst.name}.stage-{os.getpid()}")
     tmp = dst.with_name(f"{dst.name}.tmp-{os.getpid()}")
     try:
@@ -212,6 +238,22 @@ def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> No
             ds.set_band_description(1, "field")
             ds.set_band_description(2, "boundary")
             ds.update_tags(**tags)
+            # Embedded band statistics are a Portolan MUST (PTL-DAT-009,
+            # read with PAM disabled, so a sidecar does not count). The
+            # array is already in memory, so exact statistics are free here
+            # — unlike retrofitting them into a published COG, which would
+            # rewrite the file. They are written on the staged GTiff because
+            # per-band GDAL_METADATA survives the COG copy below.
+            for bidx in range(scores.shape[0]):
+                band = scores[bidx]
+                ds.update_tags(
+                    bidx + 1,
+                    STATISTICS_MINIMUM=int(band.min()),
+                    STATISTICS_MAXIMUM=int(band.max()),
+                    STATISTICS_MEAN=float(band.mean()),
+                    STATISTICS_STDDEV=float(band.std()),
+                    STATISTICS_VALID_PERCENT=100.0,
+                )
         with rasterio.open(stage, "r+") as ds:
             ds.build_overviews(list(OVERVIEWS), Resampling.average)
         rasterio.shutil.copy(
@@ -225,6 +267,9 @@ def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> No
             BIGTIFF="IF_SAFER",
             OVERVIEWS="FORCE_USE_EXISTING",
         )
+        # The stage is as large as the COG, so dropping it here halves peak
+        # scratch per in-flight tile; the `finally` stays as the error path.
+        stage.unlink(missing_ok=True)
         same_pixels(tmp, scores)
         os.replace(tmp, dst)
     finally:
@@ -235,7 +280,10 @@ def write_score(dst: Path, scores: np.ndarray, crs, transform, tags: dict) -> No
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--input-dir", type=Path, required=True)
-    ap.add_argument("--output-dir", type=Path, required=True)
+    ap.add_argument("--output-dir", type=Path, required=True,
+                    help="hierarchy root; scores land at "
+                         "{output-dir}/" + LAYOUTS["item"] + " (see --layout)")
+    ap.add_argument("--year", type=int, required=True)
     ap.add_argument("--model", type=Path, required=True)
     ap.add_argument("--batch", type=int, default=64)
     ap.add_argument("--overlap", type=float, default=0.25)
@@ -243,10 +291,10 @@ def main() -> None:
     ap.add_argument("--device", choices=tuple(PROVIDERS), default="cuda")
     ap.add_argument(
         "--layout",
-        choices=("flat", "hive"),
-        default="flat",
-        help="flat: {output-dir}/{tile}.tif; hive: the published raster/ layout "
-        "{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif (needs the stack's year tag)",
+        choices=tuple(LAYOUTS),
+        default="item",
+        help="item (default): " + LAYOUTS["item"] + "; hive: the bucket's own grouped "
+        "key " + LAYOUTS["hive"] + ", which uploads without a server-side regrouping",
     )
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--num-shards", type=int, default=1)
@@ -272,8 +320,7 @@ def main() -> None:
         ap.error(problem)
     todo = []
     for src in paths:
-        with rasterio.open(src) as ds:
-            dst = output_path(a.output_dir, src, ds.tags(), a.layout)
+        dst = output_path(a.output_dir, src, a.year, a.layout)
         fp = fingerprint(src, model_hash, a.batch, a.overlap, a.norm, provider)
         if not current(dst, fp):
             todo.append((src, dst, fp))
@@ -282,6 +329,13 @@ def main() -> None:
         future = pool.submit(read_stack, todo[0][0]) if todo else None
         for i, (src, dst, fp) in enumerate(todo):
             arr, transform, crs, tags = future.result()
+            # Same fail-closed year guard as postprocessing's source_provenance:
+            # a tile filed under the wrong year poisons every downstream product.
+            if tags.get("year") not in (None, str(a.year)):
+                raise RuntimeError(
+                    f"{src.name}: input year tag {tags['year']!r} "
+                    f"!= --year {a.year}")
+            tags.setdefault("year", str(a.year))
             if i + 1 < len(todo):
                 future = pool.submit(read_stack, todo[i + 1][0])
             scores, patches = predict_tile(

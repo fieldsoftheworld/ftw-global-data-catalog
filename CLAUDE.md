@@ -20,12 +20,28 @@ exploration/search subagents; keep Opus (the default) for implementation and rev
 
 ## Layout
 - `catalog/` — the published catalog (STAC JSON, README.md, AGENTS.md,
-  thumbnails, styles). Dotfiles are not published. `catalog/.portolan/` was removed
+  thumbnails, styles; llms.txt was removed by user ruling 2026-10-01).
+  Dotfiles are not published. `catalog/.portolan/` was removed
   on 2026-10-03 (portolan-cli state this catalog does not use; every fact in
   `metadata.yaml` was already in the STAC). `publish.py` still allows
   `.portolan/metadata.yaml` through as a general rule. **The bucket copy was not
   deleted** — publishing never deletes — so ask Chris before removing
   `.portolan/` objects from the bucket.
+- Bucket data layouts (both per-item folders, data beside metadata):
+  `vector/{year}/zone=NN/utm{NN}.parquet` and
+  `raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif` (+ `{tile}.json`,
+  `{tile}.thumb.png`; per-year `overview.tif`/`thumbnail.webp`/`items.parquet`
+  at `raster/{year}/`; user ruling 2026-10-02). `{ZZ}`/`{GZD}` come from the
+  tile key: `01KFS_0_0` → `zone=01/gzd=01K/`. The inference pipeline emits
+  the raster hierarchy directly — new generations never need a relayout.
+- The raster item tree (67,197 items + 3,690 zone/GZD catalogs) is
+  **generated, not committed** (user ruling 2026-10-03; gitignored as
+  `catalog/raster/*/zone=*/`). Rebuild it with `tools/build_raster_items.py`,
+  in the order `items` → `collections` → `mirror`; `tools/publish.py` walks
+  the filesystem, so what publishes is unchanged. A checkout without the
+  tree skips the conformance gate in CI and fails it locally — the full
+  check runs pre-publish via `pipeline/rashid_check.sbatch` (see
+  docs/conformance.md, "generated item tree", and rashid#205).
 - `tools/` — `publish.py` (metadata, 1:1), `upload_data.py` (staged data, suffix
   allow-list, never deletes), `build_vector_items.py` / `build_raster_items.py`
   (tree generators), `render_thumbnails.py` (vector thumbnails via chiitiler),
