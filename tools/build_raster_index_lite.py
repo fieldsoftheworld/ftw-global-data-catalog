@@ -16,12 +16,18 @@ outward (min down, max up) so a tile is never culled early. Rows are sorted by
 2017-2025, against ~1.9 MB for the full index.
 
     python3 tools/build_raster_index_lite.py [SRC] [DST]
-    # defaults: the published raster.parquet -> staging-data/index/raster-lite.parquet
+    # defaults: staging-data/index/raster.parquet -> staging-data/index/raster-lite.parquet
+
+SRC may also be an ``http(s)`` URL -- the published index at
+``https://data.source.coop/ftw/global-data-2e/index/raster.parquet`` is the usual one -- which
+is fetched into memory, since pyarrow has no filesystem for that scheme.
 
 This only writes a local file. Uploading it is a separate, explicit step
 (``tools/upload_data.py``).
 """
+import io
 import sys
+import urllib.request
 from pathlib import Path
 
 import numpy as np
@@ -29,7 +35,7 @@ import pyarrow as pa
 import pyarrow.parquet as pq
 
 ROOT = Path(__file__).resolve().parent.parent
-SRC = "https://data.source.coop/ftw/global-data-2e/index/raster.parquet"
+SRC = ROOT / "staging-data" / "index" / "raster.parquet"
 DST = ROOT / "staging-data" / "index" / "raster-lite.parquet"
 KEEP = ["year", "tile_key", "epsg", "xmin", "ymin", "xmax", "ymax"]
 
@@ -59,10 +65,19 @@ def write_lite(table: pa.Table, dst: Path) -> None:
     pq.write_table(table, dst, compression="zstd", compression_level=19, write_statistics=False)
 
 
+def read_index(src: str | Path) -> pa.Table:
+    "The KEEP columns of a raster index, from a local path or an http(s) URL."
+    if str(src).startswith(("http://", "https://")):
+        req = urllib.request.Request(str(src), headers={"User-Agent": "ftw-global-data-catalog"})
+        with urllib.request.urlopen(req) as response:  # noqa: S310 - http(s) only, checked above
+            src = io.BytesIO(response.read())
+    return pq.read_table(src, columns=KEEP)
+
+
 def main() -> int:
     src = sys.argv[1] if len(sys.argv) > 1 else SRC
     dst = Path(sys.argv[2]) if len(sys.argv) > 2 else DST
-    lite = build_lite(pq.read_table(src, columns=KEEP))
+    lite = build_lite(read_index(src))
     write_lite(lite, dst)
     print(f"{lite.num_rows:,} rows, {dst.stat().st_size / 1e3:.0f} kB -> {dst}")
     return 0

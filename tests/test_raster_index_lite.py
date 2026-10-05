@@ -3,15 +3,22 @@
 
 Builds a lite index from a small synthetic raster index. No network, no AWS.
 
+Needs pyarrow and numpy; without them it skips, so a checkout that only validates
+metadata still runs the rest of ``tests/run_all.py``.
+
 Run: python3 tests/test_raster_index_lite.py
 """
 import sys
 import tempfile
 from pathlib import Path
 
-import numpy as np
-import pyarrow as pa
-import pyarrow.parquet as pq
+try:
+    import numpy as np
+    import pyarrow as pa
+    import pyarrow.parquet as pq
+except ImportError as exc:  # pragma: no cover - depends on the local environment
+    print(f"skip  test_raster_index_lite.py: {exc.name} is not installed")
+    raise SystemExit(0)
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
