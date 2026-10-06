@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""One small PNG per beta raster item, from that COG's coarsest overview.
+"""One small PNG per 2e raster item, from that COG's coarsest overview.
 
     python3 pipeline/make_item_thumbnails.py --year 2025 \\
         --out /u/cholmes/ftw-browse/publish --work /u/cholmes/ftw-browse/work

@@ -1,5 +1,14 @@
 # ftw-global-data-catalog — Portolan catalog for the FTW Global Data **2nd Edition** (2e) release
 
+> **Historical record.** This is the build plan the catalog was made from; it is
+> kept as written. Where it disagrees with the shipped catalog, the catalog and
+> `CLAUDE.md` are right — notably: the vector tree now covers all nine years
+> (486 zone parquets, not the 108/227.5 GiB two-year state below), the released
+> item schema has 9 columns (not 20), the provider resolved to Taylor Geospatial
+> alone, `.portolan/metadata.yaml` and `llms.txt` were later removed, and no
+> separate `fields-yearly/` collection exists (PMTiles live per year at
+> `vector/{year}/fields-{year}.pmtiles`).
+
 ## Context
 
 FTW's global field-boundary predictions have a new **2nd Edition** (2e) release on Source Cooperative at
@@ -213,8 +222,8 @@ Applied from the Portolan best-practices specs
   between them. Every level cross-links its parent, its children and its sibling file.
 - **llms.txt dropped** (2026-10-01, user's call). It was a third surface duplicating the other two
   and drifting from the hive layout; the `rel: llms` links went with it at the root and in the
-  vector tree. rashid 0.1.8 stays green without them. The raster tree still carries llms.txt —
-  removing those belongs to the agent that owns `tools/build_raster_items.py`. The llms.txt objects
+  vector tree. rashid 0.1.8 stays green without them. The raster tree's llms.txt files were
+  removed too (none exist in the repo any more). The llms.txt objects
   already in the bucket are untouched: publishing never deletes.
 - **Lead with what a reader can do.** Each README opens with measured numbers, then a runnable
   single-file query, then the whole-collection hive glob — the pattern a reader would not have

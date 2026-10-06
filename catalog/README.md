@@ -179,7 +179,7 @@ mosaic, transform = read_area((-93.06, 41.90, -92.94, 42.00), 2024, 20, "EPSG:32
 
 - Snap the bounds to the pixel size, as above. Otherwise the output grid sits a fraction of a
   pixel off the tile grid, and the values differ slightly from the COGs.
-- Neighbouring tiles overlap by about 60 m, and each predicted that strip on its own.
+- Neighbouring tiles overlap by 60 or 120 m (the seams alternate), and each predicted that strip on its own.
   `method="first"` keeps the first tile's values there; use `"max"` or `"mean"` to combine them.
 - `WarpedVRT` warps tiles from other UTM zones into `crs`. It leaves tiles already in `crs` as they are.
 

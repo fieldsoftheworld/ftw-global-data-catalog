@@ -208,11 +208,12 @@ pixel.
 |---|---|
 | `browse_common.py` | the shared core: GDAL env, overview-level math, the colour ramp, index reads |
 | `make_overview.py` + `overview.sbatch` | one `raster/{year}/overview.tif` + `thumbnail.webp` |
-| `make_item_thumbnails.py` + `thumbnails.sbatch` | `raster/{year}/{tile}/{tile}.thumb.png`, as a Slurm array |
+| `make_item_thumbnails.py` + `thumbnails.sbatch` | `raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.thumb.png`, as a Slurm array |
 
 Tiles are **always** enumerated from `index/raster.parquet` and opened by
 its `href` column. No key is ever constructed, so the scripts keep working
-across the move to per-item folders (`raster/{year}/{tile}/{tile}.tif`).
+across the move to the grouped per-item folders
+(`raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif`).
 Use `href` (https), never `s3_href` — `browse_common.vsicurl()` refuses
 the latter, because `s3://` hangs on a compute node.
 
@@ -225,7 +226,7 @@ cp pipeline/* ~/ftw-beta-pipeline/ && cd ~/ftw-beta-pipeline
 YEAR=2025 BBOX=4,51,7,53 JOBS=4 sbatch --export=ALL overview.sbatch
 YEAR=2025 TILES=31UFU_0_0,32ULD_0_0 sbatch --export=ALL thumbnails.sbatch
 
-# 2025 for real, then the other eight once its size and timings are seen.
+# One year for real (all nine have been run this way).
 YEAR=2025 sbatch --export=ALL overview.sbatch
 YEAR=2025 sbatch --export=ALL --array=0-74%16 thumbnails.sbatch
 
@@ -311,7 +312,8 @@ zone**, so a partial run never produces a browse layer with a hole in it.
   well as 2025**, so it is an inference edge effect in the source COGs,
   not a browse-pipeline artifact. It shows up in the browse layer as faint
   hairlines along some tile boundaries over water. It is **not** corrected
-  here: same-zone tiles overlap by only 80 m total (0.5 overview pixels),
+  here: same-zone tiles overlap by only 60–120 m, alternating seam by seam
+  (at most 0.75 of an overview pixel),
   so insetting even one overview row to hide it would open visible gaps on
   the grid, which is worse. Four other tiles checked (38KQU, 50SQJ, 43RCQ,
   10TFL) show no edge anomaly, so it is edge- and tile-specific rather
@@ -339,14 +341,16 @@ Measured on the login node, 2026-10-01, reading over https:
 A compute node should beat that — it is in-region and the numbers above are
 from the login node over the public endpoint.
 
-Extrapolated for a full year (7,466 tiles, 79 UTM zones) — **measure 2025
-before fanning out to the other eight**:
+Extrapolated for a full year (7,466 tiles, 79 zone/hemisphere CRSs — 54 UTM
+zone partitions, some spanning both hemispheres). All nine years have since
+been built and published; the estimates below are kept as the planning
+record:
 
 | step | estimate |
 |---|---|
 | pixel data read per year | **2.9 GB** (against 3.4 TB at full resolution) |
-| overview staging (79 zone VRTs, pool of 64) | 5–10 min; the largest zone is 246 tiles |
-| overview warps (79 zones, 16 concurrent) | 20–40 min |
+| overview staging (79 CRS VRTs, pool of 64) | 5–10 min; the largest zone is 246 tiles |
+| overview warps (79 CRSs, 16 concurrent) | 20–40 min |
 | final COG translate (dense JPEG, ~1.05 M blocks) | 15–45 min |
 | **overview wall per year** | **~1–1.5 h**, 8 h requested |
 | `overview.tif` size at zoom 10 | ~2–4 GB/year, ~20–35 GB for nine (zoom 9 would be ~4x smaller for the same reads) |

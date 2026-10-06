@@ -30,8 +30,9 @@ it carries the measured numbers and the quirks this file does not repeat.
     `s3://us-west-2.opendata.source.coop/ftw/global-data-2e/vector/{year}/zone=*/utm*.parquet`.
   - `vector/{year}/fields-{year}.pmtiles` and `vector/{year}/styles/*.json` —
     map tiles and MapLibre styles
-  - `raster/{year}/{tile_key}.tif` — two-band uint8 field/boundary-probability
-    COGs at 2.5 m
+  - `raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.tif` — two-band uint8
+    field/boundary-probability COGs at 2.5 m, one folder per tile (the zone and
+    GZD come from the tile key: `01KFS_0_0` → `zone=01/gzd=01K/`)
   - `index/vector.parquet`, `index/raster.parquet` — manifests listing hrefs,
     sizes and bboxes for every data file
 - Read in place over HTTP range requests; there is no reason to download.
