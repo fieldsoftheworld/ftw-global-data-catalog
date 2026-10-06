@@ -194,6 +194,7 @@ from __future__ import annotations
 
 import argparse
 import concurrent.futures as cf
+import json
 import os
 import shutil
 import subprocess
@@ -206,6 +207,54 @@ sys.path.insert(0, str(HERE))
 import browse_common as bc  # noqa: E402
 
 ZONE_ATTEMPTS = 4
+
+# The statistics a published COG band MUST carry inside the file:
+# min/max/mean/stddev are PTL-DAT-009 (MUST, formats.md:95) and the valid
+# percent is PTL-DAT-010 — a SHOULD in general, a MUST for a band that
+# declares a nodata value, which every band of this overview does (nodata 0
+# through the whole VRT chain). `gdalinfo -(approx_)stats` writes all five
+# together, so the check asks for all five.
+STAT_KEYS = ("STATISTICS_MINIMUM", "STATISTICS_MAXIMUM", "STATISTICS_MEAN",
+             "STATISTICS_STDDEV", "STATISTICS_VALID_PERCENT")
+
+
+def missing_band_stats(info: dict, keys: tuple[str, ...] = STAT_KEYS) -> list[int]:
+    """The 1-based bands of a ``gdalinfo -json`` report that lack ``keys``.
+
+    Band statistics live in the default (unnamed) metadata domain, which is
+    what the GeoTIFF ``GDAL_METADATA`` tag holds.
+    """
+    return [
+        i
+        for i, band in enumerate(info.get("bands", ()), 1)
+        if not all(k in band.get("metadata", {}).get("", {}) for k in keys)
+    ]
+
+
+def verify_band_stats(path: Path) -> None:
+    """Exit unless every band of the finished COG carries embedded statistics.
+
+    Read with PAM **disabled**, so a ``.aux.xml`` sidecar beside the file does
+    not count — the same way rashid's PTL-DAT-009 check reads it. The numbers
+    come from the ``gdalinfo -approx_stats`` pass over the source VRT; that
+    pass writes PAM, and it is the COG translate that carries the band
+    metadata into the output file's own ``GDAL_METADATA`` tag. This is the
+    check that it really did, before the file is moved into place: a
+    stats-less overview is a published MUST violation, and it cannot be
+    repaired afterwards without rewriting the file.
+    """
+    r = subprocess.run(
+        ["gdalinfo", "-json", "--config", "GDAL_PAM_ENABLED", "NO", str(path)],
+        capture_output=True, text=True, env=bc.gdal_env())
+    if r.returncode != 0:
+        print(r.stdout[-2000:], r.stderr[-2000:], file=sys.stderr)
+        sys.exit(f"{path}: gdalinfo could not read the finished COG")
+    missing = missing_band_stats(json.loads(r.stdout))
+    if missing:
+        sys.exit(f"{path}: band(s) {missing} carry no embedded "
+                 f"{'/'.join(STAT_KEYS)} (PTL-DAT-009 is a MUST). The "
+                 "`gdalinfo -approx_stats` pass over the source VRT did not "
+                 "reach the output file; the COG was not published.")
 
 
 def _zone_vrt(job: tuple[int, list[str], Path, int]) -> tuple[int, float, str]:
@@ -414,7 +463,9 @@ def build(year: int, index: str, work: Path, out: Path, zoom: int,
     # disabled, so a .aux.xml sidecar does not count). Computing them on the
     # source VRT writes PAM beside it, and the COG translate copies band
     # metadata into the file's GDAL_METADATA tag — verified with rashid's
-    # own check. -approx_stats reads the warped zones' overviews, not every
+    # own check, and `verify_band_stats` re-reads the finished COG with PAM
+    # off and refuses to publish one where they did not land.
+    # -approx_stats reads the warped zones' overviews, not every
     # base pixel, which the spec permits for statistics.
     t0 = time.monotonic()
     bc.run(["gdalinfo", "-approx_stats", str(rgba)], "band statistics")
@@ -447,6 +498,7 @@ def build(year: int, index: str, work: Path, out: Path, zoom: int,
             "-co", "OVERVIEW_RESAMPLING=AVERAGE",
             "-co", "BIGTIFF=IF_SAFER",
             "-co", "NUM_THREADS=ALL_CPUS"], "gdal_translate COG")
+    verify_band_stats(tmp)
     os.replace(tmp, final)
     bc.say(f"{year}: {final} written, JPEG+mask, "
            f"{final.stat().st_size / 1e6:,.1f} MB, "

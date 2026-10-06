@@ -61,6 +61,13 @@ probability is the stored value divided by 255. No nodata value is declared,
 and no land-cover or nodata mask is applied at this stage. These files are the
 `raster/{year}/` product.
 
+Every band carries its exact `STATISTICS_MINIMUM/MAXIMUM/MEAN/STDDEV` and a
+`STATISTICS_VALID_PERCENT` of 100 embedded in the file itself, not in a PAM
+sidecar — a Portolan MUST (PTL-DAT-009; PTL-DAT-010 for the valid percent).
+They are computed from the array already in memory, so they are exact rather
+than estimated and cost no extra pass over the pixels. The 2e tiles predate
+this and are an accepted deviation (docs/conformance.md).
+
 A stack that declares neither the `Q1_B04`…`Q4_B08` band descriptions nor the
 `input_bands` tag is refused rather than assumed, because GDAL does not always
 preserve band descriptions. The model SHA-256, the source raster tags and the
@@ -245,6 +252,10 @@ zone's warped GeoTIFF in `WORK/<year>/overview-scratch` (that is what
 skips any PNG already on disk. A resubmit of either redoes only what is
 missing. The overview **refuses to assemble a mosaic with a missing
 zone**, so a partial run never produces a browse layer with a hole in it.
+It also **refuses to publish a COG without embedded band statistics**: the
+`gdalinfo -approx_stats` pass over the source VRT writes them to PAM, the COG
+translate carries them into the file, and `verify_band_stats` re-reads the
+finished file with PAM off before it is moved into place (PTL-DAT-009/010).
 
 ### Rulings, and what they rest on
 
@@ -479,10 +490,14 @@ uv pip install pytest
 .venv/bin/python -m pytest pipeline/postprocessing/tests
 .venv/bin/python -m pytest -rs pipeline/inference/test_inference.py
 .venv/bin/python -m pytest pipeline/mosaics/test_mosaics.py
+.venv/bin/python -m pytest -rs pipeline/test_make_overview.py
 ```
 
 Run the inference tests with `-rs`, so the few that need a GPU skip loudly
 rather than silently. The tests cover patch edges, blending, the COG and
-band-order contracts, resume and provenance, and the model and device
-preflights against real ONNX exports. CUDA throughput and parity against the
-real checkpoint still need a GPU and the released model.
+band-order contracts, embedded band statistics, resume and provenance, and the
+model and device preflights against real ONNX exports. CUDA throughput and
+parity against the real checkpoint still need a GPU and the released model.
+The rashid cross-check in `test_inference.py` and the end-to-end overview
+statistics test skip loudly too — the first wants rashid importable, the second
+GDAL's command-line tools on PATH — so run both with `-rs` as well.
