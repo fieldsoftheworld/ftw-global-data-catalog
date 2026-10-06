@@ -14,6 +14,7 @@ Guidance for AI agents. Every claim here is quoted from the dataset's embedded m
 - Parcel ids are unique within a zone file; zones partition the parcels cleanly (measured: zero shared ids or geometries in the 6°E utm31/utm32 boundary strip).
 - `metrics:area` is m². Post-processing kept parcels between 900 m² and 5 km². Inside a processed tile nothing was removed on land-cover, water or slope grounds, so non-agricultural ground can carry parcels.
 - Coverage is cropland-gated: only MGRS tiles with at least 1% cropland were processed. Treat an empty region as unprocessed, not as a prediction that no fields exist there.
+- **South-west Norway is missing from this year.** 2017 predates the band-V exception in the post-processing UTM-zone test, so parcels between 3°E and 6°E in the 56°N–64°N band — MGRS squares 32VKK, 32VKL, 32VLK and 32VLL, covering Bergen, Stavanger and Jæren — were rejected as outside zone 32 and are absent from the zone=31 and zone=32 files alike. The tiles were predicted and the 2017 rasters carry them; only the vectors drop them. 2018 through 2025 were rebuilt with the fix and each gained between 9,761 and 18,625 parcels there, so a year-over-year comparison in that window makes fields look as though they appeared in 2018 when the difference is only this artefact.
 - Query with DuckDB over https:// URLs (s3:// hangs on some networks); a browser-like User-Agent is needed for bucket listings only, not file reads.
 - The `items.parquet` collection mirror holds all item metadata for bulk spatial lookup of zones.
 

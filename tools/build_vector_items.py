@@ -151,6 +151,35 @@ def fix_details(details: str) -> str:
         return details
     return details.replace(_STALE_DETAIL, _TRUE_DETAIL)
 
+
+# 2017 was built before `lon_in_zone` grew the band-V UTM exception
+# (`pipeline/postprocessing/outlines.py`), which widens 32V to 3-12E. The
+# nominal 6-12E test rejected every zone-32 parcel between 3E and 6E, and no
+# 31V tile covers that strip, so those parcels were lost outright rather than
+# claimed by a neighbour. 2018-2025 were rebuilt with the fix and each gained
+# 9,761 to 18,625 zone-32 parcels; 2017 was not, and its zone-32 bbox still
+# starts at 5.984E against 3.708-3.996E for every other year. The 2017 rasters
+# for 32VKK/32VKL/32VLK/32VLL are published and return 200, so the tiles ran:
+# only the vectors drop the parcels.
+_BAND_V_GAP_YEARS = (2017,)
+_BAND_V_GAP = (
+    "**South-west Norway is missing from this year.** 2017 predates the "
+    "band-V exception in the post-processing UTM-zone test, so parcels "
+    "between 3°E and 6°E in the 56°N–64°N band — MGRS squares 32VKK, 32VKL, "
+    "32VLK and 32VLL, covering Bergen, Stavanger and Jæren — were rejected "
+    "as outside zone 32 and are absent from the zone=31 and zone=32 files "
+    "alike. The tiles were predicted and the 2017 rasters carry them; only "
+    "the vectors drop them. 2018 through 2025 were rebuilt with the fix and "
+    "each gained between 9,761 and 18,625 parcels there, so a year-over-year "
+    "comparison in that window makes fields look as though they appeared in "
+    "2018 when the difference is only this artefact."
+)
+
+
+def band_v_gap(year: int) -> str:
+    """The band-V gap note for the years that carry it, empty for the rest."""
+    return _BAND_V_GAP if year in _BAND_V_GAP_YEARS else ""
+
 # The 9 columns of every zone parquet (second bucket revision, 2026-09-28).
 # The `score` description is the dataset's own, from the parquet's embedded
 # schemas:custom; the core fields follow fiboa/vecorel.
@@ -382,14 +411,40 @@ def build_item(row: dict, meta: dict, checksums: dict) -> dict:
     }
 
 
+def tiles_meta_for(year: int, out: Path | None = None) -> dict:
+    """size+checksum for the year's assets whose bytes live only in the bucket.
+
+    The staging sidecar wins where it has the year, because the PMTiles build
+    writes it. It is gitignored, though, so a checkout without it (or with only
+    some years in it) falls back to the committed `collection.json`. Without
+    that fallback a regeneration silently drops the `pmtiles`, `cells` and
+    `styles/*` assets for every missing year — `has_tiles` gates all three — so
+    the advertised "edit the generator and re-run it" would delete metadata
+    rather than reproduce it.
+    """
+    sizes = (json.loads(TILES_META.read_text())
+             if TILES_META.is_file() else {})
+    base = out if out is not None else ROOT / "catalog" / "vector"
+    committed = base / str(year) / "collection.json"
+    if not committed.is_file():
+        return sizes
+    assets = json.loads(committed.read_text()).get("assets", {})
+    for key in ("pmtiles", "cells", "mirror"):
+        asset = assets.get(key) or {}
+        if f"{key}_{year}" in sizes or not asset.get("file:checksum"):
+            continue
+        sizes[f"{key}_{year}"] = {"size": asset["file:size"],
+                                  "checksum": asset["file:checksum"]}
+    return sizes
+
+
 def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
     n = sum(r["n_parcels"] for r in rows)
     gib = sum(r["size_bytes"] for r in rows) / 2**30
     area = sum(r["area_km2"] for r in rows)
     bbox = [min(r["xmin"] for r in rows), min(r["ymin"] for r in rows),
             max(r["xmax"] for r in rows), max(r["ymax"] for r in rows)]
-    tiles_meta = (json.loads(TILES_META.read_text())
-                  if TILES_META.is_file() else {})
+    tiles_meta = tiles_meta_for(year)
     has_tiles = f"pmtiles_{year}" in tiles_meta
     links = [
         {"rel": "root", "href": "../../catalog.json",
@@ -507,6 +562,8 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
         if entry and key in assets:
             assets[key]["file:size"] = entry["size"]
             assets[key]["file:checksum"] = entry["checksum"]
+    gap = band_v_gap(year)
+    gap_para = "\n\n" + gap if gap else ""
     return {
         "type": "Collection",
         "stac_version": "1.1.0",
@@ -529,6 +586,7 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             f"(CDSE mirror). The full pipeline, from mosaic download to this "
             f"file, is documented in "
             f"[pipeline/README.md]({REPO_URL}/blob/main/pipeline/README.md)."
+            f"{gap_para}"
             f"\n\nThe schema follows {_FIBOA} and {_VECOREL}: "
             f"columns {_COLS_SHORT} — see `table:columns` for definitions."
         ),
@@ -638,6 +696,7 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         f"[pipeline/README.md]({REPO_URL}/blob/main/pipeline/README.md) "
         f"documents every stage, from mosaic download to this file.",
         "",
+        *([band_v_gap(year), ""] if band_v_gap(year) else []),
         "## Files", "",
         f"One file per UTM zone at `vector/{year}/zone=NN/utm{{NN}}.parquet`, "
         "hive-partitioned by `zone`. The largest is "
@@ -714,6 +773,7 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         "- Coverage is cropland-gated: only MGRS tiles with at least 1% "
         "cropland were processed. Treat an empty region as unprocessed, not "
         "as a prediction that no fields exist there.",
+        *([f"- {band_v_gap(year)}"] if band_v_gap(year) else []),
         "- Query with DuckDB over https:// URLs (s3:// hangs on some "
         "networks); a browser-like User-Agent is needed for bucket "
         "listings only, not file reads.",
@@ -845,8 +905,7 @@ def main() -> int:
             stem = zone_stem(row["zone"])
             write_json(year_dir / f"zone={row['zone']:02d}" / f"{stem}.json",
                        build_item(row, meta, checksums))
-        tiles_meta = (json.loads(TILES_META.read_text())
-                      if TILES_META.is_file() else {})
+        tiles_meta = tiles_meta_for(year, args.out)
         if f"pmtiles_{year}" in tiles_meta:
             for name, spec in style_specs().items():
                 write_json(year_dir / "styles" / f"{name}.json",

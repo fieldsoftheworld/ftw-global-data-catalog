@@ -21,11 +21,11 @@
           64.90435182641926
         ],
         [
-          5.988598636845076,
+          3.7254498121050994,
           64.90435182641926
         ],
         [
-          5.988598636845076,
+          3.7254498121050994,
           -16.258209416436827
         ],
         [
@@ -36,19 +36,19 @@
     ]
   },
   "bbox": [
-    5.988598636845076,
+    3.7254498121050994,
     -16.258209416436827,
     12.018420202852006,
     64.90435182641926
   ],
   "properties": {
     "title": "UTM zone 32 — 2024 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 32 for 2024: 5,887,440 parcels, 187,749 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 32 for 2024: 5,897,201 parcels, 188,068 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2024-01-01T00:00:00Z",
     "start_datetime": "2024-01-01T00:00:00Z",
     "end_datetime": "2024-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 5887440,
+    "table:row_count": 5897201,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 4474054235,
+      "file:size": 4481018030,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2024/zone=32/utm32.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "12206a9cdfd7a062d380eaee91cc865046749e9784a8dc9efbce33d22a6f1a95fe5e"
+      "file:checksum": "122035d84161041b126659b86ef6e16c11b5acf17a8332d2516606e91d2ccb8aec5d"
     }
   },
   "links": [

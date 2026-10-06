@@ -36,8 +36,11 @@ something.
 
 | Rule | Where | Why accepted | In `ACCEPTED`? | Tracking |
 |---|---|---|---|---|
-| PTL-VIZ-002 | `raster/{2017..2025}/collection.json` | The visualization derivative is a pre-rendered RGB JPEG COG (roles `visual`,`overview`,`cloud-optimized`); its styling is baked into the pixels at build time, so no client-side style document exists for a `style` asset to name. The colormap is documented in each README and in `pipeline/make_overview.py`. | yes (9× error) | rashid#202 |
+| PTL-VIZ-002 | `raster/{2017..2025}/collection.json` | The visualization derivative is a pre-rendered RGB JPEG COG (roles `visual`,`overview`,`cloud-optimized`); its styling is baked into the pixels at build time, so no client-side style document exists for a `style` asset to name. The colormap is documented in each README and in `pipeline/make_overview.py`. | yes (9× error) | [rashid#202](https://github.com/portolan-sdi/rashid/issues/202) |
 | PTL-DAT-009 | the 67,197 published 2e score COGs, `raster/{2017..2025}/.../{tile}.tif` | They were written without embedded band statistics. 26 TB cannot be rewritten in place without destroying the COG layout, and the writers are fixed, so the next generation complies. See the section below. | **no** — a data rule, never reached by the gate (see below) | — |
+
+The structural rows (and only those) match `ACCEPTED` in
+`tests/test_portolan_conformance.py` exactly.
 
 <!--
 When you accept one, add a row and a section explaining it.
@@ -50,6 +53,21 @@ A **data** rule (`PTL-DAT-…`) does not, and must not be added: the gate runs
 waive nothing while reading as if the gate had seen the deviation and let it
 pass. The row is the whole record. Say so in the row, as PTL-DAT-009 does.
 -->
+
+### PTL-VIZ-002: the raster browse overview has no style document
+
+Each raster year collection carries an `overview.tif` with roles `visual`,
+`overview`, `cloud-optimized`. PTL-VIZ-002 wants a visualization asset to name
+the style that renders it, and this one has none to name: it is a pre-rendered
+RGB JPEG COG, so the colormap is applied at build time and baked into the
+pixels rather than evaluated by a client. A `style` asset pointing at a
+MapLibre document would be a false claim about how the image is drawn.
+
+The colormap is documented instead — in each year's README.md and in
+`pipeline/make_overview.py`, which is the code that applies it. The rule as
+written does not distinguish a client-styled asset from a baked one; filed as
+[rashid#202](https://github.com/portolan-sdi/rashid/issues/202). Nine
+findings, one per year.
 
 ### PTL-DAT-009: the published 2e score COGs carry no embedded band statistics
 

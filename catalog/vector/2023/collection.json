@@ -11,7 +11,7 @@
   ],
   "id": "ftw-s2-2023",
   "title": "FTW Global — Field Boundaries 2023 (GeoParquet)",
-  "description": "Predicted agricultural field boundaries for 2023: 133,227,819 parcels (6,579,283 km² of field area) in 54 per-UTM-zone GeoParquet files, 82.7 GiB total. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2023), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2023/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2023 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Within a processed tile no parcel is removed on land-cover, water or terrain grounds, the retention test being UTM-zone and MGRS-square ownership plus the size bounds above. Land cover did decide which tiles ran: only MGRS tiles with at least 1% cropland were processed, so regions below that threshold are absent entirely. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror). The full pipeline, from mosaic download to this file, is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+  "description": "Predicted agricultural field boundaries for 2023: 133,246,444 parcels (6,579,740 km² of field area) in 54 per-UTM-zone GeoParquet files, 82.7 GiB total. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2023), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2023/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2023 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Within a processed tile no parcel is removed on land-cover, water or terrain grounds, the retention test being UTM-zone and MGRS-square ownership plus the size bounds above. Land cover did decide which tiles ran: only MGRS tiles with at least 1% cropland were processed, so regions below that threshold are absent entirely. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror). The full pipeline, from mosaic download to this file, is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
   "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
@@ -528,8 +528,8 @@
       "roles": [
         "visual"
       ],
-      "file:size": 27763677692,
-      "file:checksum": "1220b5d339bd311e079c8fb0b189c9835d43e700a3cc07d30c20dc6b8684877443bd"
+      "file:size": 27768265753,
+      "file:checksum": "12202b7773b175178375c9d0dca4dcbb46e770635dbfb44f16fd66d47dc024f2536e"
     },
     "cells": {
       "href": "./cells_a5r7_2023.parquet",
@@ -539,8 +539,8 @@
       "roles": [
         "data"
       ],
-      "file:size": 1658552,
-      "file:checksum": "1220226bae31edd118294ab258cb99950cdb1b461f5e99ffdbaf1af8651387b74c51"
+      "file:size": 1659247,
+      "file:checksum": "122003db5f35b2b88c2ef7c5890d0bbf0572f2055a47ee7651ea7972c3067ef4b836"
     },
     "styles/count": {
       "href": "./styles/count.json",
@@ -590,8 +590,8 @@
       "roles": [
         "thumbnail"
       ],
-      "file:size": 8187,
-      "file:checksum": "12203ef68406f35c579ea1487f2f0eb3b2173cd5a68ccbbe07939c8a9a0b2a68c6fb"
+      "file:size": 120651,
+      "file:checksum": "12204b8dc73e3a3b5ad3f998bf1f12663a9fe038c2b2ae2dd8354f0c367d491c4641"
     },
     "mirror": {
       "href": "./items.parquet",
@@ -602,8 +602,8 @@
         "collection-mirror",
         "metadata"
       ],
-      "file:size": 34427,
-      "file:checksum": "1220d70395f7b0b8ef1aa188993bcc9c7f0aeaa2adae5e80af0b973f49fc9e2ad2cb"
+      "file:size": 34425,
+      "file:checksum": "1220ee744204d56120e608757dd4961f4494549a33cdf5f2e53d8d2e7b2d99fa42d5"
     }
   }
 }
