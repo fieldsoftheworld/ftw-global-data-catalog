@@ -38,7 +38,7 @@ pipeline/rashid-check-*.time
 .DS_Store
 __pycache__/
 *.pyc
-.venv/
+.venv
 .ruff_cache/
 .superpowers/
 
