@@ -80,7 +80,7 @@ The 7,466 items are grouped into 54 UTM-zone subcatalogs, each splitting into it
 
 The UTM zones present this year: 01, 04, 05, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60 — 54 of the 60 UTM zones; the others hold no tiles in this collection.
 
-One [global overview COG](https://data.source.coop/ftw/global-data-2e/raster/2021/overview.tif) renders the whole year at global scale (the collection's `overview` asset). Every tile's own thumbnail sits beside its COG.
+One [global overview COG](https://data.source.coop/ftw/global-data-2e/raster/2021/overview.tif) renders the whole year at global scale (the collection's `overview` asset). Its colormap is baked in at build time by `pipeline/make_overview.py`: a continuous ramp over band 1 (field probability), transparent below 0.10, interpolating the same colours and score edges as the vector `field-prob` style. Every tile's own thumbnail sits beside its COG.
 
 The [items.parquet mirror](https://data.source.coop/ftw/global-data-2e/raster/2021/items.parquet) holds every item's metadata in one stac-geoparquet file, so a spatial lookup over 7,466 tiles is one query rather than 7,466 HTTP requests:
 

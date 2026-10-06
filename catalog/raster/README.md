@@ -1,4 +1,4 @@
-# FTW Global (beta) — Field & boundary probability rasters
+# FTW Global (2nd Edition) — Field & boundary probability rasters
 
 Per-year collections of 2.5 m field/boundary probability COGs, 2017–2025: **67,197 tiles**. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 

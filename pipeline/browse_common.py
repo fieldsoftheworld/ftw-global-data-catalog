@@ -31,9 +31,9 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 
-# The public index of every beta raster item. `href` is the authoritative
+# The public index of every 2e raster item. `href` is the authoritative
 # object URL; nothing here ever builds a key from a tile id.
-INDEX_URL = ("https://data.source.coop/ftw/global-data-beta/"
+INDEX_URL = ("https://data.source.coop/ftw/global-data-2e/"
              "index/raster.parquet")
 
 # Source COG geometry, verified with gdalinfo over https on 2026-10-01

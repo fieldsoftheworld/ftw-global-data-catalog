@@ -150,9 +150,9 @@ the gate stays honest.
 It is a deliberate policy, not an oversight. A multihash checksum means
 reading the bytes, and the raster tree is 67,197 COGs totalling ~26 TB. The
 index carries no checksum column (measured: 14 columns, none of them a
-digest), so filling the field would mean streaming 26 TB — nine times the
+digest), so filling the field would mean streaming 26 TB — dozens of times the
 whole vector tree — to add a field that no reader of this catalog has asked
-for. The vector tree, at 227 GiB in 108 files, was cheap enough to hash
+for. The vector tree, at ~0.7 TiB in 486 zone parquets, was cheap enough to hash
 (`tools/hash_remote.py`) and does carry checksums. The rule this follows is
 the s2-stac-geoparquet one: checksums where they are cheap.
 
@@ -194,7 +194,8 @@ what may and may not be changed about it later.
 ### The generated item tree is not committed (user ruling 2026-10-03)
 
 The tree is **generated, not authored**: `tools/build_raster_items.py items`
-rebuilds all 78,267 files (67,197 items + 3,690 zone/GZD catalogs) from
+rebuilds all 78,267 files (67,197 items, 3,690 zone/GZD catalogs, and
+their 7,380 README/AGENTS files) from
 `index/raster.parquet` plus the header sidecar, deterministically, and
 `tools/publish.py` walks the filesystem rather than the git index, so what
 publishes is unchanged. The 2026-10-02 ruling above was about the *bucket
@@ -259,12 +260,13 @@ reports nothing at all, while a flat list of 7,466 could never comply.
   ~150k loose objects until someone runs `git gc`.
 - **Files.** 3,690 group catalogs (486 zone + 3,204 GZD across nine years),
   each with a README.md and an AGENTS.md, because PTL-FIL-001/002/003 bind
-  plain catalogs and not only collections (measured). That is 11,070
+  plain catalogs and not only collections (measured). That is 7,380
   generated documentation files.
-- **Warnings, not errors.** Measured over the committed tree: 1,497
-  PTL-CAT-001 (1,494 GZD leaves holding 20 or more tiles, plus the 3 vector
-  collections that already warned) and 201,615 PTL-AST-003 (134,415 "no
-  `file:checksum`" and 67,200 "no `file:size`"). The year collections
+- **Warnings, not errors.** Measured over the full tree (rashid job
+  250634, 2026-10-03): 1,503
+  PTL-CAT-001 (1,494 GZD leaves holding 20 or more tiles, plus the 9 vector
+  collections that already warned) and 201,618 PTL-AST-003 (134,412 "no
+  `file:checksum`" and 67,206 "no `file:size`"). The year collections
   themselves no longer warn, because all of their children are catalogs.
   A fourth level (the 100-km square) would clear the leaf warnings and is
   deliberately not used: every extra group catalog costs rashid a full-tree
@@ -284,7 +286,7 @@ rashid's containment helpers cost (nodes × catalog-or-collection nodes):
 | flat, 1 year | 7,658 | 13 | 32 s |
 | flat, 3 years | 22,590 | 13 | 95 s |
 | grouped, 1 year | 8,068 | 423 | 124 s |
-| **grouped, 9 years (this catalog)** | **71,088** | **3,703** | **2 h 30 min** |
+| **grouped, 9 years (this catalog)** | **71,448** | **3,711** | **2 h 54 min** |
 
 The flat rows are linear in file count, because their structural-node count
 never moves. The grouped rows are not: one grouped year is 4× slower than a

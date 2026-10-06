@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Generate the raster tree of the beta catalog: collections, items, mirror.
+"""Generate the raster tree of the 2e catalog: collections, items, mirror.
 
 Three subcommands, in the order you run them:
 
@@ -606,7 +606,7 @@ def build_collection(year: int, stats: dict, extra: dict[str, dict],
         "links": [
             {"rel": "root", "href": "../../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (beta)"},
+             "title": "Fields of the World — Global Data (2nd Edition)"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json"},
             {"rel": "license",
@@ -638,7 +638,7 @@ def build_raster_catalog(stats: dict[int, dict]) -> dict:
         "stac_version": "1.1.0",
         "stac_extensions": [PORTOLAN_EXT],
         "id": "raster",
-        "title": "FTW Global (beta) — Field & boundary probability rasters",
+        "title": "FTW Global (2nd Edition) — Field & boundary probability rasters",
         "description": (
             f"Per-year collections of field/boundary probability COGs at "
             f"{GSD} m, {min(stats)}–{max(stats)}: {total:,} tiles, "
@@ -648,7 +648,7 @@ def build_raster_catalog(stats: dict[int, dict]) -> dict:
         "links": [
             {"rel": "root", "href": "../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (beta)"},
+             "title": "Fields of the World — Global Data (2nd Edition)"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json"},
             {"rel": "describedby", "href": "./README.md",
@@ -738,7 +738,7 @@ def build_item(row: dict, header: dict, with_thumbnail: bool = True) -> dict:
             # object, and the collection sits three above.
             {"rel": "root", "href": "../../../../../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (beta)"},
+             "title": "Fields of the World — Global Data (2nd Edition)"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json",
              "title": f"Grid zone {gzd_of(tile)} — {year}"},
@@ -776,7 +776,7 @@ def build_zone_catalog(year: int, zone: str, gzds: dict[str, list[str]],
         "links": [
             {"rel": "root", "href": "../../../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (beta)"},
+             "title": "Fields of the World — Global Data (2nd Edition)"},
             {"rel": "parent", "href": "../collection.json",
              "type": "application/json",
              "title": f"FTW Global — Field & Boundary Probabilities {year} "
@@ -812,7 +812,7 @@ def build_gzd_catalog(year: int, zone: str, gzd: str,
         "links": [
             {"rel": "root", "href": "../../../../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (beta)"},
+             "title": "Fields of the World — Global Data (2nd Edition)"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json",
              "title": f"UTM zone {int(zone)} — {year}"},
@@ -1489,7 +1489,11 @@ def year_readme(year: int, stats: dict, extra: dict[str, dict],
             lines += [
                 f"One [global overview COG]({PUBLIC_BASE}/raster/{year}/"
                 f"overview.tif) renders the whole year at global scale "
-                "(the collection's `overview` asset)."
+                "(the collection's `overview` asset). Its colormap is baked "
+                "in at build time by `pipeline/make_overview.py`: a "
+                "continuous ramp over band 1 (field probability), "
+                "transparent below 0.10, interpolating the same colours and "
+                "score edges as the vector `field-prob` style."
                 + (" Every tile's own thumbnail sits beside its COG."
                    if report.get("thumb") == "PRESENT" else ""), "",
             ]
@@ -1580,7 +1584,7 @@ def year_agents(year: int, stats: dict, extra: dict[str, dict],
 def tree_readme(stats: dict[int, dict]) -> str:
     total = sum(s["n"] for s in stats.values())
     return "\n".join([
-        "# FTW Global (beta) — Field & boundary probability rasters", "",
+        "# FTW Global (2nd Edition) — Field & boundary probability rasters", "",
         f"Per-year collections of {GSD} m field/boundary probability COGs, "
         f"{min(stats)}–{max(stats)}: **{total:,} tiles**. {_PROJECT}", "",
         f"Browse it in the [data browser]({DATA_BROWSER}).", "",
