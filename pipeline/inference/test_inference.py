@@ -417,17 +417,22 @@ def _fake_run(monkeypatch, tmp_path, argv):
 
 
 def test_main_writes_into_the_published_hierarchy(tmp_path, monkeypatch):
-    """The dst main() actually chooses — the default must stay the hierarchy."""
+    """The default must be the key the bucket and the catalog use.
+
+    The bucket holds raster/{year}/zone=ZZ/gzd=ZZL/{tile}/ and nothing else; a
+    default run that wrote the older per-item-folder key would upload COGs no
+    catalog item points at.
+    """
     out = tmp_path / "out"
     assert _fake_run(monkeypatch, tmp_path, []) == [
-        out / "raster/2025/15TVG_0_0/15TVG_0_0.tif"
+        out / "raster/2025/zone=15/gzd=15T/15TVG_0_0/15TVG_0_0.tif"
     ]
 
 
-def test_main_hive_layout_writes_the_grouped_key(tmp_path, monkeypatch):
+def test_main_item_layout_is_still_available(tmp_path, monkeypatch):
     out = tmp_path / "out"
-    assert _fake_run(monkeypatch, tmp_path, ["--layout", "hive"]) == [
-        out / "raster/2025/zone=15/gzd=15T/15TVG_0_0/15TVG_0_0.tif"
+    assert _fake_run(monkeypatch, tmp_path, ["--layout", "item"]) == [
+        out / "raster/2025/15TVG_0_0/15TVG_0_0.tif"
     ]
 
 

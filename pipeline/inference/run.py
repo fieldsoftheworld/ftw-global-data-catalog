@@ -1,10 +1,11 @@
 """Run an FP32 ONNX model over stacked quarterly mosaic tiles.
 
-Outputs land directly in the published per-item hierarchy:
-``{output-dir}/raster/{year}/{tile}/{tile}.tif``, so a finished year uploads
-with ``tools/upload_data.py`` without a relayout step (point ``--output-dir``
-at the repo's ``staging-data/``). ``--layout hive`` writes the bucket's own
-grouped key instead, ``raster/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif``.
+Outputs land directly at the bucket's own grouped key:
+``{output-dir}/raster/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif``, so a finished
+year uploads with ``tools/upload_data.py`` to where the catalog's items point,
+with no relayout step (point ``--output-dir`` at the repo's ``staging-data/``).
+``--layout item`` writes the older per-item-folder key
+``raster/{year}/{tile}/{tile}.tif``, which no catalog references any more.
 """
 
 import argparse
@@ -282,7 +283,7 @@ def main() -> None:
     ap.add_argument("--input-dir", type=Path, required=True)
     ap.add_argument("--output-dir", type=Path, required=True,
                     help="hierarchy root; scores land at "
-                         "{output-dir}/" + LAYOUTS["item"] + " (see --layout)")
+                         "{output-dir}/" + LAYOUTS["hive"] + " (see --layout)")
     ap.add_argument("--year", type=int, required=True)
     ap.add_argument("--model", type=Path, required=True)
     ap.add_argument("--batch", type=int, default=64)
@@ -292,9 +293,11 @@ def main() -> None:
     ap.add_argument(
         "--layout",
         choices=tuple(LAYOUTS),
-        default="item",
-        help="item (default): " + LAYOUTS["item"] + "; hive: the bucket's own grouped "
-        "key " + LAYOUTS["hive"] + ", which uploads without a server-side regrouping",
+        default="hive",
+        help="hive (default): the bucket's own grouped key " + LAYOUTS["hive"]
+        + ", which the catalog references and uploads with no regrouping; "
+        "item: " + LAYOUTS["item"] + ", the superseded per-item-folder layout "
+        "(no catalog points at it — use only to reproduce older runs)",
     )
     ap.add_argument("--shard", type=int, default=0)
     ap.add_argument("--num-shards", type=int, default=1)
