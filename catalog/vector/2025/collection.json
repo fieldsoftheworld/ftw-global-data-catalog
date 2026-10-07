@@ -546,12 +546,12 @@
       "href": "./cells-2025.pmtiles",
       "type": "application/vnd.pmtiles",
       "title": "A5 cell aggregates 2025, one resolution per zoom (PMTiles)",
-      "description": "Cell counts, areas and mean scores at A5 resolutions 3 to 10, one resolution per zoom from z0 to z7, for drawing the year at global scale.",
+      "description": "A5 cells for drawing the year at global scale, with one resolution per zoom: r4 at the globe to r11 at zoom 7. Each cell carries count, area_ha, avg_score, pct_covered and density (fields per 1,000 km²). About 140 MB per year.",
       "roles": [
         "visual"
       ],
-      "file:size": 58384376,
-      "file:checksum": "122074ea23c4752425dab20adc4302999e8e45da08d8aacf55ce6ef11008b457ad64"
+      "file:size": 142135701,
+      "file:checksum": "12208ad69b84e394c4863d1933b786a2411353b81db5969d60c5e4b27b6e68c68d14"
     },
     "styles/count": {
       "href": "./styles/count.json",

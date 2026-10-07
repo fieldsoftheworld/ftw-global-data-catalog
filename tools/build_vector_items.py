@@ -430,7 +430,7 @@ def build_item(row: dict, meta: dict, checksums: dict) -> dict:
 
 # (tiles_meta key prefix, collection asset key) for the assets whose bytes live only in the bucket.
 # `cellsmulti` is vector/{year}/cells-{year}.pmtiles, the multi-resolution cell archive the web
-# viewer reads; it exists for some years only, and the asset is written only for those.
+# viewer reads. The asset is written for the years that have an entry in tiles_meta.json.
 META_ASSETS = (("pmtiles", "pmtiles"), ("cells", "cells"),
                ("cellsmulti", "cells-pmtiles"), ("mirror", "mirror"))
 
@@ -557,10 +557,11 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             "type": "application/vnd.pmtiles",
             "title": f"A5 cell aggregates {year}, one resolution per zoom "
                      "(PMTiles)",
-            "description": "Cell counts, areas and mean scores at A5 "
-                           "resolutions 3 to 10, one resolution per zoom "
-                           "from z0 to z7, for drawing the year at "
-                           "global scale.",
+            "description": "A5 cells for drawing the year at global scale, "
+                           "with one resolution per zoom: r4 at the globe "
+                           "to r11 at zoom 7. Each cell carries count, "
+                           "area_ha, avg_score, pct_covered and density "
+                           "(fields per 1,000 km²). About 140 MB per year.",
             "roles": ["visual"],
         }
     for name, spec in (specs.items() if has_tiles else ()):

@@ -542,6 +542,17 @@
       "file:size": 1598768,
       "file:checksum": "1220a4970d1228977b122f855a1d120c9336e45fe119200c1f26acdfc910e9a80b1f"
     },
+    "cells-pmtiles": {
+      "href": "./cells-2018.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "A5 cell aggregates 2018, one resolution per zoom (PMTiles)",
+      "description": "A5 cells for drawing the year at global scale, with one resolution per zoom: r4 at the globe to r11 at zoom 7. Each cell carries count, area_ha, avg_score, pct_covered and density (fields per 1,000 km²). About 140 MB per year.",
+      "roles": [
+        "visual"
+      ],
+      "file:size": 139345903,
+      "file:checksum": "122053bfd4c68bfbad5a38ec6cac0979a0bf88f7346a113ce4155bcd7fd9e7c91f87"
+    },
     "styles/count": {
       "href": "./styles/count.json",
       "type": "application/vnd.mapbox.style+json",
