@@ -11,7 +11,7 @@
   ],
   "id": "ftw-s2-2018",
   "title": "FTW Global — Field Boundaries 2018 (GeoParquet)",
-  "description": "Predicted agricultural field boundaries for 2018: 120,277,037 parcels (6,229,924 km² of field area) in 54 per-UTM-zone GeoParquet files, 76.0 GiB total. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2018), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2018/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2018 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Within a processed tile no parcel is removed on land-cover, water or terrain grounds, the retention test being UTM-zone and MGRS-square ownership plus the size bounds above. Land cover did decide which tiles ran: only MGRS tiles with at least 1% cropland were processed, so regions below that threshold are absent entirely. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror). The full pipeline, from mosaic download to this file, is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+  "description": "Predicted agricultural field boundaries for 2018: 129,911,998 parcels (6,936,734 km² of field area) in 54 per-UTM-zone GeoParquet files, 84.5 GiB total. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2018), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2018/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2018 Q1-Q4, 4 quarters x B04/B03/B02/B08 in the model's input order), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1), 5 m coverage simplification, holes under 20 m2 filled. Removed: parcels > 5 km2 (after the seam union), parcels at least 70% Impact Observatory io-lulc 2024 water (inland water, aquaculture ponds, salt pans), parcels with less than half their area on OpenStreetMap land polygons (sea). Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror). The full pipeline, from mosaic download to this file, is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
   "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
@@ -39,10 +39,10 @@
     "spatial": {
       "bbox": [
         [
-          -175.82725500208306,
-          -46.95295452326319,
-          179.8066296746243,
-          65.82154420889279
+          -175.35161676026448,
+          -46.83662412801349,
+          179.8118490715629,
+          65.82062940047486
         ]
       ]
     },
@@ -528,8 +528,8 @@
       "roles": [
         "visual"
       ],
-      "file:size": 25523209031,
-      "file:checksum": "12207cc39a8901d46af97bfc62f0f4ccf9846610429fb97696d9dd09f4af52569634"
+      "file:size": 28243485220,
+      "file:checksum": "12202ecf0be380972fb076db8cbd829b30ad891fe9aa974983efc130d0ec7bf033f9"
     },
     "cells": {
       "href": "./cells_a5r7_2018.parquet",
@@ -539,8 +539,19 @@
       "roles": [
         "data"
       ],
-      "file:size": 1651038,
-      "file:checksum": "1220dd34c8c9f875fa1054d79aa3b19dcdc1a75f227caabf0f5fae26afbce4b9a215"
+      "file:size": 1598768,
+      "file:checksum": "1220a4970d1228977b122f855a1d120c9336e45fe119200c1f26acdfc910e9a80b1f"
+    },
+    "cells-pmtiles": {
+      "href": "./cells-2018.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "A5 cell aggregates 2018, one resolution per zoom (PMTiles)",
+      "description": "A5 cells for drawing the year at global scale, with one resolution per zoom: r4 at the globe to r11 at zoom 7. Each cell carries count, area_ha, avg_score, pct_covered and density (fields per 1,000 km²). About 140 MB per year.",
+      "roles": [
+        "visual"
+      ],
+      "file:size": 139345903,
+      "file:checksum": "122053bfd4c68bfbad5a38ec6cac0979a0bf88f7346a113ce4155bcd7fd9e7c91f87"
     },
     "styles/count": {
       "href": "./styles/count.json",
@@ -590,8 +601,8 @@
       "roles": [
         "thumbnail"
       ],
-      "file:size": 114588,
-      "file:checksum": "1220d354937f2803deb4ad97892c0a341fbd52181991a2a32da968f46dba5bb47f81"
+      "file:size": 240285,
+      "file:checksum": "122026c8bfb8c6e4643262fd3390ed4433a1cfbe7e46b67a6f91cfd0c7da768890ea"
     },
     "mirror": {
       "href": "./items.parquet",
@@ -602,8 +613,8 @@
         "collection-mirror",
         "metadata"
       ],
-      "file:size": 34419,
-      "file:checksum": "12200261f6f7f86d7ae42b0f12af1b49fc3123965877d24b2949a637c86aefc5fa0d"
+      "file:size": 34402,
+      "file:checksum": "122076c9e41995617092c8c55d0db73babd283dd5b1a90b270de4a0593d3a2217d29"
     }
   }
 }

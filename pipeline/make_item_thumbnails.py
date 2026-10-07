@@ -8,9 +8,9 @@
     python3 pipeline/make_item_thumbnails.py --year 2025 --out p \\
         --chunk 100 --task 7                   # one array task's slice
 
-Writes ``{out}/raster/{year}/{tile}/{tile}.thumb.png`` -- the published
-per-item folder layout, so the thumbnail sits beside its COG and its item
-JSON. Another agent registers it as the item's ``thumbnail`` asset.
+Writes ``{out}/raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.thumb.png`` --
+the published grouped layout, so the thumbnail sits beside its COG and its
+item JSON. Another agent registers it as the item's ``thumbnail`` asset.
 
 Resumable, and that is the whole operating model: 67,197 renders across
 nine years, so a task that is interrupted, or a year that is rerun
@@ -142,6 +142,12 @@ def render(job: tuple[str, str, Path, Path, int, int, Path]) -> tuple[str, float
     return tile, time.monotonic() - t0, last or "render failed"
 
 
+def thumb_path(out: Path, year: int, tile: str) -> Path:
+    "Where one tile's thumbnail goes: the published ``zone=ZZ/gzd=ZZL/{tile}/`` folder."
+    return (out / "raster" / str(year) / f"zone={tile[:2]}" / f"gzd={tile[:3]}"
+            / tile / f"{tile}.thumb.png")
+
+
 def build(year: int, index: str, out: Path, table: Path, width: int,
           level: int, workers: int, chunk: int, task: int | None,
           only: list[str] | None, bbox, force: bool,
@@ -164,7 +170,7 @@ def build(year: int, index: str, out: Path, table: Path, width: int,
 
     jobs = []
     for tile, _epsg, href in tiles:
-        dest = out / "raster" / str(year) / tile / f"{tile}.thumb.png"
+        dest = thumb_path(out, year, tile)
         if force:
             dest.unlink(missing_ok=True)
         jobs.append((tile, href, dest, table, width, level, tmpdir))
@@ -186,7 +192,7 @@ def build(year: int, index: str, out: Path, table: Path, width: int,
                        f"skipped, {len(broken)} failed, "
                        f"{time.monotonic() - t0:,.0f}s")
     for tile, _epsg, _href in tiles:
-        p = out / "raster" / str(year) / tile / f"{tile}.thumb.png"
+        p = thumb_path(out, year, tile)
         if p.is_file():
             nbytes += p.stat().st_size
     bc.say(f"{year}: {done} rendered, {skipped} already there, "
@@ -206,7 +212,7 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--year", type=int, required=True)
     ap.add_argument("--out", required=True, help="the publish tree; each "
                     "thumbnail lands at "
-                    "{out}/raster/{year}/{tile}/{tile}.thumb.png")
+                    "{out}/raster/{year}/zone={ZZ}/gzd={GZD}/{tile}/{tile}.thumb.png")
     ap.add_argument("--index", default=bc.INDEX_URL,
                     help="raster.parquet, a URL or a local path; its `href` "
                          "column is the only source of object URLs")

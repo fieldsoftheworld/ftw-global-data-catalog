@@ -11,7 +11,7 @@
   ],
   "id": "ftw-s2-2022",
   "title": "FTW Global — Field Boundaries 2022 (GeoParquet)",
-  "description": "Predicted agricultural field boundaries for 2022: 130,315,034 parcels (6,430,552 km² of field area) in 54 per-UTM-zone GeoParquet files, 80.0 GiB total. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2022), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2022/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2022 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Within a processed tile no parcel is removed on land-cover, water or terrain grounds, the retention test being UTM-zone and MGRS-square ownership plus the size bounds above. Land cover did decide which tiles ran: only MGRS tiles with at least 1% cropland were processed, so regions below that threshold are absent entirely. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror). The full pipeline, from mosaic download to this file, is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+  "description": "Predicted agricultural field boundaries for 2022: 147,088,177 parcels (7,141,706 km² of field area) in 54 per-UTM-zone GeoParquet files, 90.9 GiB total. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2022), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2022/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2022 Q1-Q4, 4 quarters x B04/B03/B02/B08 in the model's input order), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1), 5 m coverage simplification, holes under 20 m2 filled. Removed: parcels > 5 km2 (after the seam union), parcels at least 70% Impact Observatory io-lulc 2024 water (inland water, aquaculture ponds, salt pans), parcels with less than half their area on OpenStreetMap land polygons (sea). Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror). The full pipeline, from mosaic download to this file, is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
   "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
@@ -40,9 +40,9 @@
       "bbox": [
         [
           -175.34898587162712,
-          -46.9536018347234,
+          -46.86746936910718,
           179.79388854422754,
-          65.8215476413489
+          65.82062483747167
         ]
       ]
     },
@@ -528,8 +528,8 @@
       "roles": [
         "visual"
       ],
-      "file:size": 27040695164,
-      "file:checksum": "12202d20852daf5859cca14003e5b5182ef1661aa606ce76799e547b4a2817caa7dd"
+      "file:size": 30696854130,
+      "file:checksum": "1220a7e93e7f408fc597bd6426bffe8634f1c8960592eabbf682f4be89c505df6509"
     },
     "cells": {
       "href": "./cells_a5r7_2022.parquet",
@@ -539,8 +539,19 @@
       "roles": [
         "data"
       ],
-      "file:size": 1660986,
-      "file:checksum": "1220bb3c286de0138590bedb338006b5c5fd5c164244209dcf78ea05693a47dd7228"
+      "file:size": 1600482,
+      "file:checksum": "1220955eacc90e03a19beabdd48138ed40bdee6930fc178dca1d7f14a5cd777bd1bc"
+    },
+    "cells-pmtiles": {
+      "href": "./cells-2022.pmtiles",
+      "type": "application/vnd.pmtiles",
+      "title": "A5 cell aggregates 2022, one resolution per zoom (PMTiles)",
+      "description": "A5 cells for drawing the year at global scale, with one resolution per zoom: r4 at the globe to r11 at zoom 7. Each cell carries count, area_ha, avg_score, pct_covered and density (fields per 1,000 km²). About 140 MB per year.",
+      "roles": [
+        "visual"
+      ],
+      "file:size": 141857545,
+      "file:checksum": "12209b7b3cf5537d7d54ac91873730ad5c9650945c632124242dd598659e2ee5be1b"
     },
     "styles/count": {
       "href": "./styles/count.json",
@@ -590,8 +601,8 @@
       "roles": [
         "thumbnail"
       ],
-      "file:size": 115308,
-      "file:checksum": "1220f719450e16780261f1b1500a7fc397905b10f656d44e283372dc8122e5c67262"
+      "file:size": 240931,
+      "file:checksum": "12208de7c6ac0f6916d20549216a643ec67f42af0796f29c8783c4e935adb6c5e85e"
     },
     "mirror": {
       "href": "./items.parquet",
@@ -602,8 +613,8 @@
         "collection-mirror",
         "metadata"
       ],
-      "file:size": 34406,
-      "file:checksum": "12202a1c75bee5139b4b6229b2058bfd3a91bb353d7595fdc050d7dfc63e9e1933c8"
+      "file:size": 34412,
+      "file:checksum": "12203221d25870d6bc691a7574c5de79127c2302faef25a14665737b52cba5a43132"
     }
   }
 }

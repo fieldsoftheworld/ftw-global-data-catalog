@@ -13,42 +13,42 @@
     "coordinates": [
       [
         [
-          30.018412644409366,
+          31.055626110228154,
           -34.18783525160115
         ],
         [
-          30.018412644409366,
-          64.9192783230033
+          31.055626110228154,
+          64.91938443606834
         ],
         [
-          23.982457980272475,
-          64.9192783230033
+          23.698699187186993,
+          64.91938443606834
         ],
         [
-          23.982457980272475,
+          23.698699187186993,
           -34.18783525160115
         ],
         [
-          30.018412644409366,
+          31.055626110228154,
           -34.18783525160115
         ]
       ]
     ]
   },
   "bbox": [
-    23.982457980272475,
+    23.698699187186993,
     -34.18783525160115,
-    30.018412644409366,
-    64.9192783230033
+    31.055626110228154,
+    64.91938443606834
   ],
   "properties": {
     "title": "UTM zone 35 — 2019 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 35 for 2019: 3,386,302 parcels, 310,492 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 35 for 2019: 3,578,230 parcels, 344,172 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2019-01-01T00:00:00Z",
     "start_datetime": "2019-01-01T00:00:00Z",
     "end_datetime": "2019-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 3386302,
+    "table:row_count": 3578230,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 3070582635,
+      "file:size": 3333317651,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2019/zone=35/utm35.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "1220d69386f400da3a24408d3ae1e141464fe82ef53bf3a22675950bad9d560364ba"
+      "file:checksum": "1220c3d5d1ecc059a5523d297381c9fb2bfcac9d1570c5118a44eccf23680ca27018"
     }
   },
   "links": [

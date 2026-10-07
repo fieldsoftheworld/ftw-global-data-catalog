@@ -1,7 +1,7 @@
 # ftw-global-data-catalog
 
 The catalog metadata and the processing pipeline for the **Fields of the World
-(FTW) Global Data 2nd Edition**: 1,139,523,271 predicted agricultural field
+(FTW) Global Data 2nd Edition**: 1,242,648,258 predicted agricultural field
 boundaries and 67,197 field/boundary-probability rasters, covering 2017
 through 2025 worldwide.
 

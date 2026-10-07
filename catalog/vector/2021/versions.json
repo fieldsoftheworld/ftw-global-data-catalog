@@ -1,6 +1,6 @@
 {
   "spec_version": "1.0.0",
-  "current_version": "1.0.1",
+  "current_version": "1.0.2",
   "versions": [
     {
       "version": "1.0.0",
@@ -29,6 +29,23 @@
           "size_bytes": 34442,
           "href": "vector/2021/items.parquet",
           "mtime": 1790884426.7273397
+        }
+      },
+      "changes": [
+        "items.parquet"
+      ],
+      "message": "Generated items.parquet for STAC GeoParquet queries"
+    },
+    {
+      "version": "1.0.2",
+      "created": "2026-10-07T04:09:07.572848Z",
+      "breaking": false,
+      "assets": {
+        "items.parquet": {
+          "sha256": "1cad9283cda2d62a3d46c0f64007b6c2d767df4b9d55c7c8b598a65c320c7329",
+          "size_bytes": 34445,
+          "href": "vector/2021/items.parquet",
+          "mtime": 1791346147.5542831
         }
       },
       "changes": [
