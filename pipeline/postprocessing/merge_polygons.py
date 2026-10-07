@@ -26,6 +26,22 @@ WORLD = "{'min_x': -180.0, 'min_y': -90.0, 'max_x': 180.0, 'max_y': 90.0}::BOX_2
 #: no aux file, so every zone file in a year has the same schema either way.
 AUX_COLUMNS = ("patch_sat_mean", "patch_sat_max", "patch_pb_mean")
 
+#: Parcels with at least this share of io-lulc 2024 water (``frac_water``, measured per 2.5 m
+#: pixel against the 30 m land cover) are dropped: inland water, aquaculture ponds and salt pans.
+#: Rice paddies are mostly io-lulc crops or flooded vegetation and stay. Measured on 2025: 1.91M
+#: parcels at 0.7 against 2.01M at 0.5, and in [0.5, 0.7) a 20-chip sample found 9 crop fields
+#: to 6 ponds, in [0.7, 0.9) 2 fields to 12 ponds.
+MAX_FRAC_WATER = 0.7
+
+
+def keep_filter(max_km2: float, max_frac_water: float = MAX_FRAC_WATER) -> str:
+    """SQL on the raw parcel columns for the parcels merge keeps (``--max-frac-water 2`` keeps all water)."""
+    return (
+        f"in_utm_zone AND in_mgrs_square AND area_m2 <= {max_km2 * 1e6} "
+        f"AND coalesce(frac_water, 0) < {max_frac_water}"
+    )
+
+
 FP_KEY = b"merge_fingerprint"
 #: Set by outlines.py; carried through simplify's schema-metadata copy.
 OUTLINE_PROVENANCE = b"outline_provenance"
@@ -232,6 +248,12 @@ def main() -> None:
     ap.add_argument("--allow-missing", action="store_true", help="merge despite missing tiles")
     ap.add_argument("--force", action="store_true", help="rewrite zones that are already current")
     ap.add_argument("--max-km2", type=float, default=5.0)
+    ap.add_argument(
+        "--max-frac-water",
+        type=float,
+        default=MAX_FRAC_WATER,
+        help="drop parcels with at least this io-lulc 2024 water fraction (2 keeps all)",
+    )
     ap.add_argument("--threads", type=int, default=int(os.environ.get("SLURM_CPUS_PER_TASK", 8)))
     ap.add_argument("--memory", default="48GB")
     a = ap.parse_args()
@@ -257,7 +279,7 @@ def main() -> None:
     if spill == root or root in spill.parents:
         raise SystemExit(f"--tmp-dir {a.tmp_dir} is inside --out-root {a.out_root}")
     tmp_dir.mkdir(parents=True, exist_ok=True)
-    keep = f"in_utm_zone AND in_mgrs_square AND area_m2 <= {a.max_km2 * 1e6}"
+    keep = keep_filter(a.max_km2, a.max_frac_water)
 
     by_zone: dict[str, list[str]] = {}
     for tk in sorted(have):
@@ -265,6 +287,7 @@ def main() -> None:
     summary: dict = {
         "year": a.year,
         "max_km2": a.max_km2,
+        "max_frac_water": a.max_frac_water,
         "filter": keep,
         "source": str(src),
         "aux": str(aux),

@@ -26,6 +26,7 @@ def _tile(path: Path, tk: str, n: int, area: float = 1000.0) -> None:
     con.sql(
         f"""COPY (SELECT '{tk}' AS tile_key, (i + 1)::BIGINT AS parcel_id,
           true AS in_utm_zone, true AS in_mgrs_square, {area} AS area_m2, 0.7 AS pf_mean,
+          0.0 AS frac_water,
           ST_MakeEnvelope(3.0 + i*0.001, 51.0, 3.0 + i*0.001 + 0.0005, 51.0005) AS geometry
         FROM range({n}) t(i)) TO '{path}' (FORMAT parquet)"""
     )
