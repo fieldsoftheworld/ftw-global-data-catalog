@@ -16,7 +16,7 @@
 set -euo pipefail
 : "${YEAR:?set YEAR via --export=ALL,YEAR=..}"
 cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}"
-export PATH="$HOME/ftw-us-tiles/venv/bin:/u/cholmes/micromamba/envs/ftw/bin:$PATH"
+export PATH="$HOME/ftw-us-tiles/venv/bin:$PATH"  # pinned to this venv only (gpio 1.6.0, duckdb 1.5.6)
 # Per-year temp isolation: concurrent year jobs share this submit dir, and
 # both DuckDB spill and gpio's cwd-relative .tmp/ collide across jobs
 # (observed: three concurrent converts corrupted each other's temp storage).
