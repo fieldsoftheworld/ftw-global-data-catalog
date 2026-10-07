@@ -1,7 +1,41 @@
+[![Taylor Geospatial](https://data.source.coop/ftw/global-data-2e/assets/readme/tg-logo.png)](https://taylorgeospatial.org)
+
 # Fields of the World — Global Data (2nd Edition)
 
 2nd Edition of the Fields of the World (FTW) global field-boundary predictions for 2017 to 2025: **1,242,648,258 predicted field polygons** as cloud-native GeoParquet, and **67,197 field/boundary-probability tiles** (25.8 TB) as Cloud-Optimized GeoTIFFs.
 Both derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/), and both are part of [Fields of the World](https://fieldsofthe.world).
+
+## Examples
+
+### 1st and 2nd edition
+
+**Sorriso, Brazil, 2025 Q3.** Large fields, same imagery in both panels.
+
+| 1st edition | 2nd edition |
+|---|---|
+| ![Sorriso, Brazil, 1st edition field outlines on 2025 Q3 imagery](https://data.source.coop/ftw/global-data-2e/assets/readme/edition-sorriso-1st.jpg) | ![Sorriso, Brazil, 2nd edition field outlines on the same 2025 Q3 imagery](https://data.source.coop/ftw/global-data-2e/assets/readme/edition-sorriso-2nd.jpg) |
+
+**Normandy, France, 2025 Q3.** Irregular fields and hedgerows, same imagery in both panels.
+
+| 1st edition | 2nd edition |
+|---|---|
+| ![Normandy, France, 1st edition field outlines on 2025 Q3 imagery](https://data.source.coop/ftw/global-data-2e/assets/readme/edition-normandy-1st.jpg) | ![Normandy, France, 2nd edition field outlines on the same 2025 Q3 imagery](https://data.source.coop/ftw/global-data-2e/assets/readme/edition-normandy-2nd.jpg) |
+
+### 2018 and 2025
+
+**Matopiba, Brazil.** New rectangular field blocks.
+
+| 2018 Q3 | 2025 Q3 |
+|---|---|
+| ![Matopiba, Brazil, 2018 Q3 imagery with 2018 field outlines](https://data.source.coop/ftw/global-data-2e/assets/readme/change-matopiba-2018.jpg) | ![Matopiba, Brazil, 2025 Q3 imagery with 2025 field outlines](https://data.source.coop/ftw/global-data-2e/assets/readme/change-matopiba-2025.jpg) |
+
+**West Bahia, Brazil.** Rectangular fields replaced by center pivots.
+
+| 2018 Q1 | 2025 Q1 |
+|---|---|
+| ![West Bahia, Brazil, 2018 Q1 imagery with 2018 field outlines](https://data.source.coop/ftw/global-data-2e/assets/readme/change-west-bahia-2018.jpg) | ![West Bahia, Brazil, 2025 Q1 imagery with 2025 field outlines](https://data.source.coop/ftw/global-data-2e/assets/readme/change-west-bahia-2025.jpg) |
+
+Imagery is Copernicus Sentinel data 2017–2025 from the TGE Labs quarterly mosaics, outlines are FTW predictions, and these are selected examples, not an accuracy assessment.
 
 ## Three ways in
 
