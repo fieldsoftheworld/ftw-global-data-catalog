@@ -38,6 +38,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -50,6 +51,10 @@ TILES_META = ROOT / "staging-data" / "checksums" / "tiles_meta.json"
 
 PUBLIC_BASE = "https://data.source.coop/ftw/global-data-2e"
 INDEX_URL = f"{PUBLIC_BASE}/index/vector.parquet"
+# Read the index from FTW_INDEX_DIR/vector.parquet when set (an index that is not published yet);
+# the default is the published copy. Docs keep linking INDEX_URL.
+INDEX_SOURCE = (str(Path(os.environ["FTW_INDEX_DIR"]) / "vector.parquet")
+                if os.environ.get("FTW_INDEX_DIR") else INDEX_URL)
 
 PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
 WEBMAP_EXT = "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json"
@@ -227,7 +232,7 @@ def read_index(con) -> list[dict]:
     rows = con.execute(f"""
         SELECT year, zone, href, s3_href, size_bytes, n_parcels, area_km2,
                xmin, ymin, xmax, ymax, ST_AsGeoJSON(geometry) AS geom
-        FROM '{INDEX_URL}' ORDER BY year, zone
+        FROM '{INDEX_SOURCE}' ORDER BY year, zone
     """).fetchall()
     cols = ("year", "zone", "href", "s3_href", "size_bytes", "n_parcels",
             "area_km2", "xmin", "ymin", "xmax", "ymax", "geom")

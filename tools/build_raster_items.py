@@ -109,6 +109,12 @@ _CONFIG = load_config()
 PUBLIC_BASE = _CONFIG["public_base"].rstrip("/")
 WRITE_PREFIX = _CONFIG["write_prefix"].rstrip("/")
 INDEX_URL = f"{PUBLIC_BASE}/index/raster.parquet"
+# Where the generators read the index from. The default is the published copy, so a rebuild
+# describes what is live. Set FTW_INDEX_DIR to a directory holding raster.parquet (usually
+# staging-data/index) to build the metadata for an index that is not published yet; the links
+# written into the docs still name INDEX_URL.
+INDEX_SOURCE = (str(Path(os.environ["FTW_INDEX_DIR"]) / "raster.parquet")
+                if os.environ.get("FTW_INDEX_DIR") else INDEX_URL)
 YEARS = tuple(range(2017, 2026))
 
 # The header sidecar stays outside catalog/ (it is build state, not metadata).
@@ -299,7 +305,7 @@ def read_year_stats(con) -> dict[int, dict]:
                round(max(field_frac), 4) AS max_field_frac,
                list_sort(list_distinct(list(epsg))) AS epsgs,
                min(tile_key) AS sample_tile
-        FROM '{INDEX_URL}' GROUP BY year ORDER BY year
+        FROM '{INDEX_SOURCE}' GROUP BY year ORDER BY year
     """).fetchall()
     out = {}
     for (year, n, size, xmin, ymin, xmax, ymax, mff, xff, epsgs,
@@ -331,7 +337,7 @@ def read_index(con, years: tuple[int, ...] | None = None) -> list[dict]:
         SELECT year, tile_key, epsg, size_bytes, field_frac, boundary_frac,
                cropland_frac, xmin, ymin, xmax, ymax,
                ST_AsGeoJSON(geometry) AS geom
-        FROM '{INDEX_URL}' {where} ORDER BY year, tile_key
+        FROM '{INDEX_SOURCE}' {where} ORDER BY year, tile_key
     """).fetchall()
     return [dict(zip(INDEX_COLS, r)) for r in rows]
 
