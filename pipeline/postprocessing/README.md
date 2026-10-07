@@ -12,12 +12,24 @@ uv pip install -r pipeline/postprocessing/requirements.txt
 ```
 
 `outlines.py` calls `fbp.methods.parse`; no BoundaryVote implementation is
-vendored. The private package must expose the production method
-`nbg-pb-h0.01-t0.3+R35+F10+G2+A900`. The default `exact` backend uses this ID;
-`--backend fast` adds `+q1` and requires that variant in fbp. Until the package
-is released, the outline stage requires separately authorized package access —
-it fails with one message naming that need rather than once per tile. Only
-`outlines.py` needs fbp; the other three stages run without it.
+vendored. It runs the method of the published 2017-2025 vectors,
+`nbg-pb-h0.01-t0.5+R25+F10+G2+A900`: non-background pixels as foreground,
+watershed seeds from the boundary surface at depth 0.01, a watershed line kept
+when half of its pixels have p(boundary) >= p(field) (`t0.5`), regions with mean
+p(field) under 25% dropped (`R25`), parcels of the p(field) > 10% mask that the
+result covers less than half re-adopted (`F10`) unless under 2% of that mask is
+uncovered (`G2`), and parcels under 900 m² dropped (`A900`). The default
+`--backend fast` appends `+q1`, an integer h-maxima and bucket-queue watershed on
+the 1/255 grid the scores are stored on, which is what the published run used and
+what its footers record; `--backend exact` is scikit-image. The method id is part
+of each tile's resume fingerprint, so an older outline tile is recomputed.
+
+fbp is public at `fieldsoftheworld/fbp`, but its `main` parses only the `l`, `b`,
+`f`, `m` and `A` modifiers: it rejects `+R25`, `+F10`, `+G2` and `+q1`, and has no
+`+q1` backend. The published run used a revision of fbp that has not been pushed
+there yet, so until it is, `outlines.py` needs that revision installed and fails
+with one message naming the requirement rather than once per tile. Only
+`outlines.py` needs fbp; the other stages run without it.
 
 ```sh
 .venv/bin/python pipeline/postprocessing/outlines.py --year 2025 \
@@ -27,8 +39,14 @@ it fails with one message naming that need rather than once per tile. Only
 .venv/bin/python pipeline/postprocessing/merge_polygons.py --year 2025 \
   --in-root simplified --out-root merged --no-aux --tmp-dir scratch/duckdb \
   --keep-list tiles.txt --empty-list empty.txt
+# once: OSM land polygons for the sea rule (osmdata.openstreetmap.de, ODbL)
+curl -LO https://osmdata.openstreetmap.de/download/land-polygons-split-4326.zip
+unzip land-polygons-split-4326.zip
+.venv/bin/python pipeline/postprocessing/sea_filter.py \
+  land-polygons-split-4326/land_polygons.shp land_polygons.parquet
 .venv/bin/python pipeline/postprocessing/fiboa_convert.py --year 2025 \
-  --in-root merged --out-root fiboa --tmp-dir scratch/duckdb --zone 15
+  --in-root merged --out-root fiboa --tmp-dir scratch/duckdb --zone 15 \
+  --land-polygons land_polygons.parquet
 ```
 
 Install DuckDB's spatial extension once (`INSTALL spatial`) before running
@@ -81,9 +99,18 @@ edges stay shared; results are repaired, never re-simplified per geometry, and
 attributes are preserved. The Rust implementation is provided by the `coarsen`
 PyPI package and this repo calls its Python API.
 
-Merge retains `in_utm_zone AND in_mgrs_square`, dropping parcels >5 km² by
-`area_m2`, which simplification refreshes so the cap and the summary totals
-describe the geometry actually written. `tiles.txt` lists expected tiles;
+Merge retains `in_utm_zone AND in_mgrs_square AND area_m² <= 5 km² AND
+frac_water < 0.7`. `area_m2` is the value simplification refreshes, so the cap
+and the summary totals describe the geometry actually written. `frac_water` is
+the share of a parcel's pixels that are class water in the Impact Observatory
+io-lulc **2024** layer, for every product year (`context.WATER_VINTAGE`), so a
+reservoir that filled or drained between 2017 and 2025 is judged by its 2024
+state; it removes inland water, aquaculture ponds and salt pans (2025: 1.91M
+parcels at 0.7, 2.01M at 0.5). 0.7 and not 0.5 because rice paddies are flooded
+in one quarter and vegetated in another: in 20-chip samples on false-colour
+Sentinel-2, [0.5, 0.7) held 9 crop fields to 6 ponds and [0.7, 0.9) held 2 fields
+to 12 ponds. `--max-frac-water 2` keeps all of it, and the value is in the merge
+fingerprint and `_summary.json`. `tiles.txt` lists expected tiles;
 `empty.txt` lists verified empty/excluded tiles. The two are disjoint, and an
 input tile in neither is refused. Missing inputs fail unless `--allow-missing` is
 explicit; with it, `_summary.json` records `allow_missing`, the missing list and
@@ -107,7 +134,14 @@ Empty outline tiles write readable empty Parquet files.
 
 Conversion repairs geometry, joins seams, then — on the unioned geometry — fills
 interior rings under 20 m², drops parts and parcels below 900 m², re-applies
-merge's km² cap, computes area/perimeter, and derives the bbox covering. The order
+merge's km² cap, computes area/perimeter, and derives the bbox covering. The sea
+rule (`sea_filter.py`) then drops parcels with less than half their area on OSM
+land polygons, because io-lulc has no data over open sea and counts nodata as dry
+(south-west Norway 2025: 3,361 offshore parcels with a median `frac_water` of 0).
+The OSM polygons are coastline-derived, so islands, polders and lakes are land,
+tidal flats outside the coastline and the Caspian are sea. `--land-polygons` (or
+`$FTW_LAND_POLYGONS`) names the prepared GeoParquet and `--no-sea-filter` skips
+the rule; the footer's `determination:details` states which removal rules ran. The order
 matters: filtering before
 the union deleted fields cut by a seam into two sub-minimum halves, and a cap
 applied to merge's pre-union pixel area let a union over the cap through. The hole
@@ -159,5 +193,68 @@ uv pip install pytest
 .venv/bin/python -m pytest pipeline/postprocessing/tests
 ```
 
-The default exact path avoids the private fast-crop helper. Production fast-path
-parity and a complete fbp run require the unreleased package and score fixtures.
+The published run cropped each window to the blocks that contain foreground before
+calling BoundaryVote, for speed; this directory calls it on the whole window. The
+two are expected to agree, and that has not been checked here, because both need
+the unpublished fbp revision. A complete outline run needs it and real score
+fixtures.
+
+## Where the published 2017-2025 vectors differ from this code
+
+The vectors were made by the production repository (`global-ftw-2e`, commit
+`5d01d4b`, not public), not by this directory. The spec, the inland-water rule,
+the sea rule and the footer wording above are the same rules. Row groups of 8,192
+rows, zstd 19, the nine columns, the Hilbert order of the bbox centre, the seam
+overlap rule (10% of the smaller piece and 100 m²), the 20 m² hole fill, the 900 m²
+part and parcel floor and the 5 km² cap after the union are the same constants.
+What this directory does not do:
+
+- **Orphan-strip claims.** Near some zone edges the mosaic product has no tile for
+  the partial 100 km squares (for example zone 32 between 6°E and its 32UL*
+  squares at 52-53°N, and zone 16 west of 89.4°W at 42-43°N), so the zone that
+  contains such a location has no tile there while the neighbouring zone's tile,
+  whose square reaches across the zone edge, flags those parcels as outside its
+  zone. Before the rerun nobody
+  kept them: 3.0-3.4M parcels and 167-174k km² a year in 2020-2025. The run's tile
+  also kept (`claimed`) a parcel of its own square outside its zone when the
+  centroid, or any point on the centroid row across the parcel sampled every
+  200 m, lies in an adjacent zone's square without a keep-list tile; of two
+  claimers the western zone wins. Here `in_utm_zone` is the plain zone test.
+- **Cross-zone seams.** A claimed field that reaches into the next zone's first
+  square is also cut at the raster edge by the tile there. The run's merge ended
+  with a pass that unions each claimed parcel with the overlapping pieces in the
+  two neighbouring zone files (same overlap rule), keeping the smallest claimed id
+  of the group and removing the other pieces from their zone files. Here such
+  pieces stay in both zone files.
+- **Piece floor before the union.** The run dropped single-tile pieces under
+  900 m² before the seam union and again judged merged groups after it, so a field
+  cut into a piece over and a piece under 900 m² was published as the larger piece
+  alone (0 observed in 5 zones of 2025; at most about 2,000 fields over the nine
+  years were expected). Here both floors run after the union, so the union is kept.
+- **Patch statistics.** The run's `patch_saturation.py` wrote `patch_sat_mean`,
+  `patch_sat_max` and `patch_pb_mean` per parcel for `merge_polygons.py --aux-root`.
+  They are not in the released nine columns and no rule uses them; nothing here
+  writes them.
+- **Simplification.** The run simplified with a Rust port of GEOS 3.13.1 coverage
+  simplification kept in the production repository, one tile at a time in shards of
+  8 threads. `polygons.py` here calls the `coarsen` package, which returns the same
+  geometry as one GEOS 3.13.1 `coverage_simplify` pass over the same input (802 of
+  802 parcels of a 2019 tile). The run did not make one pass: polygons GEOS reports
+  as coverage-invalid (about 1% of parcels, 16 of 1,546 and 12 of 802 in two 2019
+  tiles) were simplified on their own with Douglas-Peucker at up to 1.2 m, and only
+  the rest went through `coverage_simplify`. That changes the outline of 1-2% of
+  parcels, mostly the invalid polygons themselves, and `polygons.py` explains why
+  this directory keeps one pass. On those two tiles `simplify_polygons.py` here
+  reproduces 96% of the published simplified outlines to within 1e-9°. It also
+  refreshes `area_m2` after simplification, so merge's 5 km² cap sees the simplified
+  area; the run capped at merge on the pixel-count area and again after the seam
+  union.
+- **Conversion mechanics.** The run converted each zone with `fiboa_ranges.py`,
+  which splits a zone's Hilbert key space into ranges of about 400,000 rows to
+  bound memory per task and stitches the row groups. It produces the same rows in
+  the same order as `fiboa_convert.py`.
+- **Equator seams** are joined in the zone's north UTM CRS in both.
+
+The sea rule here reads the OSM land-polygons snapshot you prepare. The published
+run used the polygons of 2026-10-04 (`land-polygons-split-4326`), so a later
+download can differ along coasts.

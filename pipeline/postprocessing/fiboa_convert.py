@@ -25,6 +25,7 @@ from fiboa_common import (
     zone_at,
     zone_utm,
 )
+from sea_filter import LAND_MIN, SeaFilter
 
 IN_ROOT = Path("merged")
 OUT_ROOT = Path("fiboa")
@@ -79,12 +80,41 @@ def method_ids(summary: dict | None = None, spec: str | None = None) -> str:
     return stated
 
 
+def land_water_clauses(summary: dict, sea: bool) -> tuple[str, str]:
+    """The removal clauses for the inland-water and sea rules that ran, and the closing sentence.
+
+    Water ran when merge recorded ``max_frac_water`` under 1 (an older ``_summary.json`` has
+    none); the sea rule ran when ``fiboa_convert`` was given land polygons. The sentence "no
+    land-cover masking was applied" is only true when neither did.
+    """
+    water = summary.get("max_frac_water")
+    clauses = ""
+    if water is not None and water < 1:
+        clauses += (
+            f"parcels at least {water:.0%} Impact Observatory io-lulc 2024 water "
+            "(inland water, aquaculture ponds, salt pans) removed, "
+        )
+    if sea:
+        clauses += (
+            f"parcels with less than {LAND_MIN:.0%} of their area on OpenStreetMap land "
+            "polygons (sea) removed, "
+        )
+    if clauses:
+        return clauses, "Attributes are for filtering."
+    return "", "Attributes are for filtering; no land-cover masking was applied."
+
+
 def collection_metadata(
-    cid: str, year: int, summary: dict | None = None, spec: str | None = None
+    cid: str,
+    year: int,
+    summary: dict | None = None,
+    spec: str | None = None,
+    sea: bool = False,
 ) -> dict:
     "Collection metadata; the numbers come from merge's ``_summary.json``, not literals."
     s = summary or {}
     max_km2 = s.get("max_km2", MAX_PARCEL_M2 / 1e6)
+    land_water, closing = land_water_clauses(s, sea)
     tol = s.get("simplify_tolerance_m")
     simplify = f"{tol:g} m coverage simplification, " if tol else ""
     partial = ""
@@ -99,9 +129,9 @@ def collection_metadata(
             f"(CDSE sentinel-2-global-mosaics, {year} Q1-Q4, 4 quarters x {INPUT_BANDS}), "
             "2.5 m field/boundary probabilities, BoundaryVote instance post-processing "
             f"({method_ids(s, spec)}), {simplify}parcels > {max_km2:g} km2 removed, "
+            f"{land_water}"
             f"parcels and parts under {MIN_PART_M2:g} m2 removed, "
-            f"interior holes under {MIN_HOLE_M2:g} m2 filled. "
-            "Attributes are for filtering; no land-cover masking was applied." + partial
+            f"interior holes under {MIN_HOLE_M2:g} m2 filled. " + closing + partial
         ),
         "schemas:custom": {
             "$schema": SDL,
@@ -307,7 +337,10 @@ def convert(
     memory_limit: str,
     out_root: Path,
     spec: str | None = None,
+    land: Path | None = None,
 ) -> Path:
+    """Merged zone file -> fiboa zone file; ``land``: OSM land polygons for the sea rule
+    (``sea_filter.SeaFilter``), None keeps sea parcels."""
     cid = f"ftw-s2-{year}"
     src = IN_ROOT / str(year) / f"zone={zone}" / "part-0.parquet"
     # Hive layout: the published catalog documents vector/{year}/zone=NN/utm{NN}.parquet
@@ -333,18 +366,27 @@ def convert(
         join_seams(con, src)
         schema = arrow_schema(cid).with_metadata(
             {
-                b"collection": json.dumps(collection_metadata(cid, year, summary, spec)).encode(),
+                b"collection": json.dumps(
+                    collection_metadata(cid, year, summary, spec, sea=land is not None)
+                ).encode(),
                 b"geo": json.dumps(geo_metadata(bbox)).encode(),
             }
         )
         reader = con.sql(query(src, cid, year, bbox, max_m2)).to_arrow_reader(
             batch_size=ROW_GROUP
         )
-        n = write_sorted(reader, schema, dst, ROW_GROUP, validate=_validator(zone, n_in))
+        sea = SeaFilter(land, int(zone)) if land is not None else None
+        n = write_sorted(
+            sea(reader) if sea else reader, schema, dst, ROW_GROUP, validate=_validator(zone, n_in)
+        )
     finally:
         con.close()
         shutil.rmtree(tmp_dir, ignore_errors=True)
-    print(f"{dst.name}: {n:,} features from {n_in:,} rows, {dst.stat().st_size / 1e9:.2f} GB")
+    dropped = f", {sea.dropped:,} sea parcels dropped" if sea else ""
+    print(
+        f"{dst.name}: {n:,} features from {n_in:,} rows{dropped}, "
+        f"{dst.stat().st_size / 1e9:.2f} GB"
+    )
     return dst
 
 
@@ -392,13 +434,27 @@ def main() -> None:
         help="BoundaryVote method id for tiles whose outlines predate the provenance "
         "stamp; stated in determination:details as supplied, not as recorded",
     )
+    sea_opts = ap.add_mutually_exclusive_group()
+    sea_opts.add_argument(
+        "--land-polygons",
+        type=Path,
+        default=os.environ.get("FTW_LAND_POLYGONS"),
+        help="OSM land polygons GeoParquet for the sea rule (sea_filter.py makes it; defaults "
+        "to $FTW_LAND_POLYGONS); parcels with less than half their area on land are dropped",
+    )
+    sea_opts.add_argument(
+        "--no-sea-filter", action="store_true", help="keep sea parcels (the footer says so)"
+    )
     a = ap.parse_args()
     IN_ROOT, TMP_ROOT = a.in_root, a.tmp_dir
     zones = discover_zones(IN_ROOT, a.year)
     if a.zone is None and a.zone_index is None:
         sys.exit(f"pass --zone or --zone-index (0-{len(zones) - 1})")
     zone = a.zone or zone_at(zones, a.zone_index)
-    convert(a.year, zone, a.threads, a.memory_limit, a.out_root, a.spec)
+    if not a.no_sea_filter and a.land_polygons is None:
+        ap.error("pass --land-polygons (or set FTW_LAND_POLYGONS), or --no-sea-filter")
+    land = None if a.no_sea_filter else a.land_polygons
+    convert(a.year, zone, a.threads, a.memory_limit, a.out_root, a.spec, land)
 
 
 if __name__ == "__main__":

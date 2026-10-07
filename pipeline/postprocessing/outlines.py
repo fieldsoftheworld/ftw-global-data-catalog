@@ -56,24 +56,32 @@ def score_labels(u8, method):
     return method(prob.argmax(0).astype(np.uint8), prob, px_m2=PX_M2).astype(np.int32)
 
 
-SPEC = "nbg-pb-h0.01-t0.3+R35+F10+G2+A900"
+#: BoundaryVote as run for the published 2017-2025 vectors: foreground ``nbg``, seeds from the
+#: boundary surface at depth 0.01, a watershed line kept when 50% of its pixels have
+#: p(boundary) >= p(field) (``t0.5``), regions with mean p(field) under 25% dropped (``R25``),
+#: parcels of the p(field) > 10% mask that the result covers less than half re-adopted
+#: (``F10``), skipped when under 2% of that mask is uncovered (``G2``), and parcels under 900 m2
+#: dropped (``A900``). The ``+R``, ``+F`` and ``+G`` modifiers (and the ``+q1`` of the fast
+#: backend) are in the fbp revision the run used, not in the public fieldsoftheworld/fbp main.
+SPEC = "nbg-pb-h0.01-t0.5+R25+F10+G2+A900"
 
 
 def method_for(backend: str):
     """``parse(SPEC)`` on the chosen backend: ``fast`` appends ``+q1``, ``exact`` is skimage.
 
-    ``fbp`` is not in requirements.txt and cannot be: it is not on PyPI, and the
-    unrelated ``fbp`` 1.3.6 that IS on PyPI does not expose ``fbp.methods``. One
+    ``fbp`` is not in requirements.txt and cannot be: the revision that parses ``SPEC`` is not
+    on PyPI, and the unrelated ``fbp`` 1.3.6 that IS on PyPI does not expose ``fbp.methods``. One
     clear failure here beats 10k identical ImportError tracebacks from the workers.
     """
     try:
         from fbp.methods import parse
     except ImportError as exc:
         raise SystemExit(
-            "the private fbp package is required for the outline stage and is not "
-            f"importable ({exc}). It is NOT the unrelated 'fbp' on PyPI; install it "
-            "from its own source. simplify_polygons, merge_polygons and "
-            "fiboa_convert do not need it."
+            "fbp, with the +R/+F/+G modifiers (and +q1 for --backend fast) the published run's "
+            f"method id uses, is required for the outline stage and is not importable ({exc}). "
+            "It is NOT the unrelated 'fbp' on PyPI, and fieldsoftheworld/fbp main does not "
+            "have those modifiers yet. simplify_polygons, merge_polygons and fiboa_convert "
+            "do not need it."
         ) from exc
 
     return parse(SPEC + ("+q1" if backend == "fast" else ""))
@@ -333,7 +341,8 @@ def fingerprint(src: Path, year: int, core: int, halo: int, backend: str, simpli
     OWNERSHIP_RULES is in here too, because which parcels a tile claims is as
     result-affecting as any flag: without it a resumed run after an ownership
     change keeps the previous rule's parquet, and the release silently mixes
-    vintages that the parquet cannot be asked to tell apart.
+    vintages that the parquet cannot be asked to tell apart. The same goes for
+    ``SPEC``, the BoundaryVote method id.
     """
     st = src.stat()
     ident: object = [st.st_size, st.st_mtime_ns]
@@ -345,7 +354,7 @@ def fingerprint(src: Path, year: int, core: int, halo: int, backend: str, simpli
     except rasterio.errors.RasterioIOError:
         pass
     return json.dumps(
-        [ident, year, core, halo, backend, simplify_m, OWNERSHIP_RULES], sort_keys=True
+        [ident, year, core, halo, backend, simplify_m, OWNERSHIP_RULES, SPEC], sort_keys=True
     )
 
 
@@ -632,7 +641,13 @@ def main() -> None:
     ap.add_argument("--tile-list", type=Path, default=None)
     ap.add_argument("--core", type=int, default=8192)
     ap.add_argument("--halo", type=int, default=512)
-    ap.add_argument("--backend", choices=("fast", "exact"), default="exact")
+    ap.add_argument(
+        "--backend",
+        choices=("fast", "exact"),
+        default="fast",
+        help="fast (default, the published run: spec + '+q1', integer watershed on the 1/255 "
+        "grid) or exact (scikit-image)",
+    )
     ap.add_argument(
         "--simplify-m",
         type=float,
