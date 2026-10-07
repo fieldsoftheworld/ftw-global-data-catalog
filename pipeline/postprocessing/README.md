@@ -131,6 +131,36 @@ says INCOMPLETE when the merge ran with `--allow-missing`. It releases the
 documented nine-column schema; QA fields remain in intermediate files. These
 geometric operations do not guarantee defect-free coverage.
 
+## Compact raw outlines
+
+The raw outlines of the published 2017-2025 vectors (the output of `outlines.py`, before
+simplification, merging and the filters) are kept so post-processing can be rerun without
+redoing BoundaryVote, which is the expensive step: about 486 GB a year as lon/lat WKB.
+Every vertex sits on the 2.5 m UTM grid, so `compact_outlines.py` stores each tile as grid
+integers (start point, ring and part counts, delta-coded steps) with the attribute columns
+unchanged, 33 GB for 2025 (6.8%). They are on Source Cooperative under
+`global-data-2e/intermediate/outlines-compact/{year}/{tile}.parquet`, with `_empty.txt` (tiles
+that produced no parcels have no file) and `_manifest.json` (size and sha256 of every file).
+
+```sh
+# expand one tile back to GeoParquet-compatible WKB, with the original geo metadata
+python pipeline/postprocessing/compact_outlines.py decode 15SVD_0_0.parquet 15SVD_0_0.wkb.parquet
+# compact a year of raw outlines; the compact file is read back and must hold the original
+# attributes and the grid integers of the original coordinates before it replaces anything
+python pipeline/postprocessing/compact_outlines.py encode --year 2025 \
+  --in-root outlines --out-root outlines-compact [--shard 0 --num-shards 8] [--delete-original]
+# list of raw tiles + empty markers -> _empty.txt and the manifest; --check re-hashes a copy
+python pipeline/postprocessing/compact_verify.py 2025 --raw-list raw.txt --empty-list empty.txt \
+  --compact-dir outlines-compact/2025 --manifest manifest.json
+```
+
+Decoded coordinates equal the original to float precision, not bit for bit: the PROJ inverse
+can differ in the last bit between machines (3.6e-15 degrees between the cluster the outlines
+were made on and the cloud image the first years were compacted on). That is why the check
+compares grid integers and attributes and not WKB bytes. On two tiles of 2019, decoding the
+published files here reproduced every attribute column exactly and every geometry to 1e-12
+degrees, and compacting the raw outlines here reproduced the published tables.
+
 Two scripts stand beside conversion rather than in it. `validate_vector.py` checks
 a staged tree before publication — schema, ZSTD, row-group size, CRS metadata,
 sampled geometry validity, ids, area and score, hive layout and zone count — and
