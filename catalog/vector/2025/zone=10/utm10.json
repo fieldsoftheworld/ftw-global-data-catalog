@@ -13,42 +13,42 @@
     "coordinates": [
       [
         [
-          -119.97669088344018,
-          34.30979641384739
+          -119.23077789528371,
+          34.453234161743396
         ],
         [
-          -119.97669088344018,
-          57.723614280977806
+          -119.23077789528371,
+          57.69438761319264
         ],
         [
-          -124.66612806358721,
-          57.723614280977806
+          -124.52783674720395,
+          57.69438761319264
         ],
         [
-          -124.66612806358721,
-          34.30979641384739
+          -124.52783674720395,
+          34.453234161743396
         ],
         [
-          -119.97669088344018,
-          34.30979641384739
+          -119.23077789528371,
+          34.453234161743396
         ]
       ]
     ]
   },
   "bbox": [
-    -124.66612806358721,
-    34.30979641384739,
-    -119.97669088344018,
-    57.723614280977806
+    -124.52783674720395,
+    34.453234161743396,
+    -119.23077789528371,
+    57.69438761319264
   ],
   "properties": {
     "title": "UTM zone 10 — 2025 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 10 for 2025: 283,677 parcels, 30,097 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 10 for 2025: 310,285 parcels, 38,013 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2025-01-01T00:00:00Z",
     "start_datetime": "2025-01-01T00:00:00Z",
     "end_datetime": "2025-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 283677,
+    "table:row_count": 310285,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 235372324,
+      "file:size": 279143640,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2025/zone=10/utm10.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "12202d1ba160c0ffe43923ede73bbe42e7bd33ca480ace5559fa40b063822197884d"
+      "file:checksum": "1220f74dfd1a8ad37d0f59a8c7d96a05ee5def2f44fb038e5db84e488c5604787f40"
     }
   },
   "links": [

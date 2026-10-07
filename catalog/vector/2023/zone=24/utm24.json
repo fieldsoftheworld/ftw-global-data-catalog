@@ -13,42 +13,42 @@
     "coordinates": [
       [
         [
-          -35.991526590159985,
+          -35.684251304450264,
           -22.475574341942735
         ],
         [
-          -35.991526590159985,
-          -2.712853822625111
+          -35.684251304450264,
+          -2.807604402385491
         ],
         [
-          -41.91351944007846,
-          -2.712853822625111
+          -41.91432995967288,
+          -2.807604402385491
         ],
         [
-          -41.91351944007846,
+          -41.91432995967288,
           -22.475574341942735
         ],
         [
-          -35.991526590159985,
+          -35.684251304450264,
           -22.475574341942735
         ]
       ]
     ]
   },
   "bbox": [
-    -41.91351944007846,
+    -41.91432995967288,
     -22.475574341942735,
-    -35.991526590159985,
-    -2.712853822625111
+    -35.684251304450264,
+    -2.807604402385491
   ],
   "properties": {
     "title": "UTM zone 24 — 2023 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 24 for 2023: 760,686 parcels, 50,650 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 24 for 2023: 765,485 parcels, 63,278 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2023-01-01T00:00:00Z",
     "start_datetime": "2023-01-01T00:00:00Z",
     "end_datetime": "2023-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 760686,
+    "table:row_count": 765485,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 573586023,
+      "file:size": 665318342,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2023/zone=24/utm24.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "1220081a6b7d79d187476862f6a1a2092d2e97ed69ee332e1c9709e96741d800e5f0"
+      "file:checksum": "1220c65a02df7c48aaf2efbeabb8adc694455c470bff11947af06a4b287e47d983b3"
     }
   },
   "links": [

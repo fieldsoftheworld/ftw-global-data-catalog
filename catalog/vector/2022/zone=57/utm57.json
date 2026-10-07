@@ -18,14 +18,14 @@
         ],
         [
           157.37876069551598,
-          56.81442802640277
+          56.81163566690438
         ],
         [
-          156.00055878243333,
-          56.81442802640277
+          155.7769102669756,
+          56.81163566690438
         ],
         [
-          156.00055878243333,
+          155.7769102669756,
           55.92569507842575
         ],
         [
@@ -36,19 +36,19 @@
     ]
   },
   "bbox": [
-    156.00055878243333,
+    155.7769102669756,
     55.92569507842575,
     157.37876069551598,
-    56.81442802640277
+    56.81163566690438
   ],
   "properties": {
     "title": "UTM zone 57 — 2022 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 57 for 2022: 517 parcels, 184 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 57 for 2022: 584 parcels, 220 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2022-01-01T00:00:00Z",
     "start_datetime": "2022-01-01T00:00:00Z",
     "end_datetime": "2022-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 517,
+    "table:row_count": 584,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 504337,
+      "file:size": 658707,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2022/zone=57/utm57.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "122078cc637d1bf69816530f8954d5a7baa60d221a567c473da5435801054fe88ab1"
+      "file:checksum": "12203075788e6101ae40cf46577a0d97c819424a3a10a89d2da1fb77206f1b32cd85"
     }
   },
   "links": [

@@ -13,42 +13,42 @@
     "coordinates": [
       [
         [
-          -101.97782406475419,
-          17.169659209166717
+          -101.35479375452105,
+          17.985030731759288
         ],
         [
-          -101.97782406475419,
-          54.14810257091148
+          -101.35479375452105,
+          54.14508901703113
         ],
         [
-          -108.01574386033622,
-          54.14810257091148
+          -108.58840699299067,
+          54.14508901703113
         ],
         [
-          -108.01574386033622,
-          17.169659209166717
+          -108.58840699299067,
+          17.985030731759288
         ],
         [
-          -101.97782406475419,
-          17.169659209166717
+          -101.35479375452105,
+          17.985030731759288
         ]
       ]
     ]
   },
   "bbox": [
-    -108.01574386033622,
-    17.169659209166717,
-    -101.97782406475419,
-    54.14810257091148
+    -108.58840699299067,
+    17.985030731759288,
+    -101.35479375452105,
+    54.14508901703113
   ],
   "properties": {
     "title": "UTM zone 13 — 2018 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 13 for 2018: 1,189,032 parcels, 253,985 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 13 for 2018: 1,166,287 parcels, 270,070 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2018-01-01T00:00:00Z",
     "start_datetime": "2018-01-01T00:00:00Z",
     "end_datetime": "2018-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 1189032,
+    "table:row_count": 1166287,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 1477312395,
+      "file:size": 1535317567,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2018/zone=13/utm13.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "122081617ba7fa674d6adc1cbc89973c026fcc152f28f428bec7d1c223cf2ae542d5"
+      "file:checksum": "12208c061a124cfd40cee913a8ed45ff9d16de254cae5524bb79ea0a79a3a511b4f7"
     }
   },
   "links": [

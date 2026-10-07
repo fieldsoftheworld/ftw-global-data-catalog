@@ -1,6 +1,6 @@
 # FTW Global — Field Boundaries 2017 (GeoParquet)
 
-Predicted agricultural field boundaries for 2017: **113,556,951 parcels** in 54 per-UTM-zone GeoParquet files (72.7 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
+Predicted agricultural field boundaries for 2017: **133,102,683 parcels** in 54 per-UTM-zone GeoParquet files (84.9 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
 **[Open 2017 on the interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2017)** to see the fields over imagery, or **[open it in the Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2017/collection.json)** to walk the metadata and preview each asset. The files themselves are listed on [Source Cooperative](https://source.coop/ftw/global-data-2e).
 
@@ -10,13 +10,11 @@ Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ## How it was made
 
-Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2017 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Within a processed tile no parcel is removed on land-cover, water or terrain grounds, the retention test being UTM-zone and MGRS-square ownership plus the size bounds above. Land cover did decide which tiles ran: only MGRS tiles with at least 1% cropland were processed, so regions below that threshold are absent entirely. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/). [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md) documents every stage, from mosaic download to this file.
-
-**South-west Norway is missing from this year.** 2017 predates the band-V exception in the post-processing UTM-zone test, so parcels between 3°E and 6°E in the 56°N–64°N band — MGRS squares 32VKK, 32VKL, 32VLK and 32VLL, covering Bergen, Stavanger and Jæren — were rejected as outside zone 32 and are absent from the zone=31 and zone=32 files alike. The tiles were predicted and the 2017 rasters carry them; only the vectors drop them. 2018 through 2025 were rebuilt with the fix and each gained between 9,761 and 18,625 parcels there, so a year-over-year comparison in that window makes fields look as though they appeared in 2018 when the difference is only this artefact.
+Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2017 Q1-Q4, 4 quarters x B04/B03/B02/B08 in the model's input order), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1), 5 m coverage simplification, holes under 20 m2 filled. Removed: parcels > 5 km2 (after the seam union), parcels at least 70% Impact Observatory io-lulc 2024 water (inland water, aquaculture ponds, salt pans), parcels with less than half their area on OpenStreetMap land polygons (sea). Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/). [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md) documents every stage, from mosaic download to this file.
 
 ## Files
 
-One file per UTM zone at `vector/2017/zone=NN/utm{NN}.parquet`, hive-partitioned by `zone`. The largest is [utm48](https://data.source.coop/ftw/global-data-2e/vector/2017/zone=48/utm48.parquet), with 18,298,288 parcels. Zone numbers with no land coverage are absent.
+One file per UTM zone at `vector/2017/zone=NN/utm{NN}.parquet`, hive-partitioned by `zone`. The largest is [utm48](https://data.source.coop/ftw/global-data-2e/vector/2017/zone=48/utm48.parquet), with 22,529,011 parcels. Zone numbers with no land coverage are absent.
 
 ## Columns
 
@@ -55,4 +53,4 @@ con.sql(f"""
 
 Read the whole year at once by globbing the partitions over `s3://` with `hive_partitioning=1`; an HTTP URL cannot expand a wildcard. The collection's `data` asset carries both forms.
 
-Coverage is not global. Only MGRS tiles with at least 1% cropland were processed, so a region below that threshold has no parcels here and an absence is not a prediction of absence. Inside a processed tile nothing is filtered by land cover, so water, scrub and built-up ground can carry predicted parcels. Filter on `score` (the model's field probability × 100) to trade precision against recall.
+Coverage is not global. Only MGRS tiles with at least 1% cropland were processed, so a region below that threshold has no parcels here and an absence is not a prediction of absence. Inside a processed tile, parcels at least 70% io-lulc 2024 water (inland water, aquaculture ponds, salt pans) and parcels with less than half their area on OpenStreetMap land (sea) were removed; no other land-cover or terrain rule applies, so scrub and built-up ground can still carry predicted parcels. Where this year's Sentinel-2 mosaics have large nodata gaps, detections are probably under-reported even after the gaps were filled. Parcel counts for 2017, 2018 and 2019 are about 9–12% below 2025, and part of that gap reflects the missing imagery. Filter on `score` (the model's field probability × 100) to trade precision against recall.
