@@ -65,10 +65,14 @@ it carries the measured numbers and the quirks this file does not repeat.
   at least 1% cropland were processed, so an empty region means the pipeline
   never ran there. Never report absence of parcels as absence of fields;
   check `index/raster.parquet` for whether a tile exists at all.
-- Inside a processed tile, nothing is filtered out by land cover, water or
-  slope, so non-agricultural ground can carry predicted parcels. Parcels are
-  removed only for falling below 900 m², exceeding 5 km², or being owned by a
-  neighboring tile.
+- Inside a processed tile, parcels that are mostly inland water or that fall
+  on the sea are removed, along with parcels over 5 km² and parcels owned by a
+  neighboring tile. No other land-cover or terrain rule applies, so scrub and
+  built-up ground can still carry predicted parcels.
+- In tiles where the Sentinel-2 mosaics have large nodata gaps, mainly the
+  sparse 2017–2019 mosaics, detections are probably under-reported even after
+  the gaps were filled. Parcel counts for 2017, 2018 and 2019 are about 9–12%
+  below 2025, and part of that gap is the input, not the land.
 - The vector `score` (uint8 0–100) is the mean model field probability inside
   the parcel × 100 — a ranking for filtering, not a calibrated probability.
   No calibration against ground truth is published for this 2nd Edition.
