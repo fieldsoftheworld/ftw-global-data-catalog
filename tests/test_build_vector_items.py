@@ -71,14 +71,7 @@ with tempfile.TemporaryDirectory() as tmp:
     finally:
         gen.TILES_META = original
 
-# The band-V gap note belongs to 2017 alone.
-if not gen.band_v_gap(2017):
-    errors.append("2017 lost its band-V gap note")
-if any(gen.band_v_gap(year) for year in range(2018, 2026)):
-    errors.append("a rebuilt year carries the band-V gap note")
-
 if errors:
     print("\n".join(f"error  {e}" for e in errors))
     raise SystemExit(1)
-print("OK: tiles_meta falls back to the committed assets; the band-V note is "
-      "2017-only")
+print("OK: tiles_meta falls back to the committed assets")

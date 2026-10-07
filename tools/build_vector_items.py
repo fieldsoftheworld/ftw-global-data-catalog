@@ -174,40 +174,28 @@ def filter_note(meta: dict) -> str:
     )
 
 
+#: Years whose Sentinel-2 mosaics are sparse. The rerun parcel counts for these years are about
+#: 9 to 12% below 2025 (qa/vector_{year}.json), and the gap tracks input nodata.
+_SPARSE_YEARS = (2017, 2018, 2019)
+
+
+def nodata_note(year: int) -> str:
+    "The under-detection caveat for the sparse-mosaic years, empty for the rest."
+    if year not in _SPARSE_YEARS:
+        return ""
+    return (
+        "Where this year's Sentinel-2 mosaics have large nodata gaps, detections are probably "
+        "under-reported even after the gaps were filled. Parcel counts for 2017, 2018 and 2019 "
+        "are about 9–12% below 2025, and part of that gap reflects the missing imagery."
+    )
+
+
 def fix_details(details: str) -> str:
     """Correct the land-cover sentence the published parquet footers carry."""
     if _STALE_DETAIL not in details:
         return details
     return details.replace(_STALE_DETAIL, _TRUE_DETAIL)
 
-
-# 2017 was built before `lon_in_zone` grew the band-V UTM exception
-# (`pipeline/postprocessing/outlines.py`), which widens 32V to 3-12E. The
-# nominal 6-12E test rejected every zone-32 parcel between 3E and 6E, and no
-# 31V tile covers that strip, so those parcels were lost outright rather than
-# claimed by a neighbour. 2018-2025 were rebuilt with the fix and each gained
-# 9,761 to 18,625 zone-32 parcels; 2017 was not, and its zone-32 bbox still
-# starts at 5.984E against 3.708-3.996E for every other year. The 2017 rasters
-# for 32VKK/32VKL/32VLK/32VLL are published and return 200, so the tiles ran:
-# only the vectors drop the parcels.
-_BAND_V_GAP_YEARS = (2017,)
-_BAND_V_GAP = (
-    "**South-west Norway is missing from this year.** 2017 predates the "
-    "band-V exception in the post-processing UTM-zone test, so parcels "
-    "between 3°E and 6°E in the 56°N–64°N band — MGRS squares 32VKK, 32VKL, "
-    "32VLK and 32VLL, covering Bergen, Stavanger and Jæren — were rejected "
-    "as outside zone 32 and are absent from the zone=31 and zone=32 files "
-    "alike. The tiles were predicted and the 2017 rasters carry them; only "
-    "the vectors drop them. 2018 through 2025 were rebuilt with the fix and "
-    "each gained between 9,761 and 18,625 parcels there, so a year-over-year "
-    "comparison in that window makes fields look as though they appeared in "
-    "2018 when the difference is only this artefact."
-)
-
-
-def band_v_gap(year: int) -> str:
-    """The band-V gap note for the years that carry it, empty for the rest."""
-    return _BAND_V_GAP if year in _BAND_V_GAP_YEARS else ""
 
 # The 9 columns of every zone parquet (second bucket revision, 2026-09-28).
 # The `score` description is the dataset's own, from the parquet's embedded
@@ -440,6 +428,13 @@ def build_item(row: dict, meta: dict, checksums: dict) -> dict:
     }
 
 
+# (tiles_meta key prefix, collection asset key) for the assets whose bytes live only in the bucket.
+# `cellsmulti` is vector/{year}/cells-{year}.pmtiles, the multi-resolution cell archive the web
+# viewer reads; it exists for some years only, and the asset is written only for those.
+META_ASSETS = (("pmtiles", "pmtiles"), ("cells", "cells"),
+               ("cellsmulti", "cells-pmtiles"), ("mirror", "mirror"))
+
+
 def tiles_meta_for(year: int, out: Path | None = None) -> dict:
     """size+checksum for the year's assets whose bytes live only in the bucket.
 
@@ -458,8 +453,8 @@ def tiles_meta_for(year: int, out: Path | None = None) -> dict:
     if not committed.is_file():
         return sizes
     assets = json.loads(committed.read_text()).get("assets", {})
-    for key in ("pmtiles", "cells", "mirror"):
-        asset = assets.get(key) or {}
+    for key, asset_key in META_ASSETS:
+        asset = assets.get(asset_key) or {}
         if f"{key}_{year}" in sizes or not asset.get("file:checksum"):
             continue
         sizes[f"{key}_{year}"] = {"size": asset["file:size"],
@@ -556,6 +551,18 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
                            "also useful for analysis.",
             "roles": ["data"],
       }
+    if has_tiles and f"cellsmulti_{year}" in tiles_meta:
+        assets["cells-pmtiles"] = {
+            "href": f"./cells-{year}.pmtiles",
+            "type": "application/vnd.pmtiles",
+            "title": f"A5 cell aggregates {year}, one resolution per zoom "
+                     "(PMTiles)",
+            "description": "Cell counts, areas and mean scores at A5 "
+                           "resolutions 3 to 10, one resolution per zoom "
+                           "from z0 to z7, for drawing the year at "
+                           "global scale.",
+            "roles": ["visual"],
+        }
     for name, spec in (specs.items() if has_tiles else ()):
         roles = ["style", "default"] if name == "coverage" else ["style"]
         assets[f"styles/{name}"] = {
@@ -586,13 +593,11 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
     }
     # Sizes and checksums for the assets whose bytes live only in the bucket.
     # Stamped last, so every asset above is in place to receive them.
-    for key in ("pmtiles", "cells", "mirror"):
+    for key, asset_key in META_ASSETS:
         entry = tiles_meta.get(f"{key}_{year}")
-        if entry and key in assets:
-            assets[key]["file:size"] = entry["size"]
-            assets[key]["file:checksum"] = entry["checksum"]
-    gap = band_v_gap(year)
-    gap_para = "\n\n" + gap if gap else ""
+        if entry and asset_key in assets:
+            assets[asset_key]["file:size"] = entry["size"]
+            assets[asset_key]["file:checksum"] = entry["checksum"]
     return {
         "type": "Collection",
         "stac_version": "1.1.0",
@@ -615,7 +620,6 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             f"(CDSE mirror). The full pipeline, from mosaic download to this "
             f"file, is documented in "
             f"[pipeline/README.md]({REPO_URL}/blob/main/pipeline/README.md)."
-            f"{gap_para}"
             f"\n\nThe schema follows {_FIBOA} and {_VECOREL}: "
             f"columns {_COLS_SHORT} — see `table:columns` for definitions."
         ),
@@ -725,7 +729,6 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         f"[pipeline/README.md]({REPO_URL}/blob/main/pipeline/README.md) "
         f"documents every stage, from mosaic download to this file.",
         "",
-        *([band_v_gap(year), ""] if band_v_gap(year) else []),
         "## Files", "",
         f"One file per UTM zone at `vector/{year}/zone=NN/utm{{NN}}.parquet`, "
         "hive-partitioned by `zone`. The largest is "
@@ -759,7 +762,9 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         "Coverage is not global. Only MGRS tiles with at least 1% cropland "
         "were processed, so a region below that threshold has no parcels "
         "here and an absence is not a prediction of absence. "
-        f"{filter_note(meta)} Filter on `score` "
+        f"{filter_note(meta)} "
+        f"{nodata_note(year) + ' ' if nodata_note(year) else ''}"
+        "Filter on `score` "
         "(the model's field probability × 100) to trade precision against "
         "recall.", "",
     ]
@@ -791,15 +796,16 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         f"- Schema: {len(TABLE_COLUMNS)} columns ({_COLS_SHORT}); "
         "definitions live in `table:columns` on the collection and every "
         "item.",
-        "- Parcel ids are unique within a zone file; zones partition the "
-        "parcels cleanly (measured: zero shared ids or geometries in the "
-        "6°E utm31/utm32 boundary strip).",
+        "- Parcel ids are unique across the year (measured: no duplicate "
+        "ids). A field that straddles a UTM zone line can appear once in "
+        "each zone file; the post-processing QA counted about 2,000 to "
+        "2,300 such overlapping pairs per year.",
         "- `metrics:area` is m². Post-processing kept parcels between "
         f"900 m² and 5 km². {filter_note(meta)}",
+        *([f"- {nodata_note(year)}"] if nodata_note(year) else []),
         "- Coverage is cropland-gated: only MGRS tiles with at least 1% "
         "cropland were processed. Treat an empty region as unprocessed, not "
         "as a prediction that no fields exist there.",
-        *([f"- {band_v_gap(year)}"] if band_v_gap(year) else []),
         "- Query with DuckDB over https:// URLs (s3:// hangs on some "
         "networks); a browser-like User-Agent is needed for bucket "
         "listings only, not file reads.",
