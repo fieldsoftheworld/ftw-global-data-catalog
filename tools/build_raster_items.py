@@ -197,7 +197,7 @@ _BANDS_PROSE = (
     "pixel carries a probability. ZSTD-compressed COG layout with "
     "average-resampled overviews down to 626 px. Produced by the "
     f"`{MODEL.removesuffix('.onnx')}` FTW model from 16 input bands "
-    "(B02/B03/B04/B08 × quarters Q1–Q4 of the year's "
+    "(B04/B03/B02/B08, the model's input order, × quarters Q1–Q4 of the year's "
     f"[Sentinel-2 quarterly cloudless mosaics]({MOSAICS_URL}), 10 m); each "
     "COG's GDAL metadata records its four source mosaic tiles "
     "(`source_items`)."
