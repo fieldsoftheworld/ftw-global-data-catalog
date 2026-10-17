@@ -23,9 +23,15 @@ from affine import Affine
 import rasterio.shutil
 from rasterio.enums import Resampling
 from rasterio.windows import Window
+from nodata import NODATA_FILLS
 from predict import PATCH, predict_tile
 
 PROVIDERS = {"cuda": "CUDAExecutionProvider", "cpu": "CPUExecutionProvider"}
+#: CUDA execution-provider options the published 2026-10 run pinned. ONNX Runtime's default is
+#: TF32 on, which makes the GPU output depend on batch size and on the cuDNN algorithm the timing
+#: search picks (up to 232/255 where nodata reaches the model); with it off, H100, A100 and CPU
+#: FP32 agree within 1/255. ``--tf32`` is the ~45% faster, less reproducible alternative.
+CUDA_OPTIONS = {"cudnn_conv_algo_search": "EXHAUSTIVE", "use_tf32": "0"}
 # The contract the mosaic pipeline writes (pipeline/mosaics/download.py): quarter-major.
 BANDS = ("B04", "B03", "B02", "B08")
 QUARTERS = ("Q1", "Q2", "Q3", "Q4")
@@ -56,14 +62,56 @@ def read_stack(path: Path):
                 f"{path}: band order unconfirmed — needs {BAND_DESCRIPTIONS} band descriptions "
                 f"or an input_bands={INPUT_BANDS!r} tag"
             )
-        return ds.read().astype(np.float32), ds.transform, ds.crs, tags
+        arr = ds.read()
+        if arr.dtype not in (np.int16, np.float32):
+            arr = arr.astype(np.float32)
+        # int16 mosaics stay int16: the window31 fill rounds to the stack's own dtype, as in the
+        # published run, and the host copy is half the size
+        return arr, ds.transform, ds.crs, tags
+
+
+def cuda_options(tf32: bool = False) -> dict:
+    """The CUDA provider options of a run: ``CUDA_OPTIONS``, with TF32 only when asked for."""
+    return {**CUDA_OPTIONS, "use_tf32": "1" if tf32 else "0"}
+
+
+def make_session(model: Path, device: str, tf32: bool = False):
+    """ONNX Runtime session on ``device``; CUDA gets the pinned options of ``cuda_options``."""
+    provider = PROVIDERS[device]
+    spec = (provider, cuda_options(tf32)) if device == "cuda" else provider
+    return ort.InferenceSession(str(model), providers=[spec])
+
+
+def options_applied(session, device: str, tf32: bool = False) -> str | None:
+    """Error message if the CUDA provider did not take the requested options (CPU: always None)."""
+    if device != "cuda":
+        return None
+    got = session.get_provider_options().get(PROVIDERS["cuda"], {})
+    for key, want in cuda_options(tf32).items():
+        if key in got and str(got[key]) != want:
+            return f"CUDA provider option {key}={got[key]!r}, requested {want!r}"
+    return None
 
 
 def fingerprint(
-    src: Path, model_hash: str, batch: int, overlap: float, norm: float, provider: str
+    src: Path,
+    model_hash: str,
+    batch: int,
+    overlap: float,
+    norm: float,
+    provider: str,
+    nodata_fill: str | None = None,
+    tf32: bool = False,
+    cuda_sync: bool = True,
 ) -> str:
+    """Resume identity: the input file, the model and every setting that changes the output."""
     st = src.stat()
-    return json.dumps([st.st_size, st.st_mtime_ns, model_hash, batch, overlap, norm, provider])
+    return json.dumps(
+        [
+            st.st_size, st.st_mtime_ns, model_hash, batch, overlap, norm, provider,
+            nodata_fill, tf32, cuda_sync,
+        ]
+    )
 
 
 #: Object keys under the publish prefix, relative to ``--output-dir``. ``item`` is what
@@ -104,11 +152,15 @@ def output_tags(
     provider: str,
     model_name: str | None = None,
     tile_key: str | None = None,
+    nodata_fill: str | None = None,
+    tf32: bool = False,
+    cuda_sync: bool = True,
 ) -> dict:
     """Source tags plus this run's provenance; the input's verified band-order tag is kept.
 
     ``model``, ``quantization``, ``zstd_level`` and ``tile_key`` are the tags the released
-    COGs carry (``model`` and ``tile_key`` are written only when given).
+    COGs carry (``model`` and ``tile_key`` are written only when given). ``nodata_fill`` (only
+    when a fill ran), ``cuda_sync`` and ``tf32`` record the numerics the run chose.
     """
     tags = dict(
         src_tags,
@@ -119,7 +171,11 @@ def output_tags(
         execution_provider=provider,
         normalization=str(norm),
         overlap=str(overlap),
+        cuda_sync="1" if cuda_sync else "0",
+        tf32="1" if tf32 else "0",
     )
+    if nodata_fill:
+        tags["nodata_fill"] = nodata_fill
     tags.setdefault("input_bands", INPUT_BANDS)
     if model_name:
         tags["model"] = model_name
@@ -291,6 +347,25 @@ def main() -> None:
     ap.add_argument("--norm", type=float, default=3000)
     ap.add_argument("--device", choices=tuple(PROVIDERS), default="cuda")
     ap.add_argument(
+        "--nodata-fill",
+        choices=(*NODATA_FILLS, "none"),
+        default=NODATA_FILLS[0],
+        help="fill mosaic nodata before inference (default window31, what the 2026-10 run used; "
+        "none passes the raw -32768 to the model, which reproduces the earlier release)",
+    )
+    ap.add_argument(
+        "--tf32",
+        action="store_true",
+        help="allow TF32 convolutions on CUDA (~45%% faster; output no longer agrees across "
+        "GPUs and batch sizes within 1/255)",
+    )
+    ap.add_argument(
+        "--no-cuda-sync",
+        dest="cuda_sync",
+        action="store_false",
+        help="drop the torch / ONNX Runtime stream barrier (reproduces the earlier release)",
+    )
+    ap.add_argument(
         "--layout",
         choices=tuple(LAYOUTS),
         default="hive",
@@ -316,15 +391,17 @@ def main() -> None:
     provider = PROVIDERS[a.device]
     if problem := device_available(a.device):
         ap.error(problem)
-    session = ort.InferenceSession(str(a.model), providers=[provider])
-    if problem := active_provider(session, provider):
+    session = make_session(a.model, a.device, a.tf32)
+    if problem := active_provider(session, provider) or options_applied(session, a.device, a.tf32):
         ap.error(problem)
     if problem := model_contract(session):
         ap.error(problem)
+    fill = None if a.nodata_fill == "none" else a.nodata_fill
+    settings = {"nodata_fill": fill, "tf32": a.tf32, "cuda_sync": a.cuda_sync}
     todo = []
     for src in paths:
         dst = output_path(a.output_dir, src, a.year, a.layout)
-        fp = fingerprint(src, model_hash, a.batch, a.overlap, a.norm, provider)
+        fp = fingerprint(src, model_hash, a.batch, a.overlap, a.norm, provider, **settings)
         if not current(dst, fp):
             todo.append((src, dst, fp))
     cache = {}
@@ -349,8 +426,10 @@ def main() -> None:
                 norm=a.norm,
                 dev=a.device,
                 obuf_cache=cache,
+                nodata_fill=fill,
+                cuda_sync=a.cuda_sync,
             )
-            if fingerprint(src, model_hash, a.batch, a.overlap, a.norm, provider) != fp:
+            if fingerprint(src, model_hash, a.batch, a.overlap, a.norm, provider, **settings) != fp:
                 raise RuntimeError(f"input changed: {src}")
             write_score(
                 dst,
@@ -366,6 +445,7 @@ def main() -> None:
                     provider,
                     model_name=a.model.name,
                     tile_key=src.stem,
+                    **settings,
                 ),
             )
             print(f"{src.name}: {patches} patches -> {dst}", flush=True)
