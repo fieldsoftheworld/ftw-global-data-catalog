@@ -6,9 +6,11 @@ shapely>=2.1
 scipy
 duckdb>=1.5.4
 coarsen>=0.1.0,<0.2.0
+pyogrio>=0.10  # sea_filter.py prep step and its test only
 # fbp (BoundaryVote instance post-processing) is NOT on PyPI and is NOT the
 # unrelated `fbp` 1.3.6 published there -- installing that one gives an import
-# that does not expose fbp.methods.parse. Install the private package from its own
-# source; `outlines.py --help` and every worker fail fast with that message rather
-# than 10k identical ImportError tracebacks. Only outlines.py needs it; simplify,
-# merge and the fiboa conversion run without it.
+# that does not expose fbp.methods.parse. outlines.py needs the revision whose
+# parse() accepts the +R/+F/+G modifiers (and +q1) of the method id in outlines.SPEC;
+# fieldsoftheworld/fbp main does not have them yet. `outlines.py --help` and every
+# worker fail fast with that message rather than 10k identical ImportError tracebacks.
+# Only outlines.py needs it; simplify, merge and the fiboa conversion run without it.

@@ -24,18 +24,30 @@ NODATA = -32768
 #: unauthenticated https form of these assets, so there is no https fallback.
 INDEX_COLUMNS = ["quarter", "b04_s3_href", "b04_s3_endpoint"]
 
-#: IO annual land-cover vintages sampled per product year.
+#: IO annual land-cover vintages sampled per product year, for ``frac_crops_ever``.
 #:
 #: ``year`` used to be accepted and ignored, so the 2020 product was scored against
-#: 2024 land cover -- reading the future. The water mask takes the newest sampled
-#: vintage and ``frac_crops_ever`` is "cropland in ANY sampled year", so the sample
-#: must never reach past the product year. IO's series currently ends at 2024, which
-#: is why 2025 shares 2024's vintages.
+#: 2024 land cover -- reading the future. ``frac_crops_ever`` is "cropland in ANY
+#: sampled year", so the sample must never reach past the product year. IO's series
+#: currently ends at 2024, which is why 2025 shares 2024's vintages. ``frac_water`` is
+#: the deliberate exception, see ``WATER_VINTAGE``.
 LULC_BY_YEAR = {
+    2017: (2017,),
+    2018: (2017,),
+    2019: (2017,),
     2020: (2017, 2020),
+    2021: (2017, 2020),
+    2022: (2017, 2020),
+    2023: (2017, 2020),
     2024: (2017, 2020, 2024),
     2025: (2017, 2020, 2024),
 }
+
+#: The vintage ``frac_water`` is measured against, for every product year. The published
+#: 2017-2025 vectors drop parcels that are at least 70% water in the 2024 land cover, whatever
+#: their own year, so a reservoir that filled or drained between 2017 and 2025 is judged by its
+#: 2024 state. ``frac_crops_ever`` still follows ``LULC_BY_YEAR``.
+WATER_VINTAGE = 2024
 
 IO_LULC = "https://io-10m-annual-lulc.s3.amazonaws.com"
 
@@ -177,15 +189,15 @@ def aux_rasters(tk: str, year: int, index: Path, crs, tr10, shape10) -> dict:
             Resampling.mode,
             np.uint8,
         )
-        for y in vintages
+        for y in sorted({*vintages, WATER_VINTAGE})
     }
     crops = np.zeros((h30, w30), bool)
-    for a in lulc.values():
-        crops |= a == CROP
+    for y in vintages:
+        crops |= lulc[y] == CROP
     return {
         "nod": nod,
         "dem": dem,
         "slope": slope,
-        "water": lulc[max(vintages)] == WATER,
+        "water": lulc[WATER_VINTAGE] == WATER,
         "crops": crops,
     }
