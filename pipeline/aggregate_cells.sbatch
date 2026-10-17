@@ -27,7 +27,7 @@ set -euo pipefail
 R="${R:-7}"
 cd "${SLURM_SUBMIT_DIR:-$(dirname "$0")}"
 IN="${IN:-$PWD/global${YEAR}_gp2.parquet}"
-export PATH="$HOME/ftw-us-tiles/venv/bin:/u/cholmes/micromamba/envs/ftw/bin:$PATH"
+export PATH="$HOME/ftw-us-tiles/venv/bin:$PATH"  # pinned to this venv only (gpio 1.6.0, duckdb 1.5.6)
 export TMPDIR="$PWD/tmp-cells-${YEAR}"   # /u spill — /tmp is tmpfs
 mkdir -p "$TMPDIR"
 trap 'rm -rf "$TMPDIR"' EXIT
