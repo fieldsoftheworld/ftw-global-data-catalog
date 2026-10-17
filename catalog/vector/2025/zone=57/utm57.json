@@ -13,42 +13,42 @@
     "coordinates": [
       [
         [
-          157.3931358112452,
+          157.39666438998617,
           55.909712667034945
         ],
         [
-          157.3931358112452,
+          157.39666438998617,
           56.8251184162753
         ],
         [
-          155.9969127652686,
+          155.7770231636202,
           56.8251184162753
         ],
         [
-          155.9969127652686,
+          155.7770231636202,
           55.909712667034945
         ],
         [
-          157.3931358112452,
+          157.39666438998617,
           55.909712667034945
         ]
       ]
     ]
   },
   "bbox": [
-    155.9969127652686,
+    155.7770231636202,
     55.909712667034945,
-    157.3931358112452,
+    157.39666438998617,
     56.8251184162753
   ],
   "properties": {
     "title": "UTM zone 57 — 2025 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 57 for 2025: 326 parcels, 227 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 57 for 2025: 304 parcels, 251 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2025-01-01T00:00:00Z",
     "start_datetime": "2025-01-01T00:00:00Z",
     "end_datetime": "2025-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 326,
+    "table:row_count": 304,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 482684,
+      "file:size": 487494,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2025/zone=57/utm57.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "122039a3d5269c9690212d147a945873ba5adbe55dfa096d06a760015dce079d4dba"
+      "file:checksum": "122029d8dc59f6a185643edc8bd84e2143596a08ae83f8ef5abedb24e7aae2874eba"
     }
   },
   "links": [

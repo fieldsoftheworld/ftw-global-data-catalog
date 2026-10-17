@@ -26,6 +26,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 
 import matplotlib
@@ -103,9 +104,13 @@ def main() -> int:
     )
     con.execute("INSTALL httpfs; LOAD httpfs; INSTALL spatial; LOAD spatial;")
     con.execute("SET http_retries=20;")
+    # FTW_INDEX_DIR names a directory holding an index that is not published yet
+    source = (f"{os.environ['FTW_INDEX_DIR']}/{args.tree}.parquet"
+              if os.environ.get("FTW_INDEX_DIR")
+              else f"{PUBLIC_BASE}/index/{args.tree}.parquet")
     years = con.execute(f"""
         SELECT year, list(ST_AsGeoJSON(geometry)), list({weight_col})
-        FROM '{PUBLIC_BASE}/index/{args.tree}.parquet'
+        FROM '{source}'
         GROUP BY year ORDER BY year
     """).fetchall()
     for year, geoms, weights in years:

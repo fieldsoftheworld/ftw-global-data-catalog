@@ -13,42 +13,42 @@
     "coordinates": [
       [
         [
-          114.01009632906765,
-          -9.046674092146105
+          114.60495733943416,
+          -8.617490873010631
         ],
         [
-          114.01009632906765,
+          114.60495733943416,
           52.346677010881415
         ],
         [
-          107.98569058310635,
+          107.82793186607874,
           52.346677010881415
         ],
         [
-          107.98569058310635,
-          -9.046674092146105
+          107.82793186607874,
+          -8.617490873010631
         ],
         [
-          114.01009632906765,
-          -9.046674092146105
+          114.60495733943416,
+          -8.617490873010631
         ]
       ]
     ]
   },
   "bbox": [
-    107.98569058310635,
-    -9.046674092146105,
-    114.01009632906765,
+    107.82793186607874,
+    -8.617490873010631,
+    114.60495733943416,
     52.346677010881415
   ],
   "properties": {
     "title": "UTM zone 49 — 2020 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 49 for 2020: 7,198,886 parcels, 58,440 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 49 for 2020: 8,860,557 parcels, 81,083 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2020-01-01T00:00:00Z",
     "start_datetime": "2020-01-01T00:00:00Z",
     "end_datetime": "2020-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 7198886,
+    "table:row_count": 8860557,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 2397353791,
+      "file:size": 3184663536,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2020/zone=49/utm49.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "1220cbd7635d776c5a31b943dc97014f6cb35174550af04a9fc2fc416e6b41450559"
+      "file:checksum": "1220988956bb6d977c637ed9193eb498eefad5d116aeaef451aa12e261d5a29f287c"
     }
   },
   "links": [

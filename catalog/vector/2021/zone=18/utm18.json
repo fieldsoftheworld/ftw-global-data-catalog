@@ -13,11 +13,11 @@
     "coordinates": [
       [
         [
-          -71.98967051546083,
-          -45.94212126101416
+          -70.88570664085802,
+          -45.99530468685922
         ],
         [
-          -71.98967051546083,
+          -70.88570664085802,
           49.632358622821506
         ],
         [
@@ -26,29 +26,29 @@
         ],
         [
           -78.00370885685355,
-          -45.94212126101416
+          -45.99530468685922
         ],
         [
-          -71.98967051546083,
-          -45.94212126101416
+          -70.88570664085802,
+          -45.99530468685922
         ]
       ]
     ]
   },
   "bbox": [
     -78.00370885685355,
-    -45.94212126101416,
-    -71.98967051546083,
+    -45.99530468685922,
+    -70.88570664085802,
     49.632358622821506
   ],
   "properties": {
     "title": "UTM zone 18 — 2021 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 18 for 2021: 1,757,811 parcels, 75,757 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 18 for 2021: 1,890,334 parcels, 85,321 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2021-01-01T00:00:00Z",
     "start_datetime": "2021-01-01T00:00:00Z",
     "end_datetime": "2021-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 1757811,
+    "table:row_count": 1890334,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 1339186713,
+      "file:size": 1460501318,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2021/zone=18/utm18.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "1220656e1ba0f758424735598b37d22a5cbfba3c1fa0528fe41a8d25a9a93c6b2e48"
+      "file:checksum": "12200fef5444e092ad4497bd9ad41677f179892b886c4eea14302537207e7860eb54"
     }
   },
   "links": [

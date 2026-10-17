@@ -1,6 +1,6 @@
 # FTW Global — Field Boundaries 2023 (GeoParquet)
 
-Predicted agricultural field boundaries for 2023: **133,246,444 parcels** in 54 per-UTM-zone GeoParquet files (82.7 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
+Predicted agricultural field boundaries for 2023: **141,468,617 parcels** in 54 per-UTM-zone GeoParquet files (91.5 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
 
 **[Open 2023 on the interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2023)** to see the fields over imagery, or **[open it in the Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2023/collection.json)** to walk the metadata and preview each asset. The files themselves are listed on [Source Cooperative](https://source.coop/ftw/global-data-2e).
 
@@ -10,11 +10,11 @@ Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
 
 ## How it was made
 
-Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2023 Q1-Q4, 4 quarters x B02/B03/B04/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.3+A900), 5 m coverage simplification, parcels > 5 km2 removed. Within a processed tile no parcel is removed on land-cover, water or terrain grounds, the retention test being UTM-zone and MGRS-square ownership plus the size bounds above. Land cover did decide which tiles ran: only MGRS tiles with at least 1% cropland were processed, so regions below that threshold are absent entirely. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/). [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md) documents every stage, from mosaic download to this file.
+Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2023 Q1-Q4, 4 quarters x B04/B03/B02/B08 in the model's input order), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1), 5 m coverage simplification, holes under 20 m2 filled. Removed: parcels > 5 km2 (after the seam union), parcels at least 70% Impact Observatory io-lulc 2024 water (inland water, aquaculture ponds, salt pans), parcels with less than half their area on OpenStreetMap land polygons (sea). Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/). [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md) documents every stage, from mosaic download to this file.
 
 ## Files
 
-One file per UTM zone at `vector/2023/zone=NN/utm{NN}.parquet`, hive-partitioned by `zone`. The largest is [utm48](https://data.source.coop/ftw/global-data-2e/vector/2023/zone=48/utm48.parquet), with 22,566,465 parcels. Zone numbers with no land coverage are absent.
+One file per UTM zone at `vector/2023/zone=NN/utm{NN}.parquet`, hive-partitioned by `zone`. The largest is [utm48](https://data.source.coop/ftw/global-data-2e/vector/2023/zone=48/utm48.parquet), with 24,412,933 parcels. Zone numbers with no land coverage are absent.
 
 ## Columns
 
@@ -53,4 +53,4 @@ con.sql(f"""
 
 Read the whole year at once by globbing the partitions over `s3://` with `hive_partitioning=1`; an HTTP URL cannot expand a wildcard. The collection's `data` asset carries both forms.
 
-Coverage is not global. Only MGRS tiles with at least 1% cropland were processed, so a region below that threshold has no parcels here and an absence is not a prediction of absence. Inside a processed tile nothing is filtered by land cover, so water, scrub and built-up ground can carry predicted parcels. Filter on `score` (the model's field probability × 100) to trade precision against recall.
+Coverage is not global. Only MGRS tiles with at least 1% cropland were processed, so a region below that threshold has no parcels here and an absence is not a prediction of absence. Inside a processed tile, parcels at least 70% io-lulc 2024 water (inland water, aquaculture ponds, salt pans) and parcels with less than half their area on OpenStreetMap land (sea) were removed; no other land-cover or terrain rule applies, so scrub and built-up ground can still carry predicted parcels. Filter on `score` (the model's field probability × 100) to trade precision against recall.

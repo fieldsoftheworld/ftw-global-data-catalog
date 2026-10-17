@@ -13,11 +13,11 @@
     "coordinates": [
       [
         [
-          138.01450160566296,
-          -36.1244157868865
+          138.29595724494484,
+          -36.045214613626484
         ],
         [
-          138.01450160566296,
+          138.29595724494484,
           48.75301300303733
         ],
         [
@@ -26,29 +26,29 @@
         ],
         [
           131.99441465622587,
-          -36.1244157868865
+          -36.045214613626484
         ],
         [
-          138.01450160566296,
-          -36.1244157868865
+          138.29595724494484,
+          -36.045214613626484
         ]
       ]
     ]
   },
   "bbox": [
     131.99441465622587,
-    -36.1244157868865,
-    138.01450160566296,
+    -36.045214613626484,
+    138.29595724494484,
     48.75301300303733
   ],
   "properties": {
     "title": "UTM zone 53 — 2023 field boundaries",
-    "description": "Predicted field boundaries falling in UTM zone 53 for 2023: 851,567 parcels, 40,827 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "description": "Predicted field boundaries falling in UTM zone 53 for 2023: 952,575 parcels, 43,344 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
     "datetime": "2023-01-01T00:00:00Z",
     "start_datetime": "2023-01-01T00:00:00Z",
     "end_datetime": "2023-12-31T23:59:59Z",
     "proj:code": "EPSG:4326",
-    "table:row_count": 851567,
+    "table:row_count": 952575,
     "table:columns": [
       {
         "name": "id",
@@ -106,14 +106,14 @@
       "roles": [
         "data"
       ],
-      "file:size": 396273354,
+      "file:size": 458233758,
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2023/zone=53/utm53.parquet",
           "title": "S3 URI (us-west-2, anonymous read)"
         }
       },
-      "file:checksum": "122040bd8698d65bf95056df5c73e203c1e860df1f1e72579865f0246933ecd1d67d"
+      "file:checksum": "1220bb2616ae789313efe072aacc6093fc17fe612e742482494610b1bb432c2b80b2"
     }
   },
   "links": [

@@ -6,7 +6,7 @@
   ],
   "id": "raster",
   "title": "FTW Global (2nd Edition) — Field & boundary probability rasters",
-  "description": "Per-year collections of field/boundary probability COGs at 2.5 m, 2017–2025: 67,197 tiles, 26.0 TB, browsable in the [data browser](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
+  "description": "Per-year collections of field/boundary probability COGs at 2.5 m, 2017–2025: 67,197 tiles, 25.8 TB, browsable in the [data browser](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
   "links": [
     {
       "rel": "root",

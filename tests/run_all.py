@@ -16,6 +16,7 @@ TESTS = [
     "test_links.py",
     "test_git_ext.py",
     "test_counts.py",
+    "test_readme_images.py",
     "test_build_vector_items.py",
     "test_thumbnails.py",
     "test_publish.py",
