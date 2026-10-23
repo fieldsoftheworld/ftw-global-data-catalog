@@ -3,3 +3,4 @@ numpy
 rasterio>=1.4
 requests
 pyarrow>=19
+shapely
