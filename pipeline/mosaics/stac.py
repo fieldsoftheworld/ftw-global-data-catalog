@@ -41,10 +41,7 @@ class MosaicItem:
     quarter: str
     bbox: tuple[float, float, float, float]
     assets: dict[str, BandAsset]
-    # The item's own GeoJSON geometry. An antimeridian-crossing tile's ``bbox`` spans
-    # 360 degrees, but its geometry's parts do not, so keep-list building needs this
-    # and not just the bbox. Optional and unused by download.py itself.
-    geometry: dict | None = None
+    geometry: dict | None = None  # GeoJSON; an antimeridian tile's bbox spans 360 degrees
 
     @property
     def total_bytes(self) -> int:
