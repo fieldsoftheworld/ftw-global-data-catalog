@@ -49,6 +49,22 @@ def test_score_one_takes_max_over_years(tmp_path, monkeypatch):
     assert row["crop_km2"] == pytest.approx(0.4, abs=0.01)
 
 
+def test_tile_crossing_a_band_reads_both_band_files(tmp_path, monkeypatch):
+    # Crop only south of 40N, in band S, while the tile is named for band T.
+    lat = np.linspace(40.5, 39.5, 100, endpoint=False)[:, None].repeat(100, axis=1)
+    paths = {}
+    for gzd, arr in (("31S", np.where(lat < 40, 5, 1)), ("31T", np.ones((100, 100)))):
+        paths[gzd] = str(tmp_path / f"{gzd}.tif")
+        with rasterio.open(
+            paths[gzd], "w", driver="GTiff", width=100, height=100, count=1, dtype="uint8",
+            crs="EPSG:4326", transform=Affine(0.01, 0, 0, 0, -0.01, 40.5),
+        ) as ds:
+            ds.write(arr.astype(np.uint8), 1)
+    monkeypatch.setattr(cropland, "_iolulc_url", lambda gzd, year: paths[gzd])
+    stats = cropland.cropland_stats("31TCE_0_0", (0.0, 39.5, 1.0, 40.5), years=(2024,))
+    assert stats[2024].fraction == pytest.approx(0.5, abs=0.02)
+
+
 def test_absent_tile_is_zero(monkeypatch):
     monkeypatch.setattr(cropland.rasterio, "open", raise_http(404))
     row = keeplist.score_one("31TDF_0_0", BBOX)

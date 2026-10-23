@@ -1,4 +1,5 @@
-"""Cropland tile list for ``download.py --tile-list``. Tiles that fail to score are kept.
+"""Cropland tile list for ``download.py --tile-list``: every tile with io-lulc crop.
+Tiles that fail to score are kept.
 
     python3 keeplist.py bbox --out tile_footprints.parquet
     python3 keeplist.py score --footprints tile_footprints.parquet \\
@@ -17,8 +18,8 @@ from stac import MosaicItem, search_items
 
 from cropland import cropland_stats
 
-# Several quarters because seasonal coverage differs (polar winter).
-SWEEP = [(y, q) for y in (2024, 2020, 2017) for q in ("Q3", "Q2", "Q4", "Q1")]
+# Every quarter of every year: the tile set differs between them (polar winter, gaps).
+SWEEP = [(y, q) for y in range(2025, 2016, -1) for q in ("Q3", "Q2", "Q4", "Q1")]
 
 
 def footprint_row(item: MosaicItem) -> dict:
@@ -83,7 +84,7 @@ def cmd_score(args: argparse.Namespace) -> None:
             if i % 2000 == 0:
                 print(f"{i:,}/{len(futs):,}", flush=True)
     pq.write_table(pa.Table.from_pylist(rows), args.out)
-    keep = sorted(r["tile_key"] for r in rows if r["fraction"] > args.threshold)
+    keep = sorted(r["tile_key"] for r in rows if r["crop_km2"] > args.min_crop_km2)
     args.keep_list.write_text("\n".join(keep) + "\n")
     errors = sum(bool(r["error"]) for r in rows)
     print(f"kept {len(keep):,}/{len(rows):,}, {errors:,} of them unscored")
@@ -95,11 +96,11 @@ def main() -> None:
     b = sub.add_parser("bbox", help="tile footprints from STAC")
     b.add_argument("--out", type=Path, default=Path("tile_footprints.parquet"))
     b.set_defaults(func=cmd_bbox)
-    s = sub.add_parser("score", help="io-lulc crop fraction per footprint")
+    s = sub.add_parser("score", help="io-lulc crop area per footprint")
     s.add_argument("--footprints", type=Path, default=Path("tile_footprints.parquet"))
     s.add_argument("--out", type=Path, default=Path("global_cropland.parquet"))
     s.add_argument("--keep-list", type=Path, default=Path("global_keep.txt"))
-    s.add_argument("--threshold", type=float, default=0.01)
+    s.add_argument("--min-crop-km2", type=float, default=0.0)
     s.add_argument("--workers", type=int, default=16)
     s.set_defaults(func=cmd_score)
     args = ap.parse_args()

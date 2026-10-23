@@ -78,9 +78,11 @@ their own columns; point `EODATA_S3_ENDPOINT` at a mirror to index one instead.
 
 ## Cropland tile list
 
-`keeplist.py` builds the `--tile-list`: tiles whose Esri io-lulc crop fraction
-(max over 2017, 2020 and 2024) exceeds 1%. The MGRS grid does not change by
-year, so build it once. Tiles that fail to score are kept.
+`keeplist.py` builds the `--tile-list`: every tile with any Esri io-lulc crop
+in 2017, 2020 or 2024 (`--min-crop-km2`, default 0). The 2nd Edition instead
+kept tiles over 1% crop, which skipped tiles with up to ~110 km² of it. The MGRS
+grid does not change by year, so build it once. Tiles that fail to score are
+kept.
 
 ```sh
 .venv/bin/python pipeline/mosaics/keeplist.py bbox --out tile_footprints.parquet
