@@ -15,7 +15,7 @@ import shapely
 from shapely.geometry import shape
 from stac import MosaicItem, search_items
 
-from cropland import cropland_fraction
+from cropland import cropland_stats
 
 # Several quarters because seasonal coverage differs (polar winter).
 SWEEP = [(y, q) for y in (2024, 2020, 2017) for q in ("Q3", "Q2", "Q4", "Q1")]
@@ -43,11 +43,16 @@ def footprint_row(item: MosaicItem) -> dict:
 
 
 def score_one(tile_key: str, bbox: tuple[float, float, float, float]) -> dict:
+    row = {"tile_key": tile_key, "fraction": 1.0, "crop_km2": float("inf"), "error": ""}
     try:
-        stat = cropland_fraction(tile_key, bbox)
+        stats = cropland_stats(tile_key, bbox).values()
     except Exception as exc:  # noqa: BLE001
-        return {"tile_key": tile_key, "fraction": 1.0, "valid_px": 0, "error": type(exc).__name__}
-    return {"tile_key": tile_key, "fraction": stat.fraction, "valid_px": stat.valid_px, "error": ""}
+        return {**row, "error": f"{type(exc).__name__}: {exc}"[:500]}
+    return {
+        **row,
+        "fraction": max((s.fraction for s in stats), default=0.0),
+        "crop_km2": max((s.crop_km2 for s in stats), default=0.0),
+    }
 
 
 def cmd_bbox(args: argparse.Namespace) -> None:

@@ -24,6 +24,7 @@ def _is_absent(exc: Exception) -> bool:
 class CroplandStat:
     cropland_px: int
     valid_px: int
+    crop_km2: float
 
     @property
     def fraction(self) -> float:
@@ -34,15 +35,15 @@ def _iolulc_url(tile_key: str, year: int) -> str:
     return f"/vsicurl/{IOLULC_BASE}/{tile_key[:3]}_{year}.tif"
 
 
-def cropland_fraction(
+def cropland_stats(
     tile_key: str,
     bbox: tuple[float, float, float, float],
     *,
     years: tuple[int, ...] = IOLULC_YEARS,
     target_px: int = 512,
-) -> CroplandStat:
-    "Max crop fraction of ``bbox`` over ``years`` (max, since one list serves every year)."
-    best = CroplandStat(0, 0)
+) -> dict[int, CroplandStat]:
+    "Crop coverage of ``bbox`` per io-lulc year; years with no io-lulc tile are omitted."
+    stats = {}
     for year in years:
         url = _iolulc_url(tile_key, year)
         try:
@@ -56,17 +57,15 @@ def cropland_fraction(
                 )
                 if window[0] >= window[2] or window[1] >= window[3]:
                     continue
+                win = ds.window(*window)
                 arr = ds.read(
-                    1,
-                    window=ds.window(*window),
-                    out_shape=(target_px, target_px),
-                    resampling=Resampling.nearest,
+                    1, window=win, out_shape=(target_px, target_px), resampling=Resampling.nearest
                 )
+                cell_km2 = win.width * win.height * abs(ds.res[0] * ds.res[1]) / 1e6 / arr.size
         except RasterioIOError as exc:
             if _is_absent(exc):
                 continue
             raise RasterioIOError(f"{url}: {exc}") from exc
-        stat = CroplandStat(int((arr == IOLULC_CROPS_CLASS).sum()), int((arr != 0).sum()))
-        if stat.fraction > best.fraction:
-            best = stat
-    return best
+        crop_px = int((arr == IOLULC_CROPS_CLASS).sum())
+        stats[year] = CroplandStat(crop_px, int((arr != 0).sum()), crop_px * cell_km2)
+    return stats
