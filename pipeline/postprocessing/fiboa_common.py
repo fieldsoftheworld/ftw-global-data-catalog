@@ -81,9 +81,9 @@ def drop_small_holes(poly: str) -> str:
     """
     rings = (
         f"list_transform(range(1, ST_NumInteriorRings({poly}) + 1), "
-        f"i -> ST_InteriorRingN({poly}, i))"
+        f"lambda i: ST_InteriorRingN({poly}, i))"
     )
-    keep = f"ring -> ST_Area({zone_utm('ST_MakePolygon(ring)')}) >= {MIN_HOLE_M2}"
+    keep = f"lambda ring: ST_Area({zone_utm('ST_MakePolygon(ring)')}) >= {MIN_HOLE_M2}"
     rebuilt = f"ST_MakePolygon(ST_ExteriorRing({poly}), list_filter({rings}, {keep}))"
     return f"CASE WHEN ST_NumInteriorRings({poly}) = 0 THEN {poly} ELSE {rebuilt} END"
 
@@ -116,8 +116,8 @@ def final_select(rows: str, cid: str, year: int, bbox: list[float], max_m2: floa
     parts = (
         f"SELECT id, tile_key, pf_mean, CASE WHEN ST_GeometryType(g) = 'MULTIPOLYGON' "
         f"THEN ST_Collect(list_filter(list_transform(ST_Dump(g), "
-        f"x -> {drop_small_holes('x.geom')}), "
-        f"p -> ST_Area({zone_utm('p')}) >= {MIN_PART_M2})) "
+        f"lambda x: {drop_small_holes('x.geom')}), "
+        f"lambda p: ST_Area({zone_utm('p')}) >= {MIN_PART_M2})) "
         f"ELSE {drop_small_holes('g')} END AS g FROM ({rows})"
     )
     metric = (

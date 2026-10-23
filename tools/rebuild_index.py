@@ -78,7 +78,7 @@ def main() -> int:
     n, ok = con.execute(f"""
         SELECT count(*), count(*) FILTER (regexp_matches(href, '{target}'))
         FROM read_parquet('{out}')
-    """).fetchone()
+    """).fetchall()[0]
     print(f"{out}: {n} rows, {ok} in target layout")
     if n != ok:
         raise SystemExit("some hrefs did not rewrite")

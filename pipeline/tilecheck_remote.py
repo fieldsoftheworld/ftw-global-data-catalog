@@ -31,5 +31,5 @@ if True:
             if 1<=zz<=60:
                 rel=f"{year}/zone={zz:02d}/utm{zz:02d}.parquet"
                 fp=f"{SRC_ROOT}/{rel}" if SRC_ROOT else f"https://data.source.coop/ftw/global-data-2e/vector/{rel}"
-                k+=c.execute(f"select count(*) from '{fp}' where bbox.xmin<={e} and bbox.xmax>={w} and bbox.ymin<={n} and bbox.ymax>={s}").fetchone()[0]
+                k+=c.execute(f"select count(*) from '{fp}' where bbox.xmin<={e} and bbox.xmax>={w} and bbox.ymin<={n} and bbox.ymax>={s}").fetchall()[0][0]
         print(name,(z,x,y),"tile features",len(fs),"| parquet features in tile bbox",k,"| props",list(fs[0]["properties"]) if fs else None)

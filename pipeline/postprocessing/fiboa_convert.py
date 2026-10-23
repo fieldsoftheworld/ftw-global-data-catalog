@@ -356,7 +356,7 @@ def convert(
         row = con.sql(
             f"select min(xmin), min(ymin), max(xmax), max(ymax), count(*) "
             f"from read_parquet('{src}')"
-        ).fetchone()
+        ).fetchall()[0]
         if row is None or row[4] == 0 or any(v is None for v in row[:4]):
             # An all-NULL aggregate is a row, so the old `assert bbox is not None`
             # could not catch it and float(None) raised naming nothing.
@@ -410,7 +410,7 @@ def _validator(zone: str, n_in: int):
         # cannot infer the reader from its suffix.
         ids = duckdb.sql(
             f"select count(*), count(distinct id) from read_parquet('{tmp}')"
-        ).fetchone()
+        ).fetchall()[0]
         assert ids is not None
         if ids[0] != ids[1]:
             raise SystemExit(f"zone {zone}: {ids[0] - ids[1]:,} duplicate parcel ids")
