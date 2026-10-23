@@ -393,13 +393,15 @@ Land cover decides **where the pipeline runs**, and never **which parcels
 survive**. Both halves matter, and conflating them is how the catalog ended up
 with a wrong caveat.
 
-Coverage comes first. Stage 1 runs against a cropland tile list, described at
-`mosaics/README.md`, and that list is the intended tile set: a named tile the
-STAC query does not return fails the run. The threshold shows plainly in the
-published index. Every year's minimum `cropland_frac` is exactly 0.010006 and
-no tile falls below 1%, which is the signature of a cut rather than of a
-natural distribution. Tiles under 1% cropland were never processed, so open
-desert, ice, dense forest and purely urban areas are absent by construction.
+Coverage comes first. Stage 1 runs against a cropland tile list, built by
+[`mosaics/keeplist.py`](mosaics/README.md#building-the-cropland-tile-list)
+from Esri/Impact Observatory io-lulc, and that list is the intended tile set:
+a named tile the STAC query does not return fails the run. The threshold
+shows plainly in the published index. Every year's minimum `cropland_frac` is
+exactly 0.010006 and no tile falls below 1%, which is the signature of a cut
+rather than of a natural distribution. Tiles under 1% cropland were never
+processed, so open desert, ice, dense forest and purely urban areas are
+absent by construction.
 An empty region in this data means the pipeline never ran there.
 
 Within a processed tile, a parcel is removed for exactly three reasons, none

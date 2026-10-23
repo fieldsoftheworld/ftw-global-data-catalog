@@ -26,6 +26,37 @@ use `--bbox -180 -90 180 90`, preferably with a cropland tile list supplied via
 `--tile-list`, which is then also the intended tile set: tiles it names that the
 STAC query does not return fail the run. Specify disjoint `--shard` /
 `--num-shards` for multiple jobs.
+
+### Building the cropland tile list
+
+`keeplist.py` builds the `--tile-list` file. Most of Earth's ~35,000 MGRS
+sub-tiles are ocean, desert, ice or forest, so this decides where the whole
+pipeline runs at all, not just this stage — see [What is filtered, and what is
+not](../README.md#what-is-filtered-and-what-is-not). The MGRS grid is
+year-independent, so it is built once and reused for every imagery year:
+
+```sh
+python3 pipeline/mosaics/keeplist.py bbox --out tile_footprints.parquet
+python3 pipeline/mosaics/keeplist.py score --footprints tile_footprints.parquet \
+  --out global_cropland.parquet --keep-list global_keep.txt
+```
+
+`bbox` sweeps the STAC collection across nine year/quarter combinations
+(seasonal coverage differs, e.g. polar winter) to collect every tile's
+geometry once; watch the "+N new" count printed per quarter fall to ~0 by the
+end of the sweep, and widen `keeplist.SWEEP_ORDER` if it has not. `score`
+then reads each tile's Esri/Impact Observatory io-lulc crop fraction
+(`cropland.py`, `/vsicurl`, thread-pooled) and keeps the tile if its max
+fraction over 2017/2020/2024 exceeds `--threshold` (default `0.01`, matching
+the published 2017–2025 run). A tile io-lulc could not be scored — a
+transient fetch failure, not a missing object — is kept rather than skipped:
+a false keep costs one wasted tile of download and inference, a false skip
+silently drops a real cropland tile forever.
+
+```sh
+uv pip install pytest
+.venv/bin/python -m pytest pipeline/mosaics/test_keeplist.py
+```
 `--workers` limits simultaneous object downloads within each tile. Scratch must
 hold 16 source COGs; band stacking reads in windows to bound RAM.
 
