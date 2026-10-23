@@ -3,6 +3,7 @@
 # describes are not. Git keeps every version of a binary forever, so one large
 # file committed once is paid for by every clone from then on.
 *.parquet
+!pipeline/mosaics/keeplist_2e.parquet
 *.pmtiles
 *.tif
 *.tiff

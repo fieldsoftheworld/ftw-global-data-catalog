@@ -87,3 +87,7 @@ year, so build it once. Tiles that fail to score are kept.
 .venv/bin/python pipeline/mosaics/keeplist.py score --footprints tile_footprints.parquet \
   --out global_cropland.parquet --keep-list global_keep.txt
 ```
+
+`keeplist_2e.parquet` is the tile set the 2nd Edition ran: 7,467 tiles, each
+with its `cropland_frac`, the years it was processed, its bbox and its WKB
+footprint, taken from the published `index/raster.parquet`.
