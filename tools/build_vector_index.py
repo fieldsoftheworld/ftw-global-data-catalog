@@ -79,7 +79,7 @@ def zone_row(year: int, f: Path) -> dict:
     row = duckdb.sql(
         f'select count(*), sum("metrics:area"), min(bbox.xmin), min(bbox.ymin), '
         f"max(bbox.xmax), max(bbox.ymax) from '{f}'"
-    ).fetchone()
+    ).fetchall()[0]
     n, area, w, s, e, north = row
     if not n or area is None:
         raise SystemExit(f"{f}: {n or 0} parcels, or no metrics:area to total")
