@@ -1,9 +1,4 @@
-"""Zero field and boundary scores farther than ``--buffer-m`` from io-lulc crop.
-
-Runs after ``run.py`` on the tiles in ``--tile-list`` and writes masked COGs under
-``--output-dir`` with the same layout, leaving the unmasked scores in ``--input-dir``.
-Crop is any io-lulc crop pixel in 2017, 2020 or 2024, mapped onto a 40 m grid.
-"""
+"""Zero scores farther than ``--buffer-m`` from io-lulc crop on the tiles in ``--tile-list``."""
 
 import argparse
 import sys
@@ -23,11 +18,10 @@ from run import LAYOUTS, output_key, write_score
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "mosaics"))
 from cropland import IOLULC_CROPS_CLASS, IOLULC_YEARS, _bands, _is_absent, _iolulc_url  # noqa: E402
 
-CELL = 16  # 16 output pixels of 2.5 m = 40 m
+CELL = 16  # 40 m cells
 
 
 def crop_grid(tile_key: str, crs, transform, shape: tuple[int, int]) -> np.ndarray:
-    "Boolean grid: any io-lulc crop pixel in any year falls in the cell."
     crop = np.zeros(shape, np.uint8)
     bounds = array_bounds(*shape, transform)
     _, south, _, north = transform_bounds(crs, "EPSG:4326", *bounds)
@@ -67,14 +61,14 @@ def near_crop(crop: np.ndarray, cell_m: float, buffer_m: float) -> np.ndarray:
 
 
 def apply_mask(scores: np.ndarray, keep: np.ndarray, cell: int = CELL) -> None:
-    "Zero ``scores`` (bands, H, W) in place outside the coarse ``keep`` grid."
+    "Zero ``scores`` in place outside the coarse ``keep`` grid."
     for r in range(keep.shape[0]):
         drop = ~np.repeat(keep[r], cell)[: scores.shape[2]]
         scores[:, r * cell : (r + 1) * cell, drop] = 0
 
 
 def mask_tile(src: Path, dst: Path, tile_key: str, buffer_m: float) -> float:
-    "Write the masked COG; returns the share of field-score pixels (> 0.5) zeroed."
+    "Returns the share of field pixels (score > 128) zeroed."
     with rasterio.open(src) as ds:
         scores, crs, transform, tags = ds.read(), ds.crs, ds.transform, ds.tags()
     shape = (-(-scores.shape[1] // CELL), -(-scores.shape[2] // CELL))
@@ -106,9 +100,10 @@ def main() -> None:
         src, dst = a.input_dir / key, a.output_dir / key
         if dst.exists():
             with rasterio.open(src) as s, rasterio.open(dst) as d:
-                done = d.tags().get("crop_mask_buffer_m") == str(a.buffer_m)
-                if done and d.tags().get("inference_fingerprint") == s.tags().get("inference_fingerprint"):
-                    continue
+                st, dt = s.tags(), d.tags()
+            same_fp = dt.get("inference_fingerprint") == st.get("inference_fingerprint")
+            if same_fp and dt.get("crop_mask_buffer_m") == str(a.buffer_m):
+                continue
         share = mask_tile(src, dst, tile, a.buffer_m)
         print(f"{tile}: {share:.1%} of field pixels zeroed", flush=True)
 

@@ -41,7 +41,7 @@ class MosaicItem:
     quarter: str
     bbox: tuple[float, float, float, float]
     assets: dict[str, BandAsset]
-    geometry: dict | None = None  # GeoJSON; an antimeridian tile's bbox spans 360 degrees
+    geometry: dict | None = None  # GeoJSON, since an antimeridian tile's bbox spans 360 degrees
 
     @property
     def total_bytes(self) -> int:

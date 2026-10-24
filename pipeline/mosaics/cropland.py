@@ -16,7 +16,7 @@ _HTTP_CODE = re.compile(r"HTTP response code:\s*(\d{3})")
 
 
 def _is_absent(exc: Exception) -> bool:
-    "Only 404/410 mean the tile does not exist; anything else is a transport error."
+    "Only HTTP 404 or 410 means the tile does not exist."
     m = _HTTP_CODE.search(str(exc))
     return bool(m) and int(m.group(1)) in (404, 410)
 
@@ -36,7 +36,6 @@ def _iolulc_url(gzd: str, year: int) -> str:
 
 
 def _bands(south: float, north: float) -> list[tuple[str, float, float]]:
-    "MGRS latitude bands (letter, south, north) overlapping [south, north]; X spans 72-84."
     out = []
     for i, letter in enumerate(MGRS_BANDS):
         lo, hi = -80 + 8 * i, (84 if letter == "X" else -72 + 8 * i)
@@ -45,7 +44,9 @@ def _bands(south: float, north: float) -> list[tuple[str, float, float]]:
     return out
 
 
-def _read_part(url: str, bbox: tuple[float, float, float, float], target_px: int) -> CroplandStat | None:
+def _read_part(
+    url: str, bbox: tuple[float, float, float, float], target_px: int
+) -> CroplandStat | None:
     try:
         with rasterio.open(url) as ds:
             left, bottom, right, top = transform_bounds("EPSG:4326", ds.crs, *bbox)
@@ -78,11 +79,7 @@ def cropland_stats(
     years: tuple[int, ...] = IOLULC_YEARS,
     target_px: int = 512,
 ) -> dict[int, CroplandStat]:
-    """Crop coverage of ``bbox`` per io-lulc year; years with no io-lulc data are omitted.
-
-    io-lulc files stop at MGRS band edges but Sentinel-2 tiles do not, so every band the
-    bbox crosses is read from its own file.
-    """
+    "Crop and land area of ``bbox`` per io-lulc year, read from every MGRS band it crosses."
     west, south, east, north = bbox
     stats = {}
     for year in years:
