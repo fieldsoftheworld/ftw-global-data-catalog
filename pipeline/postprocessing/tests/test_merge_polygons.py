@@ -157,7 +157,7 @@ def test_over_matching_aux_glob_does_not_duplicate_parcels(tmp_path):
     con = duckdb.connect()
     n, k = con.sql(
         f"select count(*), count(distinct (tile_key, parcel_id)) from '{_written(tmp_path)}'"
-    ).fetchone()
+    ).fetchall()[0]
     con.close()
     assert (n, k) == (3, 3)
     assert _summary(tmp_path)["zones"]["31"]["parcels_out"] == n

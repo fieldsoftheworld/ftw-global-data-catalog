@@ -58,7 +58,7 @@ def load_points(con, src: str, limit: int | None) -> None:
         WHERE c IS NOT NULL
         """
     )
-    n = con.execute("SELECT count(*) FROM pts").fetchone()[0]
+    n = con.execute("SELECT count(*) FROM pts").fetchall()[0][0]
     print(f"{n:,} parcel centroids in {time.time() - t0:.0f} s", flush=True)
 
 
@@ -73,7 +73,7 @@ def bucket_points(con, res: int) -> None:
         FROM pts GROUP BY 1
         """
     )
-    n = con.execute(f"SELECT count(*) FROM agg{res}").fetchone()[0]
+    n = con.execute(f"SELECT count(*) FROM agg{res}").fetchall()[0][0]
     print(f"r{res}: {n:,} cells from the parcel centroids in {time.time() - t0:.0f} s", flush=True)
 
 
@@ -88,7 +88,7 @@ def bucket_cells(con, res: int, fine: int) -> None:
         GROUP BY 1
         """
     )
-    n = con.execute(f"SELECT count(*) FROM agg{res}").fetchone()[0]
+    n = con.execute(f"SELECT count(*) FROM agg{res}").fetchall()[0][0]
     print(f"r{res}: {n:,} cells from the centres of the r{fine} cells", flush=True)
 
 
@@ -128,8 +128,8 @@ def check_r7(con, ref: str, out: Path, year: int) -> bool:
                max(abs(r.pct_covered - g.pct_covered)) AS max_pct_diff
         FROM '{got}' g LEFT JOIN '{ref}' r USING (a5_cell)
         """
-    ).fetchone()
-    nref = con.execute(f"SELECT count(*) FROM '{ref}'").fetchone()[0]
+    ).fetchall()[0]
+    nref = con.execute(f"SELECT count(*) FROM '{ref}'").fetchall()[0][0]
     print(
         f"check r7 vs {ref}: cells {row[0]:,} (ref {nref:,}), count mismatches {row[1]}, "
         f"max area diff {row[2]} ha, max score diff {row[3]}, max pct_covered diff {row[4]}",
@@ -178,7 +178,7 @@ def main() -> int:
         bucket_cells(con, res, min(direct))
     for res in range(a.coarsest, a.finest + 1):
         path = write_res(con, res, a.out, a.year)
-        n = con.execute(f"SELECT count(*) FROM '{path}'").fetchone()[0]
+        n = con.execute(f"SELECT count(*) FROM '{path}'").fetchall()[0][0]
         print(f"r{res}: {n:,} cells -> {path.name}", flush=True)
     ok = True
     if a.check_r7 and not a.limit and DIRECT_FROM in direct:

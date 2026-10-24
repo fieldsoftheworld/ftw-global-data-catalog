@@ -84,7 +84,7 @@ def main() -> None:
                         ROW_GROUP_SIZE 65536)
         """)
         tmp.rename(out)
-        n = con.execute(f"SELECT count(*) FROM '{out}'").fetchone()[0]
+        n = con.execute(f"SELECT count(*) FROM '{out}'").fetchall()[0][0]
         rows_total += n
         done += 1
         print(f"[{i}/{len(hrefs)}] {name}: {n:,} rows, "

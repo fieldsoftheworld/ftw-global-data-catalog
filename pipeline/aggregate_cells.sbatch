@@ -62,7 +62,7 @@ print(c.execute(f"""SELECT count(*) cells, sum(count) parcels,
 for col in ("count", "area_ha", "pct_covered", "avg_score"):
     q = c.execute(f"""SELECT list_transform(
             quantile_cont({col}, [0.05,0.25,0.5,0.75,0.9,0.99]),
-            x -> round(x::DOUBLE, 3)) FROM '{sys.argv[1]}'""").fetchone()[0]
+            lambda x: round(x::DOUBLE, 3)) FROM '{sys.argv[1]}'""").fetchall()[0][0]
     print(f"quantiles {col} [p5,p25,p50,p75,p90,p99]: {q}", flush=True)
 EOF
 echo "CELLS-DONE"

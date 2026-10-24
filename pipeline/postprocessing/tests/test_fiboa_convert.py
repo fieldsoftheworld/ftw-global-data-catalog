@@ -446,7 +446,7 @@ def test_small_interior_holes_are_filled_and_large_ones_kept(tmp_path, monkeypat
     full = con.sql(
         "select ST_Area(ST_Transform(ST_MakeEnvelope(-3.0, 41.0, -2.998, 41.002), "
         "'EPSG:4326', 'EPSG:32630', true))"
-    ).fetchone()[0]
+    ).fetchall()[0][0]
     assert 1000 < full - row["metrics:area"] < 1250, "metrics:area excludes only the kept hole"
 
 
