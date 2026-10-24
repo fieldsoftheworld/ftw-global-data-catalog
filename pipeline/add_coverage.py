@@ -85,5 +85,5 @@ con.execute(f"""
       FROM '{src}' t LEFT JOIN am_fixes f USING (a5_cell)
     ) TO '{dst}' (FORMAT PARQUET, COMPRESSION zstd, ROW_GROUP_SIZE 65536)
 """)
-n = con.execute(f"SELECT count(*) FROM '{dst}'").fetchone()[0]
+n = con.execute(f"SELECT count(*) FROM '{dst}'").fetchall()[0][0]
 print(f"{dst}: {n:,} cells", flush=True)

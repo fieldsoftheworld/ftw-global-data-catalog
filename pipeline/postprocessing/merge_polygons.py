@@ -106,7 +106,7 @@ def check_aux_unique(con: duckdb.DuckDBPyConnection, files: list[Path]) -> None:
     lst = ", ".join(f"'{p}'" for p in files)
     row = con.sql(
         f"SELECT count(*), count(DISTINCT (tile_key, parcel_id)) FROM read_parquet([{lst}])"
-    ).fetchone()
+    ).fetchall()[0]
     assert row is not None
     if row[0] != row[1]:
         raise SystemExit(
@@ -336,7 +336,7 @@ def main() -> None:
             stats = con.sql(
                 f"select count(*), sum(({keep})::int), sum(area_m2)/1e6, "
                 f"sum(case when {keep} then area_m2 end)/1e6 from read_parquet([{lst}])"
-            ).fetchone()
+            ).fetchall()[0]
             assert stats is not None
             n_in, n_out, km2_in, km2_out = (v or 0 for v in stats)
             if not n_out:

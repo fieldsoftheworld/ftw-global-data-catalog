@@ -64,7 +64,7 @@ with open(path, "rb") as fh:
         w, s, e, n = bounds(x, y, z)
         k = c.execute(
             f"select count(*) from read_parquet('{src}/{year}/zone=*/utm*.parquet') where bbox.xmin<={e} and bbox.xmax>={w} and bbox.ymin<={n} and bbox.ymax>={s}"
-        ).fetchone()[0]
+        ).fetchall()[0][0]
         print(f"  {name} z13: tile features {len(fs)} | parquet in bbox {k}")
         if k > 0 and len(fs) == 0:
             bad.append(f"{name} empty tile, {k} parcels")

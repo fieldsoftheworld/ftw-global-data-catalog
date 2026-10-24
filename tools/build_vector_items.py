@@ -260,7 +260,7 @@ def fetch_year_meta(con, year: int, url: str) -> dict:
     (value,) = con.execute(f"""
         SELECT value::VARCHAR FROM parquet_kv_metadata('{url}')
         WHERE key::VARCHAR = 'collection'
-    """).fetchone()
+    """).fetchall()[0]
     meta = json.loads(value.encode().decode("unicode_escape")
                       .replace('\\x22', '"'))
     cid = meta["collection"]

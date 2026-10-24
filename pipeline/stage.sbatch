@@ -41,7 +41,7 @@ year = sys.argv[1]
 c = duckdb.connect(); c.execute("INSTALL spatial; LOAD spatial")
 n, cols = c.execute(
     f"SELECT count(*), (SELECT count(*) FROM (DESCRIBE SELECT * FROM 'global{year}_gp2.parquet'))"
-    f" FROM 'global{year}_gp2.parquet'").fetchone()
+    f" FROM 'global{year}_gp2.parquet'").fetchall()[0]
 print(f"global {year}: {n:,} features, {cols} columns", flush=True)
 EOF
 echo "STAGE-DONE"
