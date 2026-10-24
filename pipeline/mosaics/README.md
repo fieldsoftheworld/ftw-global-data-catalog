@@ -93,3 +93,7 @@ kept.
 `keeplist_2e.parquet` is the tile set the 2nd Edition ran: 7,467 tiles, each
 with its `cropland_frac`, the years it was processed, its bbox and its WKB
 footprint, taken from the published `index/raster.parquet`.
+
+`keeplist_new.txt` is the tiles the current keep-list adds to it: 7,141 tiles
+with io-lulc crop that the 2nd Edition skipped. These are the only tiles that
+need downloading, inference and `inference/crop_mask.py`.
