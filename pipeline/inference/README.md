@@ -114,10 +114,8 @@ CUDA throughput and real-checkpoint parity require a GPU and the released model.
 
 ## Crop mask
 
-`crop_mask.py` runs after `run.py` and zeroes both bands farther than
-`--buffer-m` from any io-lulc crop pixel (2017, 2020 or 2024, on a 40 m grid),
-for the tiles in `--tile-list` only. It writes to its own `--output-dir` with
-the same layout, so a different buffer needs no new inference.
+`crop_mask.py` runs after `run.py` on the tiles in `--tile-list` and zeroes both bands farther than `--buffer-m` from any io-lulc crop pixel in 2017, 2020 or 2024, measured on a 40 m grid.
+It writes to a separate `--output-dir` with the same layout, so trying a different buffer needs no new inference.
 
 ```sh
 .venv/bin/python pipeline/inference/crop_mask.py --input-dir scores --output-dir masked \

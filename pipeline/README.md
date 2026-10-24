@@ -60,8 +60,8 @@ the field-interior probability and band 2 the field-boundary probability, so a
 probability is the stored value divided by 255. No nodata value is declared,
 and no land-cover or nodata mask is applied at this stage. These files are the
 `raster/{year}/` product. On the tiles added after the 2nd Edition,
-`inference/crop_mask.py` then zeroes predictions far from io-lulc crop; see
-[What is filtered, and what is not](#what-is-filtered-and-what-is-not).
+`inference/crop_mask.py` then zeroes predictions far from io-lulc crop, as
+described in [What is filtered, and what is not](#what-is-filtered-and-what-is-not).
 
 Every band carries its exact `STATISTICS_MINIMUM/MAXIMUM/MEAN/STDDEV` and a
 `STATISTICS_VALID_PERCENT` of 100 embedded in the file itself, not in a PAM
@@ -391,38 +391,26 @@ output.
 
 ## What is filtered, and what is not
 
-Land cover decides **where the pipeline runs**. On the tiles added after the
-2nd Edition it also decides **where predictions are kept**, and nowhere does it
-decide **which parcels survive** a retention test. Conflating these is how the
-catalog ended up with a wrong caveat.
+Land cover decides which tiles the pipeline runs on.
+On the tiles added after the 2nd Edition, it also decides where predictions are kept, but no retention test uses it.
 
-Coverage comes first. Stage 1 runs against the cropland tile list built by
-[`mosaics/keeplist.py`](mosaics/README.md#cropland-tile-list), and that list
-is the intended tile set: a named tile the STAC query does not return fails
-the run. A tile is kept if io-lulc shows any crop on it in 2017, 2020 or 2024,
-read from every io-lulc band file the tile crosses. That keeps 14,608 of the
-34,916 tiles, so open desert, ice, dense forest and purely urban areas are
-still absent by construction.
+Stage 1 runs on the tiles listed by [`mosaics/keeplist.py`](mosaics/README.md#cropland-tile-list), and a listed tile that the STAC query does not return fails the run.
+A tile is listed if io-lulc shows any crop on it in 2017, 2020 or 2024, read from every io-lulc band file the tile crosses.
+The rule keeps 14,608 of the 34,916 tiles, so open desert, ice, dense forest and purely urban areas are absent.
 
-The published 2nd Edition used a stricter rule: crop on more than 1% of the
-tile's land, read only from the tile's own latitude band. Every year's minimum
-`cropland_frac` in the published index is exactly 0.010006 and no tile falls
-below 1%. That kept 7,467 tiles (`mosaics/keeplist_2e.parquet`) and skipped
-tiles with up to ~110 km² of io-lulc crop. The 7,141 tiles the new rule adds
-are in `mosaics/keeplist_new.txt`. Until they are published, an empty region
-in the published data means the pipeline never ran there.
+The published 2nd Edition kept a tile only if crop covered more than 1% of its land, and it read crop only from the tile's own latitude band.
+Every year's minimum `cropland_frac` in the published index is exactly 0.010006, and no tile falls below 1%.
+The 2nd Edition rule kept 7,467 tiles (`mosaics/keeplist_2e.parquet`) and skipped tiles with up to about 110 km² of io-lulc crop.
+The 7,141 tiles the new rule adds are in `mosaics/keeplist_new.txt`.
+Until they are published, an empty region in the published data means the pipeline never ran there.
 
-On those added tiles only, `inference/crop_mask.py` zeroes the field and
-boundary probabilities farther than a buffer from any io-lulc crop pixel,
-before polygonization. Most added tiles hold little crop, and on low-crop
-tiles most of what the model predicts as field lies kilometres from io-lulc
-crop. The mask also removes real fields io-lulc misses, so the buffer is a
-trade-off and is set per run with `--buffer-m`. The 7,467 original tiles are
-not masked.
+On the added tiles only, `inference/crop_mask.py` zeroes the field and boundary probabilities farther than `--buffer-m` from any io-lulc crop pixel, before polygonization.
+Most added tiles hold little crop, and on 60 published tiles with 1–3% crop, a median 84% of predicted field area lies more than 1 km from io-lulc crop.
+The mask also removes real fields that io-lulc does not label as crop, so the buffer is set per run.
+The 7,467 original tiles are not masked.
 
-Apart from that mask, which acts on probabilities before any parcel exists, a
-parcel is removed for exactly three reasons, none of them land cover. The
-retention test in `merge_polygons.py` is
+Apart from the mask, a parcel is removed for exactly three reasons, none
+of them land cover. The retention test in `merge_polygons.py` is
 `in_utm_zone AND in_mgrs_square AND area_m2 <= 5e6`, which drops parcels a
 neighboring tile owns and parcels over the area cap. `fiboa_convert.py` then
 drops parts and whole parcels under 900 m² after the seam union, and
