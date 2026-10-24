@@ -422,7 +422,8 @@ not masked.
 
 Apart from that mask, which acts on probabilities before any parcel exists, a
 parcel is removed for exactly three reasons, none of them land cover. The
-retention test in `merge_polygons.py` is `in_utm_zone AND in_mgrs_square AND area_m2 <= 5e6`, which drops parcels a
+retention test in `merge_polygons.py` is
+`in_utm_zone AND in_mgrs_square AND area_m2 <= 5e6`, which drops parcels a
 neighboring tile owns and parcels over the area cap. `fiboa_convert.py` then
 drops parts and whole parcels under 900 m² after the seam union, and
 re-applies the cap to the unioned geometry. One geometry change is not a
