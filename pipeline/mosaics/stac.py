@@ -41,6 +41,7 @@ class MosaicItem:
     quarter: str
     bbox: tuple[float, float, float, float]
     assets: dict[str, BandAsset]
+    geometry: dict | None = None  # GeoJSON; an antimeridian tile's bbox spans 360 degrees
 
     @property
     def total_bytes(self) -> int:
@@ -236,4 +237,5 @@ def _to_item(feat: dict, year: int, quarter: str, bands: tuple[str, ...]) -> Mos
         quarter=quarter,
         bbox=(bb[0], bb[1], bb[2], bb[3]),
         assets=assets,
+        geometry=feat.get("geometry"),
     )

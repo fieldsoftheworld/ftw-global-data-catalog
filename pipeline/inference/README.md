@@ -111,3 +111,15 @@ traces tensor allocation and fails if an extra tile-sized buffer appears, which
 is the difference between fitting on a 24 GB card and not. Run with `-rs`: the
 few tests that cannot run without a GPU skip loudly rather than silently.
 CUDA throughput and real-checkpoint parity require a GPU and the released model.
+
+## Crop mask
+
+`crop_mask.py` runs after `run.py` and zeroes both bands farther than
+`--buffer-m` from any io-lulc crop pixel (2017, 2020 or 2024, on a 40 m grid),
+for the tiles in `--tile-list` only. It writes to its own `--output-dir` with
+the same layout, so a different buffer needs no new inference.
+
+```sh
+.venv/bin/python pipeline/inference/crop_mask.py --input-dir scores --output-dir masked \
+  --year 2025 --tile-list low_crop_tiles.txt --buffer-m 2000
+```
