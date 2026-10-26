@@ -385,7 +385,8 @@ def fingerprint(
     inference_fingerprint (size, mtime, model hash, flags) and
     simplify_polygons.simplify_fingerprint (tol, size, mtime). The COG's own
     inference_fingerprint tag is preferred when PR2 stamped one, because it
-    identifies the model and inputs as well as the bytes.
+    identifies the model and inputs as well as the bytes. A ``stream.py`` COG is
+    identified by its run (``prov_fingerprint``) and its inputs (``qa_in_etag_sha``).
 
     OWNERSHIP_RULES is in here too, because which parcels a tile claims is as
     result-affecting as any flag: without it a resumed run after an ownership
@@ -399,9 +400,11 @@ def fingerprint(
     ident: object = [st.st_size, st.st_mtime_ns]
     try:
         with rasterio.open(src) as ds:
-            tag = ds.tags().get("inference_fingerprint")
-        if tag:
-            ident = tag
+            tags = ds.tags()
+        if tags.get("inference_fingerprint"):
+            ident = tags["inference_fingerprint"]
+        elif tags.get("prov_fingerprint") and tags.get("qa_in_etag_sha"):
+            ident = [tags["prov_fingerprint"], tags["qa_in_etag_sha"]]
     except rasterio.errors.RasterioIOError:
         pass
     return json.dumps(
@@ -438,7 +441,8 @@ def source_provenance(src: Path, year: int) -> dict:
     stamped = tags.get("year")
     if stamped and int(stamped) != year:
         raise ValueError(f"{src.name}: score COG is year {stamped}, run asked for {year}")
-    keep = ("model_sha256", "inference_fingerprint", "input_bands", "normalization", "overlap")
+    keep = ("model_sha256", "inference_fingerprint", "input_bands", "normalization", "overlap",
+            "patch", "prov_fingerprint", "prov_model_sha256")
     return {k: tags[k] for k in keep if k in tags}
 
 

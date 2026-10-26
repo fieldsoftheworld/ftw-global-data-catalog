@@ -119,6 +119,18 @@ def test_the_cogs_inference_fingerprint_identifies_the_source(tmp_path):
     assert _fp(src) != fp_a
 
 
+def test_a_streamed_cog_is_identified_by_its_run_and_inputs(tmp_path):
+    "stream.py COGs carry the run's prov_fingerprint and a hash of the tile's input ETags."
+    src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif",
+                     tags={"prov_fingerprint": "run1", "qa_in_etag_sha": "in1"})
+    fp = _fp(src)
+    assert "run1" in fp and "in1" in fp
+    _score_cog(src, tags={"prov_fingerprint": "run1", "qa_in_etag_sha": "in2"})
+    assert _fp(src) != fp
+    _score_cog(src, tags={"prov_fingerprint": "run2", "qa_in_etag_sha": "in1"})
+    assert _fp(src) != fp
+
+
 @pytest.mark.parametrize("corrupt", [b"", b"PAR1 truncated"])
 def test_truncated_or_unstamped_output_is_not_current(tmp_path, corrupt):
     src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
