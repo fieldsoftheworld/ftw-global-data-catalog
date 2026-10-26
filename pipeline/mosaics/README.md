@@ -97,3 +97,24 @@ footprint, taken from the published `index/raster.parquet`.
 `keeplist_new.txt` is the tiles the current keep-list adds to it: 7,141 tiles
 with io-lulc crop that the 2nd Edition skipped. These are the only tiles that
 need downloading, inference and `inference/crop_mask.py`.
+
+`keeplist.txt` is the full tile list for the next run, the 2nd Edition tiles plus `keeplist_new.txt` (14,608 tiles).
+
+## Mirror indexes
+
+Streaming inference reads its inputs from the Source Cooperative mirror of the mosaics and finds them through two per-year indexes that `indexes.py` builds from the mirror's published manifests.
+`tile_index_{year}.parquet` has one row per tile and quarter with an href and a size for each band.
+`items_{year}.parquet` holds the same items as stac-geoparquet, for searching the mirror by place and date; inference does not need it.
+Both need the tile footprints from `keeplist.py bbox`.
+
+```sh
+.venv/bin/python pipeline/mosaics/indexes.py fetch-manifests --out manifests
+.venv/bin/python pipeline/mosaics/indexes.py tile-index --manifests manifests \
+  --footprints tile_footprints.parquet --out-dir index
+.venv/bin/python pipeline/mosaics/indexes.py stac-items --manifests manifests \
+  --footprints tile_footprints.parquet --out-dir stac
+```
+
+The mirror no longer publishes its `_status` completion markers, so every quarter with a manifest is indexed.
+Each manifest row must sit at the key the mirror layout gives it, and each item must have all four bands, or the build fails.
+For 2017-2025 the indexes hold 105,255 to 117,843 items a year, and 14,567 to 14,593 of the 14,608 keep-list tiles have all four quarters.

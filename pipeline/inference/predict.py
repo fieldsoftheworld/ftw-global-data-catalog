@@ -1,12 +1,18 @@
-"""Hann-blended inference on Q1–Q4 RGBN stacks."""
+"""Hann-blended inference on Q1–Q4 RGBN stacks.
+
+1536 px patches at 2.5 m (384 px of the 10 m stack) at 50% overlap. The 2026-10 release used
+512 px at 25%; in low-contrast cropland the model then scored fields only near patch centres.
+"""
 
 import numpy as np
 import torch
 import torch.nn.functional as F
 from nodata import NODATA_FILLS, bad_mask, fill_nodata
 
-PATCH, UP = 512, 4
+PATCH, UP = 1536, 4
 NATIVE = PATCH // UP
+OVERLAP = 0.5
+BATCH = 8
 
 
 def _patch_starts(extent: int, patch: int, stride: int) -> list[int]:
@@ -28,7 +34,7 @@ def run_cuda(sess, xf, obuf, cuda_sync=True):
     b = xf.shape[0]
     io = sess.io_binding()
     io.bind_input("input", "cuda", 0, np.float32, tuple(xf.shape), xf.data_ptr())
-    io.bind_output("logits", "cuda", 0, np.float32, (b, 3, PATCH, PATCH), obuf[:b].data_ptr())
+    io.bind_output("logits", "cuda", 0, np.float32, tuple(obuf[:b].shape), obuf[:b].data_ptr())
     if cuda_sync:
         torch.cuda.synchronize()
         io.synchronize_inputs()
@@ -44,8 +50,9 @@ def predict_tile(
     sess,
     arr,
     *,
-    batch=64,
-    overlap=0.25,
+    batch=BATCH,
+    patch=PATCH,
+    overlap=OVERLAP,
     norm=3000.0,
     dev="cuda",
     obuf_cache=None,
@@ -54,6 +61,9 @@ def predict_tile(
     cuda_sync=True,
 ):
     """(16,H,W) tile -> ((2, 4H, 4W) uint8 field/boundary scores, n_patches). No I/O.
+
+    ``patch`` is the model input side at 2.5 m, any multiple of 32 (the U-Net's stride): the
+    tile is cut into ``patch // 4`` px squares at 10 m, ``overlap`` apart, and Hann-blended.
 
     ``nodata_fill="window31"`` fills mosaic nodata (-32768) with ``nodata.fill_nodata`` before
     scaling; None passes the raw -32768 to the model. ``stats``, if given, receives
@@ -69,6 +79,9 @@ def predict_tile(
         raise ValueError("expected 16 bands: Q1–Q4 × R,G,B,NIR")
     if batch <= 0 or not 0 <= overlap < 1 or norm <= 0:
         raise ValueError("invalid batch, overlap or normalization")
+    if patch <= 0 or patch % 32:
+        raise ValueError(f"patch must be a positive multiple of 32, got {patch}")
+    native_px = patch // UP
     if nodata_fill not in (None, *NODATA_FILLS):
         raise ValueError(f"nodata_fill must be one of {NODATA_FILLS}, got {nodata_fill!r}")
     if not np.isfinite(arr).all():
@@ -86,21 +99,24 @@ def predict_tile(
         stats["nodata_after"] = bad_mask(tile_t).any(0).float().mean().item()
     tile_t = tile_t.div_(norm) if tile_t.is_floating_point() else tile_t / norm
     _, h, w = tile_t.shape
-    pad = (0, max(0, NATIVE - w), 0, max(0, NATIVE - h))
+    pad = (0, max(0, native_px - w), 0, max(0, native_px - h))
     if any(pad):  # a no-op F.pad still copies the whole tile
         tile_t = F.pad(tile_t, pad, mode="replicate")
         h, w = tile_t.shape[1:]
     out_h, out_w = h * UP, w * UP
     acc = torch.zeros((2, out_h, out_w), device=dev, dtype=torch.float32)
     wsum = torch.zeros((out_h, out_w), device=dev, dtype=torch.float32)
-    win = hann_window_2d(PATCH, dev)
-    stride = max(1, round(NATIVE * (1.0 - overlap)))
+    win = hann_window_2d(patch, dev)
+    stride = max(1, round(native_px * (1.0 - overlap)))
     starts = [
-        (r, c) for r in _patch_starts(h, NATIVE, stride) for c in _patch_starts(w, NATIVE, stride)
+        (r, c)
+        for r in _patch_starts(h, native_px, stride)
+        for c in _patch_starts(w, native_px, stride)
     ]
-    if batch not in obuf_cache:
-        obuf_cache[batch] = torch.empty((batch, 3, PATCH, PATCH), device=dev, dtype=torch.float32)
-    obuf = obuf_cache[batch]
+    obuf = obuf_cache.get(batch)
+    if obuf is None or obuf.shape[-1] != patch:
+        obuf = torch.empty((batch, 3, patch, patch), device=dev, dtype=torch.float32)
+        obuf_cache[batch] = obuf
 
     def run(xf):
         xf = xf.contiguous()
@@ -110,7 +126,7 @@ def predict_tile(
 
     for i in range(0, len(starts), batch):
         chunk = starts[i : i + batch]
-        native = torch.stack([tile_t[:, r : r + NATIVE, c : c + NATIVE] for r, c in chunk])
+        native = torch.stack([tile_t[:, r : r + native_px, c : c + native_px] for r, c in chunk])
         x = F.interpolate(native, scale_factor=UP, mode="bilinear", align_corners=False)
         logits = run(x)
         if not torch.isfinite(logits).all():
@@ -118,8 +134,8 @@ def predict_tile(
         fb = logits.softmax(1)[:, 1:3]
         for (r, c), score in zip(chunk, fb, strict=True):
             oy, ox = r * UP, c * UP
-            acc[:, oy : oy + PATCH, ox : ox + PATCH] += score * win
-            wsum[oy : oy + PATCH, ox : ox + PATCH] += win
+            acc[:, oy : oy + patch, ox : ox + patch] += score * win
+            wsum[oy : oy + patch, ox : ox + patch] += win
 
     acc.div_(wsum).clamp_(0, 1).mul_(255).round_()
     del wsum, tile_t  # free the full-size float32 tensors before the uint8 copy

@@ -208,9 +208,10 @@ def test_settings_are_part_of_the_resume_fingerprint_and_the_tags(tmp_path):
     src = tmp_path / "stack.tif"
     src.write_bytes(b"stack")
     base = fingerprint(src, "h", 64, 0.25, 3000.0, "CUDAExecutionProvider")
-    for change in ({"nodata_fill": "window31"}, {"tf32": True}, {"cuda_sync": False}):
+    changes = ({"nodata_fill": "window31"}, {"tf32": True}, {"cuda_sync": False}, {"patch": 512})
+    for change in changes:
         assert fingerprint(src, "h", 64, 0.25, 3000.0, "CUDAExecutionProvider", **change) != base
-    assert json.loads(base)[-3:] == [None, False, True]
+    assert json.loads(base)[-4:] == [None, False, True, 1536]
     tags = output_tags(
         {}, "h", base, 3000.0, 0.25, "CUDAExecutionProvider", nodata_fill="window31"
     )
@@ -232,6 +233,7 @@ def test_main_defaults_to_the_published_settings(tmp_path, monkeypatch):
     assert seen["nodata_fill"] == "window31"
     assert seen["tf32"] is False
     assert seen["cuda_sync"] is True
+    assert seen["patch"] == 1536
     _fake_run(monkeypatch, tmp_path / "again", ["--nodata-fill", "none", "--no-cuda-sync"])
     assert seen["nodata_fill"] is None
     assert seen["cuda_sync"] is False

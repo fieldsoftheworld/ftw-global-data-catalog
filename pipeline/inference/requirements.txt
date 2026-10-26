@@ -1,4 +1,6 @@
 numpy
+pyarrow>=19
+boto3
 rasterio>=1.4
 scipy
 torch

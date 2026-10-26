@@ -1,0 +1,12 @@
+# Pins of the 2026-10 golden self-test (H100 and A100 agree within 1/255; AWS H100 matched Rails
+# H100 bit for bit). Compile with:
+#   uv pip compile requirements.in -o requirements.lock --python-version 3.14 \
+#     --python-platform x86_64-manylinux_2_28
+torch==2.12.1
+onnxruntime-gpu==1.30.0
+numpy==2.5.0
+rasterio==1.5.0
+pyarrow==24.0.0
+scipy==1.18.0
+affine==2.4.0
+boto3==1.43.36
