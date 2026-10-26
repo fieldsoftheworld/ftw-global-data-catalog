@@ -28,7 +28,7 @@ from torch.utils._python_dispatch import TorchDispatchMode
 class ConstantSession:
     def run(self, names, feed):
         shape = feed["input"].shape
-        out = np.zeros((shape[0], 3, 512, 512), np.float32)
+        out = np.zeros((shape[0], 3, *shape[2:]), np.float32)
         out[:, 1] = np.log(2)
         return [out]
 
@@ -62,7 +62,8 @@ def test_blend_small_and_edge_patches():
     torch.set_num_threads(1)
     for h, w in [(37, 91), (143, 201)]:
         result, count = predict_tile(
-            ConstantSession(), np.zeros((16, h, w), np.float32), dev="cpu", batch=3
+            ConstantSession(), np.zeros((16, h, w), np.float32), dev="cpu", batch=3,
+            patch=512, overlap=0.25,
         )
         assert result.shape == (2, h * 4, w * 4)
         assert count > 0
@@ -77,7 +78,9 @@ def test_blend_allocates_one_accumulator():
     h, w = 143, 201
     arr = np.full((16, h, w), 1500, np.float32)
     with AllocTrace() as trace:
-        result, _ = predict_tile(ConstantSession(), arr, dev="cpu", batch=3)
+        result, _ = predict_tile(
+            ConstantSession(), arr, dev="cpu", batch=3, patch=512, overlap=0.25
+        )
     scores, weights, tile = (2, h * 4, w * 4), (h * 4, w * 4), (16, h, w)
     assert result.shape == scores
     assert trace.fresh.count(scores) == 1, f"extra full-size tensors: {trace.fresh}"
@@ -85,6 +88,31 @@ def test_blend_allocates_one_accumulator():
     # one device copy only: normalization is in place and this size needs no padding
     assert trace.fresh.count(tile) == 1, f"extra tile-size tensors: {trace.fresh}"
     np.testing.assert_array_equal(arr, 1500)
+
+
+@pytest.mark.parametrize(
+    ("patch", "overlap", "n"), [(512, 0.25, 64), (1024, 0.5, 25), (1536, 0.5, 9)]
+)
+def test_any_patch_multiple_of_32(patch, overlap, n):
+    torch.set_num_threads(1)
+    result, count = predict_tile(
+        ConstantSession(), np.zeros((16, 768, 768), np.float32), dev="cpu", batch=4,
+        patch=patch, overlap=overlap,
+    )
+    assert count == n
+    assert result.shape == (2, 768 * 4, 768 * 4)
+    np.testing.assert_allclose(result[0], 127.5, atol=0.5)
+
+
+def test_default_geometry_is_1536_at_half_overlap():
+    _, count = predict_tile(ConstantSession(), np.zeros((16, 768, 768), np.float32), dev="cpu")
+    assert count == 9  # 384 px native patches every 192 px: 3 x 3
+
+
+@pytest.mark.parametrize("patch", [0, 500, 1540])
+def test_patch_off_the_32_grid_is_rejected(patch):
+    with pytest.raises(ValueError, match="multiple of 32"):
+        predict_tile(ConstantSession(), np.zeros((16, 512, 512), np.float32), dev="cpu", patch=patch)
 
 
 def test_cog_contract(tmp_path):
@@ -279,7 +307,7 @@ class FakeSession:
         return list(self._providers)
 
 
-def signature(batch="batch", in_shape=(16, 512, 512), out_shape=(3, 512, 512)):
+def signature(batch="batch", in_shape=(16, "h", "w"), out_shape=(3, "h", "w")):
     return FakeSession(
         [FakeIO("input", [batch, *in_shape])], [FakeIO("logits", [batch, *out_shape])]
     )
@@ -289,6 +317,12 @@ def test_model_contract_accepts_dynamic_batch():
     assert model_contract(signature()) is None
 
 
+def test_model_contract_fixed_size_export_must_match_the_patch():
+    fixed = signature(in_shape=(16, 512, 512), out_shape=(3, 512, 512))
+    assert model_contract(fixed, 512) is None
+    assert "1536" in (model_contract(fixed) or "")
+
+
 def test_model_contract_rejects_fixed_batch():
     """A fixed-batch export must fail preflight, not the first partial batch."""
     assert "fixed batch" in (model_contract(signature(batch=8)) or "")
@@ -296,7 +330,7 @@ def test_model_contract_rejects_fixed_batch():
 
 
 def test_model_contract_rejects_wrong_signature():
-    assert "logits" in (model_contract(signature(out_shape=(2, 512, 512))) or "")
+    assert "logits" in (model_contract(signature(out_shape=(2, "h", "w"))) or "")
     assert "input" in (model_contract(signature(in_shape=(16, 256, 256))) or "")
     assert model_contract(FakeSession([FakeIO("x", ["b", 16, 512, 512])], [])) is not None
     bad_type = FakeSession(
@@ -333,8 +367,8 @@ def test_model_contract_on_real_onnx_exports(tmp_path):
         path = onnx_model(tmp_path / name, dynamic=dynamic)
         return ort.InferenceSession(str(path), providers=["CPUExecutionProvider"])
 
-    assert model_contract(load("dynamic.onnx", True)) is None
-    assert "fixed batch" in (model_contract(load("fixed.onnx", False)) or "")
+    assert model_contract(load("dynamic.onnx", True), 512) is None
+    assert "fixed batch" in (model_contract(load("fixed.onnx", False), 512) or "")
 
 
 def test_write_score_cleans_up_a_failed_write(tmp_path):
@@ -468,7 +502,7 @@ def _fake_run(monkeypatch, tmp_path, argv):
     monkeypatch.setattr(run.ort, "InferenceSession", lambda *a, **k: object())
     monkeypatch.setattr(run, "device_available", lambda dev: None)
     monkeypatch.setattr(run, "active_provider", lambda s, p: None)
-    monkeypatch.setattr(run, "model_contract", lambda s: None)
+    monkeypatch.setattr(run, "model_contract", lambda s, patch=None: None)
     monkeypatch.setattr(
         run, "read_stack", lambda p: (np.zeros((16, 8, 8), np.float32), tr, "EPSG:32615", {})
     )
