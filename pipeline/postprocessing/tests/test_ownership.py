@@ -10,6 +10,7 @@ from pyproj import CRS
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 import outlines as ol
+import ownership as ow
 
 A = rasterio.Affine
 
@@ -24,27 +25,27 @@ def test_zone_32v_is_widened_to_3e(place, lon):
     The nominal band rejected every parcel between 3E and 6E, and no 31V tile
     covers 3-6E, so those parcels were dropped with exit 0.
     """
-    assert ol.lon_in_zone(32, "V", lon), place
-    assert not ol.lon_in_zone(31, "V", lon), f"{place} must not be claimed twice"
+    assert ow.lon_in_zone(32, "V", lon), place
+    assert not ow.lon_in_zone(31, "V", lon), f"{place} must not be claimed twice"
 
 
 def test_zone_31v_is_narrowed_to_0_3e():
-    assert ol.lon_in_zone(31, "V", 1.5)
-    assert not ol.lon_in_zone(31, "V", 4.0)
-    assert ol.lon_in_zone(32, "V", 4.0)
+    assert ow.lon_in_zone(31, "V", 1.5)
+    assert not ow.lon_in_zone(31, "V", 4.0)
+    assert ow.lon_in_zone(32, "V", 4.0)
 
 
 def test_nominal_bands_elsewhere_are_unchanged():
-    assert ol.lon_in_zone(31, "U", 1.5)
-    assert not ol.lon_in_zone(31, "U", 7.0)
-    assert ol.lon_in_zone(32, "U", 7.0)
-    assert ol.lon_in_zone(1, "C", -179.0)
-    assert ol.lon_in_zone(60, "C", 179.0)
+    assert ow.lon_in_zone(31, "U", 1.5)
+    assert not ow.lon_in_zone(31, "U", 7.0)
+    assert ow.lon_in_zone(32, "U", 7.0)
+    assert ow.lon_in_zone(1, "C", -179.0)
+    assert ow.lon_in_zone(60, "C", 179.0)
 
 
 def test_band_x_is_rejected_not_guessed():
     with pytest.raises(ValueError, match="band X"):
-        ol.lon_in_zone(32, "X", 9.0)
+        ow.lon_in_zone(32, "X", 9.0)
 
 
 #: Real published score rasters (2025): tile, west edge, north edge, expected 100 km square.

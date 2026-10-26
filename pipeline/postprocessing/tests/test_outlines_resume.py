@@ -156,6 +156,7 @@ def test_schema_is_declared_not_inferred_from_the_first_tile():
         "touches_window_edge": False,
         "in_utm_zone": True,
         "in_mgrs_square": True,
+        "claimed": False,
         **{
             k: float("nan")
             for k in (

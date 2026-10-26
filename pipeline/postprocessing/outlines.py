@@ -37,6 +37,7 @@ from rasterio.windows import Window
 from scipy import ndimage as ndi
 
 from context import aux_rasters
+from ownership import SQUARES, load_squares, squares_digest, zone_keeps
 from pool_utils import drain, exit_on_failures, retry_io_failures
 
 PX_M2 = 6.25
@@ -83,34 +84,13 @@ MGRS_SQUARE_M = 100_000.0
 #: A tile's square must sit inside its raster; allow this much slack (the published rasters
 #: overhang the square by 0-80 m, and a padded raster by its pad).
 MGRS_FIT_TOLERANCE_M = 250.0
-#: Version of the parcel-ownership rules (``in_utm_zone`` and ``in_mgrs_square``). It is part
-#: of the outline fingerprint, so a changed rule rewrites every tile on the next run instead
-#: of resuming onto parquet written under the old one -- otherwise a release silently mixes
-#: vintages and the parquet does not say which. Bump it with every rule change.
+#: Version of the parcel-ownership rules (``in_utm_zone``, ``in_mgrs_square``, ``claimed``).
+#: It is part of the outline fingerprint, so a changed rule rewrites every tile on the next run
+#: instead of resuming onto parquet written under the old one -- otherwise a release silently
+#: mixes vintages and the parquet does not say which. Bump it with every rule change.
 #: 1: ``origin + 5 km`` / ``extent - 5 km`` (a 90.08 km square). 2: the raster's own 100 km cell.
-OWNERSHIP_RULES = 2
-
-
-def lon_in_zone(zn: int, band: str, lon: float) -> bool:
-    """Is ``lon`` inside UTM zone ``zn`` on the grid the Sentinel-2 tiles use?
-
-    Band V (56-64N) is not on the nominal 6-degree pitch: 32V is widened to 3-12E
-    and 31V narrowed to 0-3E, the convention MGRS and the Sentinel-2 tiling grid
-    both follow. Testing 32V against the nominal 6-12E band rejects every parcel
-    between 3E and 6E -- Bergen 5.32, Stavanger 5.73, Jaeren 5.60 -- and because
-    no 31V tile covers 3-6E those parcels are lost outright rather than claimed by
-    a neighbour. Band V lies well inside this catalog's 65.82N extent.
-
-    Band X (72-84N) has its own, different exceptions (32X/34X/36X do not exist)
-    and begins above that extent, so it is rejected rather than guessed at.
-    """
-    if band == "X":
-        raise ValueError(f"zone {zn}{band}: band X UTM exceptions are not implemented")
-    if band == "V" and zn in (31, 32):
-        w, e = (0.0, 3.0) if zn == 31 else (3.0, 12.0)
-    else:
-        w, e = -180.0 + 6 * (zn - 1), -180.0 + 6 * zn
-    return w <= lon < e
+#: 3: orphan-strip claims (``ownership.py``); the owned-squares file is in the fingerprint too.
+OWNERSHIP_RULES = 3
 
 
 def mgrs_square(tr, height: int, width: int) -> tuple[float, float, float, float]:
@@ -249,6 +229,7 @@ SCHEMA = pa.schema(
         pa.field("touches_window_edge", pa.bool_()),
         pa.field("in_utm_zone", pa.bool_()),
         pa.field("in_mgrs_square", pa.bool_()),
+        pa.field("claimed", pa.bool_()),
         *(
             pa.field(k, pa.float64())
             for k in (
@@ -313,7 +294,9 @@ def score_paths(src: Path, names: list[str] | None) -> list[Path]:
     return found
 
 
-def fingerprint(src: Path, year: int, core: int, halo: int, simplify_m: float) -> str:
+def fingerprint(
+    src: Path, year: int, core: int, halo: int, simplify_m: float, squares: Path = SQUARES
+) -> str:
     """Identity of the source COG plus every flag that changes the output.
 
     Resume used to test only that the output file exists, so a regenerated score
@@ -328,7 +311,8 @@ def fingerprint(src: Path, year: int, core: int, halo: int, simplify_m: float) -
     result-affecting as any flag: without it a resumed run after an ownership
     change keeps the previous rule's parquet, and the release silently mixes
     vintages that the parquet cannot be asked to tell apart. The same goes for
-    ``SPEC``, the BoundaryVote method id. The ``"fast"`` entry is the backend, which used to be
+    ``SPEC``, the BoundaryVote method id, and the owned squares, which decide the claims.
+    The ``"fast"`` entry is the backend, which used to be
     a flag; it stays so outlines written before the flag was dropped still resume.
     """
     st = src.stat()
@@ -341,7 +325,9 @@ def fingerprint(src: Path, year: int, core: int, halo: int, simplify_m: float) -
     except rasterio.errors.RasterioIOError:
         pass
     return json.dumps(
-        [ident, year, core, halo, "fast", simplify_m, OWNERSHIP_RULES, SPEC], sort_keys=True
+        [ident, year, core, halo, "fast", simplify_m, OWNERSHIP_RULES, SPEC,
+         squares_digest(squares)],
+        sort_keys=True,
     )
 
 
@@ -394,11 +380,12 @@ def process_tile(
     core: int,
     halo: int,
     simplify_m: float = 0.0,
+    squares: Path = SQUARES,
 ) -> dict:
     "Stage the tile's COG locally if the scratch copy is gone, run it, clean up."
     if not path.is_file():
         raise FileNotFoundError(path)
-    prof = _run_tile(str(path), path.stem, year, out_dir, index, core, halo, simplify_m)
+    prof = _run_tile(str(path), path.stem, year, out_dir, index, core, halo, simplify_m, squares)
     prof["t_stage"] = 0.0
     return prof
 
@@ -412,10 +399,12 @@ def _run_tile(
     core: int,
     halo: int,
     simplify_m: float,
+    squares: Path = SQUARES,
 ) -> dict:
     from polygons import simplify_coverage
 
-    fp = fingerprint(Path(path), year, core, halo, simplify_m)
+    fp = fingerprint(Path(path), year, core, halo, simplify_m, squares)
+    owned_squares = load_squares(squares)
     prov = outline_provenance(Path(path), year)
     prof = {
         "tile_key": tk,
@@ -550,7 +539,12 @@ def _run_tile(
                 geoms.append(geom)
                 s = sl[i - 1]
                 ex, ey = tr * (cx[i] + C0 + 0.5, cy[i] + R0 + 0.5)
-                lon, _lat = to_ll.transform(ex, ey)
+                lon, lat = to_ll.transform(ex, ey)
+                in_square = bool(sq_x0 <= ex < sq_x1 and sq_y0 < ey <= sq_y1)
+                in_zone, claimed = zone_keeps(
+                    to_ll, zn, band, (lon, lat, ey), (tr * (C0 + s[1].start, 0))[0],
+                    (tr * (C0 + s[1].stop, 0))[0], in_square, owned_squares,
+                )
                 pid += 1
                 rows.append(
                     {
@@ -562,8 +556,9 @@ def _run_tile(
                         "ext_h_px": s[0].stop - s[0].start,
                         "ext_w_px": s[1].stop - s[1].start,
                         "touches_window_edge": bool(touch[i]),
-                        "in_utm_zone": lon_in_zone(zn, band, lon),
-                        "in_mgrs_square": bool(sq_x0 <= ex < sq_x1 and sq_y0 < ey <= sq_y1),
+                        "in_utm_zone": in_zone,
+                        "in_mgrs_square": in_square,
+                        "claimed": claimed,
                         **{k: float(v[i]) for k, v in attrs.items()},
                     }
                 )
@@ -631,6 +626,11 @@ def main() -> None:
         help="coverage-simplify tolerance, metres (default off; use simplify_polygons.py)",
     )
     ap.add_argument("--workers", type=int, default=1)
+    ap.add_argument(
+        "--owned-squares", type=Path, default=SQUARES,
+        help="squares of the run's keep-list tiles (ownership.py squares); r1 used "
+        "owned_squares_2e.csv",
+    )
     ap.add_argument("--force", action="store_true", help="rerun tiles that are already current")
     ap.add_argument("--shard", type=int, default=int(os.environ.get("SLURM_ARRAY_TASK_ID", 0)))
     ap.add_argument(
@@ -673,7 +673,7 @@ def main() -> None:
             for p in paths
             if not is_current(
                 out_dir / f"{p.stem}.parquet",
-                fingerprint(p, a.year, a.core, a.halo, a.simplify_m),
+                fingerprint(p, a.year, a.core, a.halo, a.simplify_m, a.owned_squares),
             )
         ]
         if n0 != len(paths):
@@ -709,7 +709,8 @@ def main() -> None:
     with ProcessPoolExecutor(a.workers, max_tasks_per_child=1, mp_context=MP_CONTEXT) as pool:
         futs = {
             pool.submit(
-                process_tile, p, a.year, out_dir, index, a.core, a.halo, a.simplify_m
+                process_tile, p, a.year, out_dir, index, a.core, a.halo, a.simplify_m,
+                a.owned_squares,
             ): p.stem
             for p in paths
         }
@@ -726,6 +727,7 @@ def main() -> None:
                 a.core,
                 a.halo,
                 a.simplify_m,
+                a.owned_squares,
             ),
             report,
             IO_RETRY_WAIT_S,
