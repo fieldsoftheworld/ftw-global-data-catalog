@@ -5,7 +5,7 @@
 torch==2.12.1
 onnxruntime-gpu==1.30.0
 numpy==2.5.0
-rasterio==1.5.0
+rasterio==1.5.2
 pyarrow==24.0.0
 scipy==1.18.0
 affine==2.4.0
