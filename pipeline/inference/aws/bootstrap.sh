@@ -48,7 +48,7 @@ export FTW_CODE_VERSION
 unset LD_LIBRARY_PATH  # the wheels supply CUDA and cuDNN; the AMI's copies must not load
 INF=/data/ftw/pipeline/inference
 uv venv --python 3.14 /data/venv
-uv pip sync --python /data/venv/bin/python "$INF/requirements.lock"
+uv pip sync --python /data/venv/bin/python "$INF/requirements-lock.txt"
 PY=(/data/venv/bin/python -u)
 Q=("${PY[@]}" "$INF/aws/work_queue.py")
 MODEL=$(ls /data/golden/model/*.onnx)

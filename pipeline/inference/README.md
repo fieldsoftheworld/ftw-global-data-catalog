@@ -75,7 +75,7 @@ The published tiles used ONNX Runtime 1.30.0 and torch 2.12.1 (CUDA 13.0, cuDNN 
 `unet_balanced_fp32.onnx` with SHA-256
 `e12bcdb9f26478273a552a4cbffb9d838dd942cba7451befd5231fae4933282e`. They were made by the
 production repository (`global-ftw-2e`, commit `5d01d4b`, not public). Its streaming runner and
-self-test now live here as `stream.py` and `selftest.py`, and `requirements.lock` pins the same
+self-test now live here as `stream.py` and `selftest.py`, and `requirements-lock.txt` pins the same
 library versions. `nodata.py` produces the same fill as the production implementation on int16
 input, checked pixel for pixel on random stacks with holes.
 
@@ -181,7 +181,7 @@ sbatch --dependency=afterany:$JOB --export=ALL,YEAR=2025,ROOT=$OUT,INDEX_DIR=$IN
 
 `aws/launch.sh` runs `stream.py` on EC2 GPU boxes that need 80 GB GPUs (p5.48xlarge H100s or
 p4de A100s); smaller GPUs cannot hold a tile.
-Each box installs `requirements.lock`, runs the self-test on every GPU and takes no work if one
+Each box installs `requirements-lock.txt`, runs the self-test on every GPU and takes no work if one
 fails, then claims units of tiles from an S3 queue (`aws/work_queue.py`).
 Finished COGs go to `s3://$FTW_AWS_BUCKET/$PREFIX` at the bucket's own keys.
 A spot interruption leaves the unit to another box, and finished tiles are not redone.
