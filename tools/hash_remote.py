@@ -9,6 +9,13 @@ rails, where the reads are cheap; the item builders then consume the sidecar.
 
     python3 tools/hash_remote.py urls.txt checksums.json --workers 12
 
+``--local PREFIX=DIR`` hashes the URLs under ``PREFIX`` from the local copy under ``DIR``
+instead, e.g. a year of fiboa zone files before they are uploaded:
+
+    BASE=https://data.source.coop/ftw/global-data-2e/
+    find vector/2025 -name 'utm*.parquet' | sed "s#^#$BASE#" > urls.txt
+    python3 tools/hash_remote.py urls.txt checksums.json --local "$BASE=."
+
 ``urls.txt`` holds one URL per line. The output JSON maps url ->
 {"size": bytes, "checksum": "1220..."}. Resumable: URLs already present in
 the output file are skipped, and the file is rewritten atomically after each
@@ -59,12 +66,36 @@ def hash_url(url: str, retries: int = 4) -> dict:
     raise AssertionError("unreachable")
 
 
+def hash_file(path: Path) -> dict:
+    digest = hashlib.sha256()
+    with open(path, "rb") as f:
+        while chunk := f.read(16 * CHUNK):
+            digest.update(chunk)
+    return {"size": path.stat().st_size, "checksum": "1220" + digest.hexdigest()}
+
+
+def hasher(local: list[str]):
+    """``hash_url``, or ``hash_file`` for a URL under one of the ``PREFIX=DIR`` mappings."""
+    maps = [tuple(m.split("=", 1)) for m in local]
+
+    def run(url: str) -> dict:
+        for prefix, root in maps:
+            if url.startswith(prefix):
+                return hash_file(Path(root) / url[len(prefix):])
+        return hash_url(url)
+
+    return run
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("urls", type=Path, help="file with one URL per line")
     parser.add_argument("out", type=Path, help="output JSON sidecar")
     parser.add_argument("--workers", type=int, default=12)
+    parser.add_argument("--local", action="append", default=[], metavar="PREFIX=DIR",
+                        help="read URLs under PREFIX from DIR instead of the network")
     args = parser.parse_args()
+    run = hasher(args.local)
 
     urls = [u.strip() for u in args.urls.read_text().splitlines() if u.strip()]
     done: dict[str, dict] = {}
@@ -78,7 +109,7 @@ def main() -> int:
     t0 = time.time()
     failed = []
     with ThreadPoolExecutor(max_workers=args.workers) as pool:
-        futures = {pool.submit(hash_url, u): u for u in todo}
+        futures = {pool.submit(run, u): u for u in todo}
         for i, future in enumerate(as_completed(futures), 1):
             url = futures[future]
             try:
