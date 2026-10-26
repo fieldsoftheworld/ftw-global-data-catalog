@@ -222,6 +222,31 @@ calling BoundaryVote, for speed; this directory calls it on the whole window. Th
 two are expected to agree, and that has not been checked here. A complete outline
 run needs real score fixtures.
 
+## Converting large zones in ranges
+
+`fiboa_convert.py` holds a whole zone in one task, which reached 24 GB on the largest 2025 zone (2.2 million rows).
+`fiboa_ranges.py` splits that work.
+`plan` runs the seam union once and hashes the other rows into buckets, `range` puts one bucket into final form and sorts it, and `stitch` merges the sorted buckets on (Hilbert key, id) and writes the zone file.
+Each row's final form depends only on that row, so the output is byte-identical to `fiboa_convert.py`: the same rows, order, row groups and footer.
+`submit` chains the three as Slurm jobs per zone and converts a zone under `--rows-per-range` rows (400,000 by default) in one job sized by `fiboa_tiers.py`.
+`local` runs the same phases on one machine.
+sbatch reads the account from `SBATCH_ACCOUNT`.
+
+```sh
+python fiboa_ranges.py submit --year 2025 --in-root merged --out-root fiboa \
+    --tmp-dir scratch/duckdb --land-polygons land_polygons.parquet --exclude 'gpu-nodes'
+```
+
+## Vector QA
+
+`qa_vector.py` checks a converted year: parcels and km² per zone, the size cap, duplicate ids, parcels in the orphan strips the claim rule fills, one field kept by two neighbouring zones, overlapping pairs across the equator, and, with `--land-polygons` and `--footprints`, a sea sample and a pile-up or gap of parcels along each tile's north edge.
+`--release` and `--prev-year`/`--prev-root` add a comparison with a released tree or another year and list the zones whose parcel count moved by more than `--zone-tol`.
+`tools/hash_remote.py --local PREFIX=DIR` computes the `file:size` and `file:checksum` of zone files before upload, keyed by their published URLs.
+
+```sh
+python qa_vector.py 2025 --root fiboa --out qa/vector_2025.json --release released-fiboa
+```
+
 ## Where the published 2017-2025 vectors differ from this code
 
 The vectors were made by the production repository (`global-ftw-2e`, commit
@@ -259,10 +284,10 @@ Where this directory differs:
   refreshes `area_m2` after simplification, so merge's 5 km² cap sees the simplified
   area; the run capped at merge on the pixel-count area and again after the seam
   union.
-- **Conversion mechanics.** The run converted each zone with `fiboa_ranges.py`,
-  which splits a zone's Hilbert key space into ranges of about 400,000 rows to
-  bound memory per task and stitches the row groups. It produces the same rows in
-  the same order as `fiboa_convert.py`.
+- **Conversion mechanics.** The run converted each zone with a range split that
+  bucketed rows by the Hilbert key of the source row and concatenated the buckets'
+  row groups. `fiboa_ranges.py` here buckets by hash and merges on the key of the
+  final row, so its output is byte-identical to `fiboa_convert.py`.
 - **Equator seams** are joined in the zone's north UTM CRS in both.
 
 The sea rule here reads the OSM land-polygons snapshot you prepare. The published
