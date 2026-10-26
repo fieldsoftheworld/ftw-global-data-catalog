@@ -161,6 +161,22 @@ python pipeline/inference/selftest.py make-ref --root golden
 python pipeline/inference/selftest.py check --root golden --full-tile
 ```
 
+## Year gate
+
+`gate.py` checks a year of `stream.py` output before the upload, and `gate.json` passes only if every part did.
+`scan` reads every COG's tags and fails the year on a missing tile, a leftover temp file, a wrong structure, another run's fingerprint, the wrong settings (barrier, nodata fill, patch, overlap, TF32 or uncommitted code), a GPU other than an H100 or A100, or a 5 km run of empty rows over valid input.
+The expected tiles are the keep-list tiles with all four quarters in the tile index.
+Keep tiles without four quarters must be listed in `no_mosaic_tiles.csv`, which holds the 242 tile-years of 2017-2025 the mirror has no complete mosaic for.
+`validate` opens every file and checks the COG layout, the overview levels, the grid against the input recorded in the sidecar, the overviews recomputed from the level above, the level means against the inference means, and the embedded band statistics.
+It decodes the full base of 10% of the tiles and compares it with the inference means.
+`summary` writes `gate_{year}.json`, optionally with a comparison against a release QA CSV.
+
+```sh
+sbatch --array=0-19 --export=ALL,YEAR=2025,ROOT=$OUT,FP=$FP pipeline/inference/validate.sbatch
+sbatch --dependency=afterany:$JOB --export=ALL,YEAR=2025,ROOT=$OUT,INDEX_DIR=$INDEX \
+  pipeline/inference/gate.sbatch
+```
+
 ## AWS
 
 `aws/launch.sh` runs `stream.py` on EC2 GPU boxes that need 80 GB GPUs (p5.48xlarge H100s or
