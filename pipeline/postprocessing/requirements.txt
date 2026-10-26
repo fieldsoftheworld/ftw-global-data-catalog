@@ -5,6 +5,6 @@ pyproj>=3.7
 shapely>=2.1
 scipy
 duckdb>=1.5.4
-coarsen>=0.1.0,<0.2.0
+coarsen==0.4.0
 pyogrio>=0.10  # sea_filter.py prep step and its test only
 ftw-fbp[fast]==0.2.0  # BoundaryVote and run_windowed for outlines.py; imports as fbp
