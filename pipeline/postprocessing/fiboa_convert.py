@@ -317,6 +317,31 @@ def query(src: Path, cid: str, year: int, bbox: list[float], max_m2: float) -> s
     return f"{final_select(rows, cid, year, bbox, max_m2)} ORDER BY hk, id"
 
 
+def zone_extent(con: duckdb.DuckDBPyConnection, src: Path, zone: str, year: int):
+    "The zone's source bbox and row count; exits on a file with no usable rows."
+    row = con.sql(
+        f"select min(xmin), min(ymin), max(xmax), max(ymax), count(*) "
+        f"from read_parquet('{src}')"
+    ).fetchall()[0]
+    if row is None or row[4] == 0 or any(v is None for v in row[:4]):
+        # An all-NULL aggregate is a row, so the old `assert bbox is not None`
+        # could not catch it and float(None) raised naming nothing.
+        raise SystemExit(f"zone {zone} ({year}): {src} has no usable rows ({row})")
+    return [float(v) for v in row[:4]], int(row[4])
+
+
+def file_schema(
+    cid: str, year: int, bbox: list[float], summary: dict, spec: str | None, sea: bool
+) -> pa.Schema:
+    "The output schema with its collection and geo footers."
+    return arrow_schema(cid).with_metadata(
+        {
+            b"collection": json.dumps(collection_metadata(cid, year, summary, spec, sea)).encode(),
+            b"geo": json.dumps(geo_metadata(bbox)).encode(),
+        }
+    )
+
+
 def merge_summary(year: int) -> dict:
     "merge_polygons' ``_summary.json``, which records what the inputs actually are."
     p = IN_ROOT / str(year) / "_summary.json"
@@ -353,25 +378,9 @@ def convert(
     con = connect(threads, memory_limit, tmp_dir)
     try:
         require_geo_metadata(src)
-        row = con.sql(
-            f"select min(xmin), min(ymin), max(xmax), max(ymax), count(*) "
-            f"from read_parquet('{src}')"
-        ).fetchall()[0]
-        if row is None or row[4] == 0 or any(v is None for v in row[:4]):
-            # An all-NULL aggregate is a row, so the old `assert bbox is not None`
-            # could not catch it and float(None) raised naming nothing.
-            raise SystemExit(f"zone {zone} ({year}): {src} has no usable rows ({row})")
-        bbox = [float(v) for v in row[:4]]
-        n_in = int(row[4])
+        bbox, n_in = zone_extent(con, src, zone, year)
         join_seams(con, src)
-        schema = arrow_schema(cid).with_metadata(
-            {
-                b"collection": json.dumps(
-                    collection_metadata(cid, year, summary, spec, sea=land is not None)
-                ).encode(),
-                b"geo": json.dumps(geo_metadata(bbox)).encode(),
-            }
-        )
+        schema = file_schema(cid, year, bbox, summary, spec, land is not None)
         reader = con.sql(query(src, cid, year, bbox, max_m2)).to_arrow_reader(
             batch_size=ROW_GROUP
         )
