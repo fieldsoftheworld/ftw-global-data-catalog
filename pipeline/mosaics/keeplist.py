@@ -1,4 +1,5 @@
-"""Cropland tile list for ``download.py --tile-list``: every tile with io-lulc crop.
+"""Build the ``download.py --tile-list`` of tiles with io-lulc crop.
+
 Tiles that fail to score are kept.
 
     python3 keeplist.py bbox --out tile_footprints.parquet
@@ -18,13 +19,13 @@ from stac import MosaicItem, search_items
 
 from cropland import cropland_stats
 
-# Every quarter of every year: the tile set differs between them (polar winter, gaps).
+# The tile set differs between quarters, e.g. in polar winter.
 SWEEP = [(y, q) for y in range(2025, 2016, -1) for q in ("Q3", "Q2", "Q4", "Q1")]
 
 
 def footprint_row(item: MosaicItem) -> dict:
     geom = shape(item.geometry)
-    # Score an antimeridian tile on its largest part; the combined bounds span the globe.
+    # An antimeridian tile's combined bounds span the globe, so score its largest part.
     parts = list(geom.geoms) if geom.geom_type == "MultiPolygon" else [geom]
     sw, ss, se, sn = max(parts, key=lambda g: g.area).bounds
     w, s, e, n = item.bbox

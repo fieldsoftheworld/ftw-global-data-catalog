@@ -59,7 +59,9 @@ own tile's UTM zone, with average-resampled overviews down to 626 px. Band 1 is
 the field-interior probability and band 2 the field-boundary probability, so a
 probability is the stored value divided by 255. No nodata value is declared,
 and no land-cover or nodata mask is applied at this stage. These files are the
-`raster/{year}/` product.
+`raster/{year}/` product. On the tiles added after the 2nd Edition,
+`inference/crop_mask.py` then zeroes predictions far from io-lulc crop, as
+described in [What is filtered, and what is not](#what-is-filtered-and-what-is-not).
 
 Every band carries its exact `STATISTICS_MINIMUM/MAXIMUM/MEAN/STDDEV` and a
 `STATISTICS_VALID_PERCENT` of 100 embedded in the file itself, not in a PAM
@@ -388,22 +390,26 @@ output.
 
 ## What is filtered, and what is not
 
-Land cover decides **where the pipeline runs**, and never **which parcels
-survive**. Both halves matter, and conflating them is how the catalog ended up
-with a wrong caveat.
+Land cover decides which tiles the pipeline runs on.
+On the tiles added after the 2nd Edition, it also decides where predictions are kept, but no retention test uses it.
 
-Coverage comes first. Stage 1 runs against the cropland tile list built by
-[`mosaics/keeplist.py`](mosaics/README.md#cropland-tile-list), and that list
-is the intended tile set: a named tile the STAC query does not return fails
-the run. The threshold
-shows plainly in the published index. Every year's minimum `cropland_frac` is
-exactly 0.010006 and no tile falls below 1%, which is the signature of a cut
-rather than of a natural distribution. Tiles under 1% cropland were never
-processed, so open desert, ice, dense forest and purely urban areas are
-absent by construction.
-An empty region in this data means the pipeline never ran there.
+Stage 1 runs on the tiles listed by [`mosaics/keeplist.py`](mosaics/README.md#cropland-tile-list), and a listed tile that the STAC query does not return fails the run.
+A tile is listed if io-lulc shows any crop on it in 2017, 2020 or 2024, read from every io-lulc band file the tile crosses.
+The rule keeps 14,608 of the 34,916 tiles, so open desert, ice, dense forest and purely urban areas are absent.
 
-Within a processed tile, a parcel is removed for the reasons below. The retention test in
+The published 2nd Edition kept a tile only if crop covered more than 1% of its land, and it read crop only from the tile's own latitude band.
+Every year's minimum `cropland_frac` in the published index is exactly 0.010006, and no tile falls below 1%.
+The 2nd Edition rule kept 7,467 tiles (`mosaics/keeplist_2e.parquet`) and skipped tiles with up to about 110 km² of io-lulc crop.
+The 7,141 tiles the new rule adds are in `mosaics/keeplist_new.txt`.
+Until they are published, an empty region in the published data means the pipeline never ran there.
+The next run covers all 14,608 tiles (`mosaics/keeplist.txt`), because the 1536 px inference patches change every tile's output.
+
+On the added tiles only, `inference/crop_mask.py` zeroes the field and boundary probabilities farther than `--buffer-m` from any io-lulc crop pixel, before polygonization.
+Most added tiles hold little crop, and on 60 published tiles with 1–3% crop, a median 84% of predicted field area lies more than 1 km from io-lulc crop.
+The mask also removes real fields that io-lulc does not label as crop, so the buffer is set per run.
+The 7,467 original tiles are not masked.
+
+Apart from the mask, a parcel is removed for the reasons below. The retention test in
 `merge_polygons.py` is `in_utm_zone AND in_mgrs_square AND area_m2 <= 5e6 AND frac_water < 0.7`,
 which drops parcels a neighboring tile owns, parcels over the area cap and parcels that are
 at least 70% io-lulc 2024 water. `fiboa_convert.py` then
@@ -421,7 +427,8 @@ Apart from the water rule, land cover and terrain are read per parcel only to de
 test, and none of the five attributes is published: the released projection in
 `fiboa_common.py` selects nine columns, and `write_sorted` casts to that
 schema, so anything else is dropped structurally. Water, scrub and built-up
-ground can therefore carry predicted parcels, and a user who needs them gone
+ground can therefore carry predicted parcels (on added tiles, only within the
+crop-mask buffer), and a user who needs them gone
 has to mask them downstream without the attributes that would have helped.
 
 `fiboa_convert.py --land-polygons` also drops parcels with less than half their area on

@@ -78,11 +78,10 @@ their own columns; point `EODATA_S3_ENDPOINT` at a mirror to index one instead.
 
 ## Cropland tile list
 
-`keeplist.py` builds the `--tile-list`: every tile with any Esri io-lulc crop
-in 2017, 2020 or 2024 (`--min-crop-km2`, default 0). The 2nd Edition instead
-kept tiles over 1% crop, which skipped tiles with up to ~110 km² of it. The MGRS
-grid does not change by year, so build it once. Tiles that fail to score are
-kept.
+`keeplist.py` builds the `--tile-list` from every tile with any Esri io-lulc crop in 2017, 2020 or 2024, and `--min-crop-km2` sets a minimum crop area (default 0).
+The 2nd Edition kept only tiles with more than 1% crop, which skipped tiles with up to about 110 km² of crop.
+The MGRS grid is the same every year, so the list is built once.
+Tiles that fail to score are kept.
 
 ```sh
 .venv/bin/python pipeline/mosaics/keeplist.py bbox --out tile_footprints.parquet
@@ -90,13 +89,10 @@ kept.
   --out global_cropland.parquet --keep-list global_keep.txt
 ```
 
-`keeplist_2e.parquet` is the tile set the 2nd Edition ran: 7,467 tiles, each
-with its `cropland_frac`, the years it was processed, its bbox and its WKB
-footprint, taken from the published `index/raster.parquet`.
+`keeplist_2e.parquet` lists the 7,467 tiles the 2nd Edition ran, with each tile's `cropland_frac`, processed years, bbox and WKB footprint from the published `index/raster.parquet`.
 
-`keeplist_new.txt` is the tiles the current keep-list adds to it: 7,141 tiles
-with io-lulc crop that the 2nd Edition skipped. These are the only tiles that
-need downloading, inference and `inference/crop_mask.py`.
+`keeplist_new.txt` lists the 7,141 tiles with io-lulc crop that the 2nd Edition skipped.
+`inference/crop_mask.py` runs on these tiles only.
 
 `keeplist.txt` is the full tile list for the next run, the 2nd Edition tiles plus `keeplist_new.txt` (14,608 tiles).
 
