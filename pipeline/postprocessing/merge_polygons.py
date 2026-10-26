@@ -121,11 +121,11 @@ def select_sql(files: list[Path], aux: list[Path]) -> str:
     src = ", ".join(f"'{p}'" for p in files)
     if not aux:
         nulls = ", ".join(f"NULL::DOUBLE AS {c}" for c in AUX_COLUMNS)
-        return f"SELECT p.*, {nulls} FROM read_parquet([{src}]) p"
+        return f"SELECT p.*, {nulls} FROM read_parquet([{src}], union_by_name=true) p"
     cols = ", ".join(f"x.{c}" for c in AUX_COLUMNS)
     lst = ", ".join(f"'{p}'" for p in aux)
     return (
-        f"SELECT p.*, {cols} FROM read_parquet([{src}]) p "
+        f"SELECT p.*, {cols} FROM read_parquet([{src}], union_by_name=true) p "
         f"LEFT JOIN read_parquet([{lst}]) x USING (tile_key, parcel_id)"
     )
 
@@ -246,6 +246,8 @@ def main() -> None:
     ap.add_argument("--keep-list", type=Path, required=True)
     ap.add_argument("--empty-list", type=Path, required=True)
     ap.add_argument("--allow-missing", action="store_true", help="merge despite missing tiles")
+    ap.add_argument("--no-cross-zone", action="store_true",
+                    help="skip cross_zone_seams.py (claimed parcels keep the next zone's piece)")
     ap.add_argument("--force", action="store_true", help="rewrite zones that are already current")
     ap.add_argument("--max-km2", type=float, default=5.0)
     ap.add_argument(
@@ -402,6 +404,23 @@ def main() -> None:
     tot = {k: sum(v[k] for v in counted) for k in keys}
     summary["total"] = tot
     summary["zones_skipped"] = sum(1 for v in summary["zones"].values() if v.get("skipped"))
+    written = {int(z) for z, v in summary["zones"].items()
+               if not v.get("skipped") and v.get("parcels_out")}
+    if not a.no_cross_zone and written:
+        skipped = {int(z) for z, v in summary["zones"].items() if v.get("skipped")}
+        near = {(z - 2) % 60 + 1 for z in written} | {z % 60 + 1 for z in written}
+        if skipped & near:
+            # a resumed zone already holds seamed parcels; pairing it with a fresh neighbour
+            # would union the same pieces twice
+            raise SystemExit(f"zones {sorted(skipped & near)} were resumed next to rewritten "
+                             "zones; rerun with --force so the cross-zone seams are redone")
+        summary["cross_zone"] = "pending"
+        prev.write_text(json.dumps(summary, indent=1))
+        from cross_zone_seams import run as cross_zone
+
+        r = cross_zone(a.out_root, a.year, written)
+        summary["cross_zone"] = {"zones": r["zones"], "pairs": len(r["pairs"])}
+        print(f"cross-zone seams: {len(r['pairs'])} pairs, {r['zones']}", flush=True)
     summary["seconds"] = time.perf_counter() - t_all
     # Written before the empty-result check: a rerun that retains nothing used to
     # abort with the PREVIOUS run's _summary.json still in place, so an incomplete

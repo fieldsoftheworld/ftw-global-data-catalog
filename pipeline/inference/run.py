@@ -24,7 +24,7 @@ import rasterio.shutil
 from rasterio.enums import Resampling
 from rasterio.windows import Window
 from nodata import NODATA_FILLS
-from predict import PATCH, predict_tile
+from predict import BATCH, OVERLAP, PATCH, predict_tile
 
 PROVIDERS = {"cuda": "CUDAExecutionProvider", "cpu": "CPUExecutionProvider"}
 #: CUDA execution-provider options the published 2026-10 run pinned. ONNX Runtime's default is
@@ -103,13 +103,14 @@ def fingerprint(
     nodata_fill: str | None = None,
     tf32: bool = False,
     cuda_sync: bool = True,
+    patch: int = PATCH,
 ) -> str:
     """Resume identity: the input file, the model and every setting that changes the output."""
     st = src.stat()
     return json.dumps(
         [
             st.st_size, st.st_mtime_ns, model_hash, batch, overlap, norm, provider,
-            nodata_fill, tf32, cuda_sync,
+            nodata_fill, tf32, cuda_sync, patch,
         ]
     )
 
@@ -155,6 +156,7 @@ def output_tags(
     nodata_fill: str | None = None,
     tf32: bool = False,
     cuda_sync: bool = True,
+    patch: int = PATCH,
 ) -> dict:
     """Source tags plus this run's provenance; the input's verified band-order tag is kept.
 
@@ -171,6 +173,7 @@ def output_tags(
         execution_provider=provider,
         normalization=str(norm),
         overlap=str(overlap),
+        patch=str(patch),
         cuda_sync="1" if cuda_sync else "0",
         tf32="1" if tf32 else "0",
     )
@@ -217,16 +220,20 @@ def active_provider(session, provider: str) -> str | None:
     return None
 
 
-def model_contract(session) -> str | None:
-    """Error message if the session is not dynamic-batch [B,16,P,P] -> [B,3,P,P] FP32."""
+def model_contract(session, patch: int = PATCH) -> str | None:
+    """Error message if the session cannot take [B,16,patch,patch] -> [B,3,patch,patch] FP32.
+
+    Height and width may be dynamic (the current export) or fixed at ``patch``.
+    """
     inputs, outputs = session.get_inputs(), session.get_outputs()
     if len(inputs) != 1 or inputs[0].name != "input" or inputs[0].type != "tensor(float)":
         return "model must take a single FP32 'input'"
     if not outputs or outputs[0].name != "logits" or outputs[0].type != "tensor(float)":
         return "model must emit FP32 'logits'"
     for io, channels in ((inputs[0], 16), (outputs[0], 3)):
-        if list(io.shape[1:]) != [channels, PATCH, PATCH]:
-            return f"expected {io.name} [B,{channels},{PATCH},{PATCH}], got {io.shape}"
+        hw_ok = all(isinstance(d, str) or d == patch for d in io.shape[2:])
+        if len(io.shape) != 4 or io.shape[1] != channels or not hw_ok:
+            return f"expected {io.name} [B,{channels},{patch},{patch}], got {io.shape}"
         if isinstance(io.shape[0], int):
             return (
                 f"{io.name} has a fixed batch of {io.shape[0]}; re-export with a dynamic "
@@ -342,8 +349,12 @@ def main() -> None:
                          "{output-dir}/" + LAYOUTS["hive"] + " (see --layout)")
     ap.add_argument("--year", type=int, required=True)
     ap.add_argument("--model", type=Path, required=True)
-    ap.add_argument("--batch", type=int, default=64)
-    ap.add_argument("--overlap", type=float, default=0.25)
+    ap.add_argument("--batch", type=int, default=BATCH)
+    ap.add_argument(
+        "--patch", type=int, default=PATCH,
+        help="model input side at 2.5 m, a multiple of 32 (patch / 4 px of the 10 m stack)",
+    )
+    ap.add_argument("--overlap", type=float, default=OVERLAP)
     ap.add_argument("--norm", type=float, default=3000)
     ap.add_argument("--device", choices=tuple(PROVIDERS), default="cuda")
     ap.add_argument(
@@ -383,6 +394,8 @@ def main() -> None:
         ap.error("invalid shard")
     if a.batch <= 0 or not 0 <= a.overlap < 1 or a.norm <= 0:
         ap.error("invalid batch, overlap or norm")
+    if a.patch <= 0 or a.patch % 32:
+        ap.error("--patch must be a positive multiple of 32")
     paths = sorted(a.input_dir.glob("*.tif"))[a.shard :: a.num_shards]
     if not paths:
         ap.error("no input tiles for this shard")
@@ -394,10 +407,10 @@ def main() -> None:
     session = make_session(a.model, a.device, a.tf32)
     if problem := active_provider(session, provider) or options_applied(session, a.device, a.tf32):
         ap.error(problem)
-    if problem := model_contract(session):
+    if problem := model_contract(session, a.patch):
         ap.error(problem)
     fill = None if a.nodata_fill == "none" else a.nodata_fill
-    settings = {"nodata_fill": fill, "tf32": a.tf32, "cuda_sync": a.cuda_sync}
+    settings = {"nodata_fill": fill, "tf32": a.tf32, "cuda_sync": a.cuda_sync, "patch": a.patch}
     todo = []
     for src in paths:
         dst = output_path(a.output_dir, src, a.year, a.layout)
@@ -422,6 +435,7 @@ def main() -> None:
                 session,
                 arr,
                 batch=a.batch,
+                patch=a.patch,
                 overlap=a.overlap,
                 norm=a.norm,
                 dev=a.device,

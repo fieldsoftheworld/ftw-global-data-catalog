@@ -351,7 +351,7 @@ def test_a_mixed_year_states_both_methods_not_the_first_one(tmp_path):
 def test_tiles_with_no_readable_spec_are_not_attributed_to_the_stamped_one(tmp_path, stamp):
     """A tile whose method is unknown must not inherit the method of the tiles beside it.
 
-    Resume is keyed on `fingerprint(src, year, core, halo, backend, simplify_m)`, which
+    Resume is keyed on `fingerprint(src, year, core, halo, simplify_m)`, which
     does not cover the stamp, so outlines written before it stay "current" and are never
     restamped. Attributing a whole year to the one id the scan found is exactly the
     plausible-looking single id this stage exists to avoid. The truncated case also guards

@@ -11,8 +11,8 @@ jobs:
   tests:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
           # 3.13 is deliberately newer than root ci.yml's 3.12: the pipeline
           # wheels were verified against cp313 (incl. rasterio's bundled GDAL).

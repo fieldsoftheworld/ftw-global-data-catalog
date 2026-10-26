@@ -7,29 +7,20 @@ The existing PMTiles pipeline consumes the released zone files.
 ```sh
 uv venv
 uv pip install -r pipeline/postprocessing/requirements.txt
-# Install the private fbp package separately. It is NOT on PyPI, and it is NOT
-# the unrelated `fbp` 1.3.6 published there, which does not expose fbp.methods.
 ```
 
-`outlines.py` calls `fbp.methods.parse`; no BoundaryVote implementation is
-vendored. It runs the method of the published 2017-2025 vectors,
-`nbg-pb-h0.01-t0.5+R25+F10+G2+A900`: non-background pixels as foreground,
+`outlines.py` runs `fbp.FTW_2E` from [`ftw-fbp`](https://pypi.org/project/ftw-fbp/)
+(installed by the requirements, imported as `fbp`). It is the method of the published 2017-2025
+vectors, which their footers record as `nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1`: non-background pixels as foreground,
 watershed seeds from the boundary surface at depth 0.01, a watershed line kept
 when half of its pixels have p(boundary) >= p(field) (`t0.5`), regions with mean
 p(field) under 25% dropped (`R25`), parcels of the p(field) > 10% mask that the
 result covers less than half re-adopted (`F10`) unless under 2% of that mask is
-uncovered (`G2`), and parcels under 900 m² dropped (`A900`). The default
-`--backend fast` appends `+q1`, an integer h-maxima and bucket-queue watershed on
-the 1/255 grid the scores are stored on, which is what the published run used and
-what its footers record; `--backend exact` is scikit-image. The method id is part
-of each tile's resume fingerprint, so an older outline tile is recomputed.
-
-fbp is public at `fieldsoftheworld/fbp`, but its `main` parses only the `l`, `b`,
-`f`, `m` and `A` modifiers: it rejects `+R25`, `+F10`, `+G2` and `+q1`, and has no
-`+q1` backend. The published run used a revision of fbp that has not been pushed
-there yet, so until it is, `outlines.py` needs that revision installed and fails
-with one message naming the requirement rather than once per tile. Only
-`outlines.py` needs fbp; the other stages run without it.
+uncovered (`G2`), and parcels under 900 m² dropped (`A900`). It runs with
+`fast=True` (`+q1`), an integer h-maxima and bucket-queue watershed on the 1/255 grid
+the scores are stored on, as the published run did. The method id is part of each
+tile's resume fingerprint, so an outline tile written under another id is recomputed.
+Only `outlines.py` needs fbp; the other stages run without it.
 
 ```sh
 .venv/bin/python pipeline/postprocessing/outlines.py --year 2025 \
@@ -38,7 +29,7 @@ with one message naming the requirement rather than once per tile. Only
   --in-root outlines --out-root simplified --workers 1
 .venv/bin/python pipeline/postprocessing/merge_polygons.py --year 2025 \
   --in-root simplified --out-root merged --no-aux --tmp-dir scratch/duckdb \
-  --keep-list tiles.txt --empty-list empty.txt
+  --keep-list tiles.txt --empty-list empty.txt   # ends with cross_zone_seams.py
 # once: OSM land polygons for the sea rule (osmdata.openstreetmap.de, ODbL)
 curl -LO https://osmdata.openstreetmap.de/download/land-polygons-split-4326.zip
 unzip land-polygons-split-4326.zip
@@ -74,9 +65,12 @@ Core/halo defaults are 8192/512 pixels. Core centroid ownership reduces window
 duplicates, but parcels wider than the halo may be truncated or duplicated;
 `touches_window_edge` identifies candidates and conversion joins seam parcels.
 Outline tiles resume on a fingerprint covering the source COG's identity, the
-flags **and** `OWNERSHIP_RULES`, so changing which parcels a tile claims rewrites
-every tile on the next run rather than resuming onto the previous rule's parquet;
-bump that constant with every `in_utm_zone`/`in_mgrs_square` change.
+flags, `OWNERSHIP_RULES` **and** the owned-squares file, so changing which parcels a
+tile claims rewrites every tile on the next run rather than resuming onto the previous
+rule's parquet; bump that constant with every `in_utm_zone`/`in_mgrs_square`/`claimed`
+change. `--owned-squares` names the squares of the run's keep-list tiles
+(`ownership.py squares` builds it); the default `owned_squares.csv` is the current
+14,608-tile keep-list.
 Ownership uses the tile raster's own bounds for its MGRS square and the MGRS
 longitude bands, including the 31V/32V exception the Sentinel-2 grid follows.
 The square is the 100 km cell the raster's north-west corner snaps to, so for a
@@ -225,9 +219,8 @@ uv pip install pytest
 
 The published run cropped each window to the blocks that contain foreground before
 calling BoundaryVote, for speed; this directory calls it on the whole window. The
-two are expected to agree, and that has not been checked here, because both need
-the unpublished fbp revision. A complete outline run needs it and real score
-fixtures.
+two are expected to agree, and that has not been checked here. A complete outline
+run needs real score fixtures.
 
 ## Where the published 2017-2025 vectors differ from this code
 
@@ -237,25 +230,12 @@ the sea rule and the footer wording above are the same rules. Row groups of 8,19
 rows, zstd 19, the nine columns, the Hilbert order of the bbox centre, the seam
 overlap rule (10% of the smaller piece and 100 m²), the 20 m² hole fill, the 900 m²
 part and parcel floor and the 5 km² cap after the union are the same constants.
-What this directory does not do:
+So are the orphan-strip claims (`ownership.py`, with the run's owned squares in
+`owned_squares_2e.csv`) and the cross-zone seam pass (`cross_zone_seams.py`): on
+200,000 random parcels near zone edges the claim decisions equal the run's, and on a
+synthetic pair of zone files the seam pass writes the same rows and geometries.
+Where this directory differs:
 
-- **Orphan-strip claims.** Near some zone edges the mosaic product has no tile for
-  the partial 100 km squares (for example zone 32 between 6°E and its 32UL*
-  squares at 52-53°N, and zone 16 west of 89.4°W at 42-43°N), so the zone that
-  contains such a location has no tile there while the neighbouring zone's tile,
-  whose square reaches across the zone edge, flags those parcels as outside its
-  zone. Before the rerun nobody
-  kept them: 3.0-3.4M parcels and 167-174k km² a year in 2020-2025. The run's tile
-  also kept (`claimed`) a parcel of its own square outside its zone when the
-  centroid, or any point on the centroid row across the parcel sampled every
-  200 m, lies in an adjacent zone's square without a keep-list tile; of two
-  claimers the western zone wins. Here `in_utm_zone` is the plain zone test.
-- **Cross-zone seams.** A claimed field that reaches into the next zone's first
-  square is also cut at the raster edge by the tile there. The run's merge ended
-  with a pass that unions each claimed parcel with the overlapping pieces in the
-  two neighbouring zone files (same overlap rule), keeping the smallest claimed id
-  of the group and removing the other pieces from their zone files. Here such
-  pieces stay in both zone files.
 - **Piece floor before the union.** The run dropped single-tile pieces under
   900 m² before the seam union and again judged merged groups after it, so a field
   cut into a piece over and a piece under 900 m² was published as the larger piece
