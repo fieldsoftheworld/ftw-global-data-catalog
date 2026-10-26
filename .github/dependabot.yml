@@ -1,0 +1,34 @@
+version: 2
+updates:
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+    groups:
+      actions:
+        patterns: ["*"]
+
+  - package-ecosystem: pip
+    directories:
+      - /pipeline/mosaics
+      - /pipeline/postprocessing
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        update-types: [minor, patch]
+
+  # torch and ONNX Runtime stay at the versions the golden self-test passed with: H100 and
+  # A100 outputs agree within 1/255 only on these, so they move with a new self-test, by hand.
+  - package-ecosystem: pip
+    directory: /pipeline/inference
+    schedule:
+      interval: weekly
+    groups:
+      python:
+        update-types: [minor, patch]
+    ignore:
+      - dependency-name: torch
+      - dependency-name: onnxruntime
+      - dependency-name: onnxruntime-gpu
+      - dependency-name: "nvidia-*"
