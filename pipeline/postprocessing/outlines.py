@@ -31,6 +31,7 @@ import pyarrow.parquet as pq
 import rasterio
 import rasterio.features
 import shapely
+from fbp import FTW_2E
 from pyproj import CRS, Transformer
 from rasterio.windows import Window
 from scipy import ndimage as ndi
@@ -50,41 +51,26 @@ PX_M2 = 6.25
 MP_CONTEXT = multiprocessing.get_context("spawn")
 
 
-def score_labels(u8, method):
+def score_labels(u8):
     pf, pb = u8.astype(np.float32) / 255
     prob = np.stack([np.clip(1 - pf - pb, 0, 1), pf, pb]).astype(np.float16)
-    return method(prob.argmax(0).astype(np.uint8), prob, px_m2=PX_M2).astype(np.int32)
+    return FTW_2E(prob.argmax(0).astype(np.uint8), prob, pixel_area_m2=PX_M2).astype(np.int32)
 
 
-#: BoundaryVote as run for the published 2017-2025 vectors: foreground ``nbg``, seeds from the
-#: boundary surface at depth 0.01, a watershed line kept when 50% of its pixels have
+#: Method id of the published 2017-2025 vectors, recorded in every outline stamp and fingerprint.
+#: It names the BoundaryVote setting fbp ships as ``fbp.FTW_2E``: foreground ``nbg``, seeds from
+#: the boundary surface at depth 0.01, a watershed line kept when 50% of its pixels have
 #: p(boundary) >= p(field) (``t0.5``), regions with mean p(field) under 25% dropped (``R25``),
 #: parcels of the p(field) > 10% mask that the result covers less than half re-adopted
 #: (``F10``), skipped when under 2% of that mask is uncovered (``G2``), and parcels under 900 m2
-#: dropped (``A900``). The ``+R``, ``+F`` and ``+G`` modifiers (and the ``+q1`` of the fast
-#: backend) are in the fbp revision the run used, not in the public fieldsoftheworld/fbp main.
+#: dropped (``A900``). Changing the string changes every fingerprint, so a resumed run would
+#: redo every tile.
 SPEC = "nbg-pb-h0.01-t0.5+R25+F10+G2+A900"
 
 
-def method_for(backend: str):
-    """``parse(SPEC)`` on the chosen backend: ``fast`` appends ``+q1``, ``exact`` is skimage.
-
-    ``fbp`` is not in requirements.txt and cannot be: the revision that parses ``SPEC`` is not
-    on PyPI, and the unrelated ``fbp`` 1.3.6 that IS on PyPI does not expose ``fbp.methods``. One
-    clear failure here beats 10k identical ImportError tracebacks from the workers.
-    """
-    try:
-        from fbp.methods import parse
-    except ImportError as exc:
-        raise SystemExit(
-            "fbp, with the +R/+F/+G modifiers (and +q1 for --backend fast) the published run's "
-            f"method id uses, is required for the outline stage and is not importable ({exc}). "
-            "It is NOT the unrelated 'fbp' on PyPI, and fieldsoftheworld/fbp main does not "
-            "have those modifiers yet. simplify_polygons, merge_polygons and fiboa_convert "
-            "do not need it."
-        ) from exc
-
-    return parse(SPEC + ("+q1" if backend == "fast" else ""))
+#: What every outline stamp records. ``fbp.FTW_2E`` runs with ``fast=True``, which the published
+#: run recorded as the ``+q1`` suffix and the ``fast`` backend.
+STAMP = {"spec": SPEC + "+q1", "backend": "fast"}
 
 
 #: Wait before the one retry pass over tiles that failed on a remote read.
@@ -327,11 +313,11 @@ def score_paths(src: Path, names: list[str] | None) -> list[Path]:
     return found
 
 
-def fingerprint(src: Path, year: int, core: int, halo: int, backend: str, simplify_m: float) -> str:
+def fingerprint(src: Path, year: int, core: int, halo: int, simplify_m: float) -> str:
     """Identity of the source COG plus every flag that changes the output.
 
     Resume used to test only that the output file exists, so a regenerated score
-    COG or a changed --core/--halo/--backend/--simplify-m silently published the
+    COG or a changed --core/--halo/--simplify-m silently published the
     previous run's parcels. Built like the siblings: PR2's run.py
     inference_fingerprint (size, mtime, model hash, flags) and
     simplify_polygons.simplify_fingerprint (tol, size, mtime). The COG's own
@@ -342,7 +328,8 @@ def fingerprint(src: Path, year: int, core: int, halo: int, backend: str, simpli
     result-affecting as any flag: without it a resumed run after an ownership
     change keeps the previous rule's parquet, and the release silently mixes
     vintages that the parquet cannot be asked to tell apart. The same goes for
-    ``SPEC``, the BoundaryVote method id.
+    ``SPEC``, the BoundaryVote method id. The ``"fast"`` entry is the backend, which used to be
+    a flag; it stays so outlines written before the flag was dropped still resume.
     """
     st = src.stat()
     ident: object = [st.st_size, st.st_mtime_ns]
@@ -354,7 +341,7 @@ def fingerprint(src: Path, year: int, core: int, halo: int, backend: str, simpli
     except rasterio.errors.RasterioIOError:
         pass
     return json.dumps(
-        [ident, year, core, halo, backend, simplify_m, OWNERSHIP_RULES, SPEC], sort_keys=True
+        [ident, year, core, halo, "fast", simplify_m, OWNERSHIP_RULES, SPEC], sort_keys=True
     )
 
 
@@ -389,14 +376,14 @@ def source_provenance(src: Path, year: int) -> dict:
     return {k: tags[k] for k in keep if k in tags}
 
 
-def outline_provenance(src: Path, year: int, method, backend: str) -> dict:
+def outline_provenance(src: Path, year: int) -> dict:
     """The stamp written into every outline file: the COG's tags plus the method actually run.
 
     merge_polygons reads the spec into ``_summary.json`` and fiboa_convert writes it into
-    ``determination:details``, so a release states the spec (and backend, e.g. ``+q1``) that
+    ``determination:details``, so a release states the spec and backend that
     produced it instead of a hardcoded one.
     """
-    return {**source_provenance(src, year), "spec": method.id, "backend": backend}
+    return {**source_provenance(src, year), **STAMP}
 
 
 def process_tile(
@@ -406,13 +393,12 @@ def process_tile(
     index: Path,
     core: int,
     halo: int,
-    backend: str,
     simplify_m: float = 0.0,
 ) -> dict:
     "Stage the tile's COG locally if the scratch copy is gone, run it, clean up."
     if not path.is_file():
         raise FileNotFoundError(path)
-    prof = _run_tile(str(path), path.stem, year, out_dir, index, core, halo, backend, simplify_m)
+    prof = _run_tile(str(path), path.stem, year, out_dir, index, core, halo, simplify_m)
     prof["t_stage"] = 0.0
     return prof
 
@@ -425,18 +411,15 @@ def _run_tile(
     index: Path,
     core: int,
     halo: int,
-    backend: str,
     simplify_m: float,
 ) -> dict:
     from polygons import simplify_coverage
 
-    fp = fingerprint(Path(path), year, core, halo, backend, simplify_m)
-    method = method_for(backend)
-    prov = outline_provenance(Path(path), year, method, backend)
+    fp = fingerprint(Path(path), year, core, halo, simplify_m)
+    prov = outline_provenance(Path(path), year)
     prof = {
         "tile_key": tk,
-        "spec": method.id,
-        "backend": backend,
+        **STAMP,
         "core": core,
         "halo": halo,
         "t_read": 0.0,
@@ -485,7 +468,7 @@ def _run_tile(
                 continue
             t = time.perf_counter()
             _probe(prof, "bv")
-            inst = score_labels(u8, method)
+            inst = score_labels(u8)
             ncrop = 1
             prof["crops"] = prof.get("crops", 0) + ncrop
             prof["t_bv"] += time.perf_counter() - t
@@ -642,13 +625,6 @@ def main() -> None:
     ap.add_argument("--core", type=int, default=8192)
     ap.add_argument("--halo", type=int, default=512)
     ap.add_argument(
-        "--backend",
-        choices=("fast", "exact"),
-        default="fast",
-        help="fast (default, the published run: spec + '+q1', integer watershed on the 1/255 "
-        "grid) or exact (scikit-image)",
-    )
-    ap.add_argument(
         "--simplify-m",
         type=float,
         default=0.0,
@@ -689,7 +665,7 @@ def main() -> None:
     out_dir = a.out_root / str(a.year)
     out_dir.mkdir(parents=True, exist_ok=True)
     # Resume on the fingerprint, not on mere existence: a regenerated score COG or a
-    # changed --core/--halo/--backend/--simplify-m used to be skipped silently.
+    # changed --core/--halo/--simplify-m used to be skipped silently.
     if not a.force:
         n0 = len(paths)
         paths = [
@@ -697,7 +673,7 @@ def main() -> None:
             for p in paths
             if not is_current(
                 out_dir / f"{p.stem}.parquet",
-                fingerprint(p, a.year, a.core, a.halo, a.backend, a.simplify_m),
+                fingerprint(p, a.year, a.core, a.halo, a.simplify_m),
             )
         ]
         if n0 != len(paths):
@@ -707,7 +683,7 @@ def main() -> None:
     if paths and not index:
         ap.error("no quarterly source index")
     print(
-        f"{len(paths)} tiles, backend={a.backend}, core={a.core} halo={a.halo}, "
+        f"{len(paths)} tiles, core={a.core} halo={a.halo}, "
         f"workers={a.workers}",
         flush=True,
     )
@@ -733,7 +709,7 @@ def main() -> None:
     with ProcessPoolExecutor(a.workers, max_tasks_per_child=1, mp_context=MP_CONTEXT) as pool:
         futs = {
             pool.submit(
-                process_tile, p, a.year, out_dir, index, a.core, a.halo, a.backend, a.simplify_m
+                process_tile, p, a.year, out_dir, index, a.core, a.halo, a.simplify_m
             ): p.stem
             for p in paths
         }
@@ -749,7 +725,6 @@ def main() -> None:
                 index,
                 a.core,
                 a.halo,
-                a.backend,
                 a.simplify_m,
             ),
             report,

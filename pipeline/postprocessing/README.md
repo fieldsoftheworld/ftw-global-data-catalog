@@ -7,29 +7,20 @@ The existing PMTiles pipeline consumes the released zone files.
 ```sh
 uv venv
 uv pip install -r pipeline/postprocessing/requirements.txt
-# Install the private fbp package separately. It is NOT on PyPI, and it is NOT
-# the unrelated `fbp` 1.3.6 published there, which does not expose fbp.methods.
 ```
 
-`outlines.py` calls `fbp.methods.parse`; no BoundaryVote implementation is
-vendored. It runs the method of the published 2017-2025 vectors,
-`nbg-pb-h0.01-t0.5+R25+F10+G2+A900`: non-background pixels as foreground,
+`outlines.py` runs `fbp.FTW_2E` from [`ftw-fbp`](https://pypi.org/project/ftw-fbp/)
+(installed by the requirements, imported as `fbp`). It is the method of the published 2017-2025
+vectors, which their footers record as `nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1`: non-background pixels as foreground,
 watershed seeds from the boundary surface at depth 0.01, a watershed line kept
 when half of its pixels have p(boundary) >= p(field) (`t0.5`), regions with mean
 p(field) under 25% dropped (`R25`), parcels of the p(field) > 10% mask that the
 result covers less than half re-adopted (`F10`) unless under 2% of that mask is
-uncovered (`G2`), and parcels under 900 m² dropped (`A900`). The default
-`--backend fast` appends `+q1`, an integer h-maxima and bucket-queue watershed on
-the 1/255 grid the scores are stored on, which is what the published run used and
-what its footers record; `--backend exact` is scikit-image. The method id is part
-of each tile's resume fingerprint, so an older outline tile is recomputed.
-
-fbp is public at `fieldsoftheworld/fbp`, but its `main` parses only the `l`, `b`,
-`f`, `m` and `A` modifiers: it rejects `+R25`, `+F10`, `+G2` and `+q1`, and has no
-`+q1` backend. The published run used a revision of fbp that has not been pushed
-there yet, so until it is, `outlines.py` needs that revision installed and fails
-with one message naming the requirement rather than once per tile. Only
-`outlines.py` needs fbp; the other stages run without it.
+uncovered (`G2`), and parcels under 900 m² dropped (`A900`). It runs with
+`fast=True` (`+q1`), an integer h-maxima and bucket-queue watershed on the 1/255 grid
+the scores are stored on, as the published run did. The method id is part of each
+tile's resume fingerprint, so an outline tile written under another id is recomputed.
+Only `outlines.py` needs fbp; the other stages run without it.
 
 ```sh
 .venv/bin/python pipeline/postprocessing/outlines.py --year 2025 \
@@ -225,9 +216,8 @@ uv pip install pytest
 
 The published run cropped each window to the blocks that contain foreground before
 calling BoundaryVote, for speed; this directory calls it on the whole window. The
-two are expected to agree, and that has not been checked here, because both need
-the unpublished fbp revision. A complete outline run needs it and real score
-fixtures.
+two are expected to agree, and that has not been checked here. A complete outline
+run needs real score fixtures.
 
 ## Where the published 2017-2025 vectors differ from this code
 
