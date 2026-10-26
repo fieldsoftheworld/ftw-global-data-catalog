@@ -75,7 +75,7 @@ The published tiles used ONNX Runtime 1.30.0 and torch 2.12.1 (CUDA 13.0, cuDNN 
 `unet_balanced_fp32.onnx` with SHA-256
 `e12bcdb9f26478273a552a4cbffb9d838dd942cba7451befd5231fae4933282e`. They were made by the
 production repository (`global-ftw-2e`, commit `5d01d4b`, not public). Its streaming runner and
-self-test now live here as `stream.py` and `selftest.py`, and `requirements.lock` pins the same
+self-test now live here as `stream.py` and `selftest.py`, and `requirements-lock.txt` pins the same
 library versions. `nodata.py` produces the same fill as the production implementation on int16
 input, checked pixel for pixel on random stacks with holes.
 
@@ -161,11 +161,27 @@ python pipeline/inference/selftest.py make-ref --root golden
 python pipeline/inference/selftest.py check --root golden --full-tile
 ```
 
+## Year gate
+
+`gate.py` checks a year of `stream.py` output before the upload, and `gate.json` passes only if every part did.
+`scan` reads every COG's tags and fails the year on a missing tile, a leftover temp file, a wrong structure, another run's fingerprint, the wrong settings (barrier, nodata fill, patch, overlap, TF32 or uncommitted code), a GPU other than an H100 or A100, or a 5 km run of empty rows over valid input.
+The expected tiles are the keep-list tiles with all four quarters in the tile index.
+Keep tiles without four quarters must be listed in `no_mosaic_tiles.csv`, which holds the 242 tile-years of 2017-2025 the mirror has no complete mosaic for.
+`validate` opens every file and checks the COG layout, the overview levels, the grid against the input recorded in the sidecar, the overviews recomputed from the level above, the level means against the inference means, and the embedded band statistics.
+It decodes the full base of 10% of the tiles and compares it with the inference means.
+`summary` writes `gate_{year}.json`, optionally with a comparison against a release QA CSV.
+
+```sh
+sbatch --array=0-19 --export=ALL,YEAR=2025,ROOT=$OUT,FP=$FP pipeline/inference/validate.sbatch
+sbatch --dependency=afterany:$JOB --export=ALL,YEAR=2025,ROOT=$OUT,INDEX_DIR=$INDEX \
+  pipeline/inference/gate.sbatch
+```
+
 ## AWS
 
 `aws/launch.sh` runs `stream.py` on EC2 GPU boxes that need 80 GB GPUs (p5.48xlarge H100s or
 p4de A100s); smaller GPUs cannot hold a tile.
-Each box installs `requirements.lock`, runs the self-test on every GPU and takes no work if one
+Each box installs `requirements-lock.txt`, runs the self-test on every GPU and takes no work if one
 fails, then claims units of tiles from an S3 queue (`aws/work_queue.py`).
 Finished COGs go to `s3://$FTW_AWS_BUCKET/$PREFIX` at the bucket's own keys.
 A spot interruption leaves the unit to another box, and finished tiles are not redone.

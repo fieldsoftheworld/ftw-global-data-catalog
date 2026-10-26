@@ -135,6 +135,7 @@ def fetch_tile(job, band_pool: ThreadPoolExecutor) -> dict:
     in_stats = {
         **input_stats(arr),
         "etag_sha": hashlib.sha256("".join(b["etag"] for b in bands).encode()).hexdigest()[:16],
+        "transform": ",".join(f"{v:.2f}" for v in tuple(transform)[:6]),
         "shape": f"{arr.shape[1]}x{arr.shape[2]}",
     }
     return {"tile_key": tk, "arr": arr, "transform": transform, "crs": crs,
