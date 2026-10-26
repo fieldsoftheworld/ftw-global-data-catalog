@@ -31,7 +31,7 @@ import pyarrow.parquet as pq
 import rasterio
 import rasterio.features
 import shapely
-from fbp import FTW_2E
+from fbp import FTW_2E, run_windowed
 from pyproj import CRS, Transformer
 from rasterio.windows import Window
 from scipy import ndimage as ndi
@@ -52,10 +52,102 @@ PX_M2 = 6.25
 MP_CONTEXT = multiprocessing.get_context("spawn")
 
 
-def score_labels(u8):
-    pf, pb = u8.astype(np.float32) / 255
-    prob = np.stack([np.clip(1 - pf - pb, 0, 1), pf, pb]).astype(np.float16)
-    return FTW_2E(prob.argmax(0).astype(np.uint8), prob, pixel_area_m2=PX_M2).astype(np.int32)
+def class_map(u8: np.ndarray, rows: int = 2048) -> tuple[np.ndarray, np.ndarray]:
+    """uint8 argmax classes and float16 (background, field, boundary) probabilities of a
+    window of the scores, built in row blocks so no float32 copy of the window exists."""
+    _, h, w = u8.shape
+    seg = np.empty((h, w), np.uint8)
+    prob = np.empty((3, h, w), np.float16)
+    for r in range(0, h, rows):
+        pf, pb = u8[:, r : r + rows].astype(np.float32) / 255
+        p = np.stack([np.clip(1 - pf - pb, 0, 1), pf, pb]).astype(np.float16)
+        prob[:, r : r + rows] = p
+        seg[r : r + rows] = p.argmax(0)
+    return seg, prob
+
+
+class ScoreWindows:
+    """A score COG as ``run_windowed`` inputs, read one window at a time.
+
+    ``seg`` (H, W) and ``prob`` (3, H, W) slice like arrays. ``run_windowed`` asks for the
+    classes and then the probabilities of the same window, so both come from one read.
+    """
+
+    def __init__(self, ds) -> None:
+        self.ds = ds
+        self._key, self._val = None, None
+        self.seg = _ScoreView(self, 0, (ds.height, ds.width))
+        self.prob = _ScoreView(self, 1, (3, ds.height, ds.width))
+
+    def window(self, rows: slice, cols: slice) -> tuple[np.ndarray, np.ndarray]:
+        key = (rows.start, rows.stop, cols.start, cols.stop)
+        if key != self._key:
+            self._key, self._val = None, None  # free the last window before reading the next
+            self._val = class_map(self.ds.read(window=Window.from_slices(rows, cols)))
+            self._key = key
+        return self._val
+
+
+class _ScoreView:
+    def __init__(self, src: ScoreWindows, which: int, shape: tuple[int, ...]) -> None:
+        self.src, self.which, self.shape = src, which, shape
+
+    def __getitem__(self, key: tuple) -> np.ndarray:
+        arr = self.src.window(*key[-2:])[self.which]
+        return arr[key[0]] if len(key) == 3 else arr
+
+
+def parcel_attrs(inst: np.ndarray, read, aux: dict, n_id: int, rows: int = 2048):
+    """Pixel count, centroid row and column, and the per-parcel means of the label image.
+
+    ``read(r0, r1)`` returns the (2, r1 - r0, W) uint8 scores of a row strip. Sums are taken
+    in row strips, so neither the scores nor the per-pixel index arrays cover the whole tile.
+    """
+    keys = ("pf", "pb", "nod1", "nod3", "water", "crops", "slope", "steep", "dem", "y", "x")
+    tot = {k: np.zeros(n_id) for k in keys}
+    cnt = np.zeros(n_id)
+    for r in range(0, inst.shape[0], rows):
+        lab = inst[r : r + rows]
+        m = lab > 0
+        if not m.any():
+            continue
+        u8 = read(r, r + lab.shape[0])
+        idx = lab[m]
+        rr, cc = np.nonzero(m)
+        rr += r
+        q16 = aux["nod"][np.minimum(rr // 16, aux["nod"].shape[0] - 1),
+                         np.minimum(cc // 16, aux["nod"].shape[1] - 1)]
+        a30 = (np.minimum(rr // 12, aux["dem"].shape[0] - 1),
+               np.minimum(cc // 12, aux["dem"].shape[1] - 1))
+        slope = aux["slope"][a30]
+        with np.errstate(invalid="ignore"):
+            steep = (slope > 30).astype(np.float64)
+        vals = {
+            "pf": u8[0][m] / 255.0, "pb": u8[1][m] / 255.0,
+            "nod1": q16 >= 1, "nod3": q16 >= 3, "water": aux["water"][a30],
+            "crops": aux["crops"][a30], "slope": slope, "steep": steep, "dem": aux["dem"][a30],
+            "y": rr, "x": cc,
+        }
+        cnt += np.bincount(idx, minlength=n_id)
+        for k, v in vals.items():
+            tot[k] += np.bincount(idx, v, n_id)
+    with np.errstate(invalid="ignore", divide="ignore"):
+        mean = {k: v / cnt for k, v in tot.items()}
+    attrs = {
+        "pf_mean": mean["pf"],
+        "pb_mean": mean["pb"],
+        "frac_nodata_1q": mean["nod1"],
+        "frac_nodata_3q": mean["nod3"],
+        "frac_water": mean["water"],
+        "frac_crops_ever": mean["crops"],
+        # Where the DEM has no coverage slope is unknown, not flat: bincount propagates NaN
+        # into slope_mean, and the steep share is masked to match rather than counting an
+        # unknown as not steep (nan_to_num once made coastal parcels pass as 0 degrees)
+        "slope_mean": mean["slope"],
+        "frac_slope_gt30": np.where(np.isnan(mean["slope"]), np.nan, mean["steep"]),
+        "elev_mean": mean["dem"],
+    }
+    return cnt, mean["y"], mean["x"], attrs
 
 
 #: Method id of the published 2017-2025 vectors, recorded in every outline stamp and fingerprint.
@@ -72,6 +164,10 @@ SPEC = "nbg-pb-h0.01-t0.5+R25+F10+G2+A900"
 #: What every outline stamp records. ``fbp.FTW_2E`` runs with ``fast=True``, which the published
 #: run recorded as the ``+q1`` suffix and the ``fast`` backend.
 STAMP = {"spec": SPEC + "+q1", "backend": "fast"}
+
+#: How a tile is cut into windows. It is in the fingerprint, so outlines from the old per-window
+#: loop, which left a field cut by two windows as two parcels, are not mixed with these.
+WINDOWING = "fbp.run_windowed"
 
 
 #: Wait before the one retry pass over tiles that failed on a remote read.
@@ -144,22 +240,6 @@ def mgrs_square(tr, height: int, width: int) -> tuple[float, float, float, float
             f"the 100 km MGRS square x {x0:.0f}-{x1:.0f}, y {y0:.0f}-{y1:.0f} its origin snaps to"
         )
     return x0, y0, x1, y1
-
-
-def slope_attrs(slope_px: np.ndarray, mean_of) -> tuple[np.ndarray, np.ndarray]:
-    """``slope_mean`` and ``frac_slope_gt30``, NaN together where the DEM is absent.
-
-    Where the DEM has no coverage, slope is UNKNOWN, not flat. ``np.nan_to_num``
-    turned missing DEM into slope 0.0 while ``elev_mean`` stayed NaN, so a coastal
-    parcel with no DEM at all reported a perfectly flat 0 degrees and passed every
-    "is this flat enough" QA filter. ``np.bincount`` propagates NaN, so simply not
-    filling makes ``slope_mean`` NaN exactly where ``elev_mean`` is; the steep
-    fraction is masked to match rather than counting an unknown as "not steep".
-    """
-    slope_mean = mean_of(slope_px)
-    with np.errstate(invalid="ignore"):
-        steep = mean_of((slope_px > 30).astype(np.float64))
-    return slope_mean, np.where(np.isnan(slope_mean), np.nan, steep)
 
 
 def _windows(size: int, core: int, halo: int):
@@ -305,7 +385,8 @@ def fingerprint(
     inference_fingerprint (size, mtime, model hash, flags) and
     simplify_polygons.simplify_fingerprint (tol, size, mtime). The COG's own
     inference_fingerprint tag is preferred when PR2 stamped one, because it
-    identifies the model and inputs as well as the bytes.
+    identifies the model and inputs as well as the bytes. A ``stream.py`` COG is
+    identified by its run (``prov_fingerprint``) and its inputs (``qa_in_etag_sha``).
 
     OWNERSHIP_RULES is in here too, because which parcels a tile claims is as
     result-affecting as any flag: without it a resumed run after an ownership
@@ -319,14 +400,16 @@ def fingerprint(
     ident: object = [st.st_size, st.st_mtime_ns]
     try:
         with rasterio.open(src) as ds:
-            tag = ds.tags().get("inference_fingerprint")
-        if tag:
-            ident = tag
+            tags = ds.tags()
+        if tags.get("inference_fingerprint"):
+            ident = tags["inference_fingerprint"]
+        elif tags.get("prov_fingerprint") and tags.get("qa_in_etag_sha"):
+            ident = [tags["prov_fingerprint"], tags["qa_in_etag_sha"]]
     except rasterio.errors.RasterioIOError:
         pass
     return json.dumps(
         [ident, year, core, halo, "fast", simplify_m, OWNERSHIP_RULES, SPEC,
-         squares_digest(squares)],
+         squares_digest(squares), WINDOWING],
         sort_keys=True,
     )
 
@@ -358,7 +441,8 @@ def source_provenance(src: Path, year: int) -> dict:
     stamped = tags.get("year")
     if stamped and int(stamped) != year:
         raise ValueError(f"{src.name}: score COG is year {stamped}, run asked for {year}")
-    keep = ("model_sha256", "inference_fingerprint", "input_bands", "normalization", "overlap")
+    keep = ("model_sha256", "inference_fingerprint", "input_bands", "normalization", "overlap",
+            "patch", "prov_fingerprint", "prov_model_sha256")
     return {k: tags[k] for k in keep if k in tags}
 
 
@@ -444,127 +528,81 @@ def _run_tile(
     to_ll = Transformer.from_crs(crs, "EPSG:4326", always_xy=True)
 
     rows, geoms = [], []
-    pid = 0
-    for r0, r1, R0, R1 in _windows(H, core, halo):
-        for c0, c1, C0, C1 in _windows(W, core, halo):
-            prof["windows"] += 1
-            t = time.perf_counter()
-            _probe(prof, "read")
-            with rasterio.open(path) as ds:
-                u8 = ds.read(window=Window(C0, R0, C1 - C0, R1 - R0))
-            prof["t_read"] += time.perf_counter() - t
-            if not u8.any():
-                continue
-            t = time.perf_counter()
-            _probe(prof, "bv")
-            inst = score_labels(u8)
-            ncrop = 1
-            prof["crops"] = prof.get("crops", 0) + ncrop
-            prof["t_bv"] += time.perf_counter() - t
-            _probe(prof, "attr")
-            if not inst.any():
-                continue
-
-            t = time.perf_counter()
-            n_id = int(inst.max()) + 1
-            m = inst > 0
-            idx = inst[m]
-            rr, cc = np.nonzero(m)
-            cnt = np.bincount(idx, minlength=n_id).astype(np.float64)
-            with np.errstate(invalid="ignore", divide="ignore"):
-                cy = np.bincount(idx, rr, n_id) / cnt
-                cx = np.bincount(idx, cc, n_id) / cnt
-
-            own = (cnt > 0) & (cy + R0 >= r0) & (cy + R0 < r1) & (cx + C0 >= c0) & (cx + C0 < c1)
-            own[0] = False
-            ids = np.nonzero(own)[0]
-            if len(ids) == 0:
-                prof["t_attr"] += time.perf_counter() - t
-                continue
-
-            edge = np.zeros(inst.shape, bool)
-            if R0 > 0:
-                edge[0, :] = True
-            if R1 < H:
-                edge[-1, :] = True
-            if C0 > 0:
-                edge[:, 0] = True
-            if C1 < W:
-                edge[:, -1] = True
-            touch = np.bincount(inst[edge & m], minlength=n_id) > 0
-            sl = ndi.find_objects(inst)
-
-            def mean_of(vals, idx=idx, cnt=cnt, n_id=n_id):
-                with np.errstate(invalid="ignore", divide="ignore"):
-                    return np.bincount(idx, vals, n_id) / cnt
-
-            R, C = rr + R0, cc + C0
-            q16 = aux["nod"][
-                np.minimum(R // 16, aux["nod"].shape[0] - 1),
-                np.minimum(C // 16, aux["nod"].shape[1] - 1),
-            ]
-            a30 = (
-                np.minimum(R // 12, aux["dem"].shape[0] - 1),
-                np.minimum(C // 12, aux["dem"].shape[1] - 1),
-            )
-            slope_mean, steep = slope_attrs(aux["slope"][a30], mean_of)
-            attrs = {
-                "pf_mean": mean_of(u8[0][m] / 255.0),
-                "pb_mean": mean_of(u8[1][m] / 255.0),
-                "frac_nodata_1q": mean_of(q16 >= 1),
-                "frac_nodata_3q": mean_of(q16 >= 3),
-                "frac_water": mean_of(aux["water"][a30]),
-                "frac_crops_ever": mean_of(aux["crops"][a30]),
-                "slope_mean": slope_mean,
-                "frac_slope_gt30": steep,
-                "elev_mean": mean_of(aux["dem"][a30]),
-            }
-            del R, C, q16, a30, rr, cc, idx
-            prof["t_attr"] += time.perf_counter() - t
-            _probe(prof, "poly")
-
-            t = time.perf_counter()
-            lut = np.zeros(n_id, np.int32)
-            lut[ids] = ids
-            owned = lut[inst]
-            wtr = tr * rasterio.Affine.translation(C0, R0)
-            parts: dict[int, list] = {}
-            for g, v in rasterio.features.shapes(owned, mask=owned > 0, transform=wtr):
-                parts.setdefault(int(v), []).append(shapely.geometry.shape(g))
-            for i in ids:
-                ps = parts.get(int(i))
-                if not ps:
+    prof["windows"] = len(list(_windows(H, core, halo))) * len(list(_windows(W, core, halo)))
+    with rasterio.open(path) as ds:
+        t = time.perf_counter()
+        _probe(prof, "bv")
+        # fbp reads one window at a time, keeps each parcel in the window whose core holds
+        # its centroid, and merges the copies of a field cut by two windows into one parcel
+        scores = ScoreWindows(ds)
+        inst = run_windowed(FTW_2E, scores.seg, scores.prob, pixel_area_m2=PX_M2, core=core,
+                            halo=halo)
+        del scores
+        prof["t_bv"] += time.perf_counter() - t
+        _probe(prof, "attr")
+        t = time.perf_counter()
+        n_id = int(inst.max()) + 1
+        cnt, cy, cx, attrs = parcel_attrs(
+            inst, lambda r0, r1: ds.read(window=Window(0, r0, W, r1 - r0)), aux, n_id
+        )
+        sl = ndi.find_objects(inst)
+        prof["t_attr"] += time.perf_counter() - t
+        _probe(prof, "poly")
+        t = time.perf_counter()
+        for r0, r1, R0, R1 in _windows(H, core, halo):
+            for c0, c1, C0, C1 in _windows(W, core, halo):
+                ids = np.nonzero((cnt > 0) & (cy >= r0) & (cy < r1) & (cx >= c0) & (cx < c1))[0]
+                ids = ids[ids > 0]
+                if not len(ids):
                     continue
-                geom = ps[0] if len(ps) == 1 else shapely.MultiPolygon(ps)
-                geoms.append(geom)
-                s = sl[i - 1]
-                ex, ey = tr * (cx[i] + C0 + 0.5, cy[i] + R0 + 0.5)
-                lon, lat = to_ll.transform(ex, ey)
-                in_square = bool(sq_x0 <= ex < sq_x1 and sq_y0 < ey <= sq_y1)
-                in_zone, claimed = zone_keeps(
-                    to_ll, zn, band, (lon, lat, ey), (tr * (C0 + s[1].start, 0))[0],
-                    (tr * (C0 + s[1].stop, 0))[0], in_square, owned_squares,
-                )
-                pid += 1
-                rows.append(
-                    {
-                        "tile_key": tk,
-                        "year": year,
-                        "parcel_id": pid,
-                        "area_m2": float(cnt[i]) * PX_M2,
-                        "n_parts": len(ps),
-                        "ext_h_px": s[0].stop - s[0].start,
-                        "ext_w_px": s[1].stop - s[1].start,
-                        "touches_window_edge": bool(touch[i]),
-                        "in_utm_zone": in_zone,
-                        "in_mgrs_square": in_square,
-                        "claimed": claimed,
-                        **{k: float(v[i]) for k, v in attrs.items()},
-                    }
-                )
-            prof["t_poly"] += time.perf_counter() - t
-            _probe(prof, "loop")
-            del inst, owned, u8
+                # a merged parcel can reach past this window, so polygonize over all its pixels
+                y0 = min(sl[i - 1][0].start for i in ids)
+                y1 = max(sl[i - 1][0].stop for i in ids)
+                x0 = min(sl[i - 1][1].start for i in ids)
+                x1 = max(sl[i - 1][1].stop for i in ids)
+                lut = np.zeros(n_id, np.int32)
+                lut[ids] = ids
+                owned = lut[inst[y0:y1, x0:x1]]
+                wtr = tr * rasterio.Affine.translation(x0, y0)
+                parts: dict[int, list] = {}
+                for g, v in rasterio.features.shapes(owned, mask=owned > 0, transform=wtr):
+                    parts.setdefault(int(v), []).append(shapely.geometry.shape(g))
+                for i in ids:
+                    ps = parts.get(int(i))
+                    if not ps:
+                        continue
+                    geom = ps[0] if len(ps) == 1 else shapely.MultiPolygon(ps)
+                    geoms.append(geom)
+                    s = sl[i - 1]
+                    ex, ey = tr * (cx[i] + 0.5, cy[i] + 0.5)
+                    lon, lat = to_ll.transform(ex, ey)
+                    in_square = bool(sq_x0 <= ex < sq_x1 and sq_y0 < ey <= sq_y1)
+                    in_zone, claimed = zone_keeps(
+                        to_ll, zn, band, (lon, lat, ey), (tr * (s[1].start, 0))[0],
+                        (tr * (s[1].stop, 0))[0], in_square, owned_squares,
+                    )
+                    # past the halo edge of the window that owns it (not the raster edge)
+                    touch = ((R0 > 0 and s[0].start <= R0) or (R1 < H and s[0].stop >= R1)
+                             or (C0 > 0 and s[1].start <= C0) or (C1 < W and s[1].stop >= C1))
+                    rows.append(
+                        {
+                            "tile_key": tk,
+                            "year": year,
+                            "parcel_id": len(rows) + 1,
+                            "area_m2": float(cnt[i]) * PX_M2,
+                            "n_parts": len(ps),
+                            "ext_h_px": s[0].stop - s[0].start,
+                            "ext_w_px": s[1].stop - s[1].start,
+                            "touches_window_edge": bool(touch),
+                            "in_utm_zone": in_zone,
+                            "in_mgrs_square": in_square,
+                            "claimed": claimed,
+                            **{k: float(v[i]) for k, v in attrs.items()},
+                        }
+                    )
+        prof["t_poly"] += time.perf_counter() - t
+        _probe(prof, "loop")
+        del inst
 
     t = time.perf_counter()
     out = out_dir / f"{tk}.parquet"
