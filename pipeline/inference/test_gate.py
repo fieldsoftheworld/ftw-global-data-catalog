@@ -223,3 +223,13 @@ def test_summary_passes_only_a_clean_complete_year(tmp_path):
     assert json.loads(a.out.read_text())["gpu"] == {"H100": 1, "A100": 1}
     val.iloc[:1].to_csv(vd / "shard_0.csv", index=False)  # b was never validated
     assert gate.summary(a) == 1
+
+
+def test_summary_fails_without_validate_shards(tmp_path):
+    scan = tmp_path / "scan.csv"
+    scan.write_text("tile_key,path,qa_flags\n")
+    a = argparse.Namespace(year=2025, scan=scan, validate_dir=tmp_path / "none", release=None,
+                           out=tmp_path / "gate.json")
+    (tmp_path / "none").mkdir()
+    assert gate.summary(a) == 1
+    assert not a.out.exists()

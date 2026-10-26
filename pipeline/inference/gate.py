@@ -341,6 +341,9 @@ def validate(a: argparse.Namespace) -> int:
 def summary(a: argparse.Namespace) -> int:
     qa = pd.read_csv(a.scan, low_memory=False)
     shards = sorted(a.validate_dir.glob("*.csv"))
+    if not shards:
+        print(f"no validate CSVs in {a.validate_dir}", file=sys.stderr)
+        return 1
     val = pd.concat([pd.read_csv(p) for p in shards], ignore_index=True)
     flags = Counter(f for fl in qa.qa_flags.fillna("") for f in str(fl).split(",") if f)
     tiles = qa[qa.path.fillna("").astype(str).str.endswith(".tif")]
