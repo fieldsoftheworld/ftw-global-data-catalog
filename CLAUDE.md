@@ -74,6 +74,12 @@ python3 tools/upload_data.py [--confirm]    # staged data files
   failed listing is not proof that objects are absent. A dry run still works and shows every
   file as changed. `upload_data.py` refuses a blind `--confirm` the same way (an empty or
   failed listing).
+- `upload_data.py` checks every object it uploaded against the local file by size and ETag,
+  multipart included (the MD5 of the part MD5s; the part size, 8 or 16 MiB, follows from the
+  part count and the size), and exits 1 on a mismatch. Change detection compares multipart
+  objects on size alone unless `--hash`. `--verify-only` checks the whole staging tree without
+  uploading, and `--public-check N` also reads the first and last 64 KiB of N files from
+  `public_base`.
 - **Raster year snapshot:** `publish.py` overwrites a `raster/{year}/*` object only while the
   bucket still holds the ETag recorded in `tools/raster_snapshot.json`. One that changed
   out of band is **skipped** — the rest of the catalog still publishes — and the run exits
