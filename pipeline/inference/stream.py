@@ -30,15 +30,15 @@ from pathlib import Path
 import numpy as np
 import pyarrow.parquet as pq
 import rasterio
-import torch  # noqa: F401  # before ONNX Runtime, so torch's CUDA libraries load first
-import onnxruntime as ort
 from affine import Affine
 from rasterio.io import MemoryFile
 
-from nodata import NODATA_FILLS
+# predict imports torch, whose CUDA libraries must load before ONNX Runtime's
 from predict import BATCH, OVERLAP, PATCH, UP, predict_tile
+from nodata import NODATA_FILLS
 from qa import input_stats, output_stats, provenance, to_tags, write_sidecar
 from run import INPUT_BANDS, ZSTD_LEVEL, cuda_options, model_contract, output_key, write_score
+import onnxruntime as ort
 
 USER_AGENT = "ftw-global-data-catalog (+https://github.com/fieldsoftheworld/ftw-global-data-catalog)"
 QUARTERS = ("Q1", "Q2", "Q3", "Q4")

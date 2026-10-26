@@ -29,12 +29,12 @@ from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import numpy as np
-import torch  # noqa: F401  # before ONNX Runtime
-import onnxruntime as ort
 
-import golden
+# predict imports torch, whose CUDA libraries must load before ONNX Runtime's
 from predict import BATCH, OVERLAP, PATCH, UP, predict_tile
+import golden
 from qa import model_sha256, provenance
+import onnxruntime as ort
 
 FULL = golden.Crop("full_tile", "48PWR_0_0", 2025, 0, 0, 10008, 10008)
 # full-tile pixels covered only by patches that also lie inside the top_left crop
