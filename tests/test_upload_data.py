@@ -6,13 +6,15 @@ catalog. It admits a file only when both gates pass. The path gate admits only
 files under data_dir. The extension gate admits only the suffixes in
 PUBLISHABLE_SUFFIXES.
 
-This gate also checks that the script refuses an unedited config and that it
-exits with a message when data_dir is wrong.
+This gate also checks that the script refuses an unedited config, that it
+exits with a message when data_dir is wrong, and that the multipart ETag it
+computes for verification is the one S3 gives the object.
 
 No network, no AWS, no credentials.
 
 Run: python3 tests/test_upload_data.py
 """
+import hashlib
 import io
 import sys
 import tempfile
@@ -23,11 +25,16 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 
 import upload_data  # noqa: E402
+from publish import Upload  # noqa: E402
 from upload_data import (  # noqa: E402
+    MIB,
     PUBLISHABLE_SUFFIXES,
     collect_data_uploads,
     data_root,
+    expected_etag,
     is_data_publishable,
+    mismatches,
+    part_size,
     unedited_sentinels,
 )
 
@@ -167,6 +174,66 @@ with tempfile.TemporaryDirectory() as tmp:
     check(code == 1, f"the sentinel guard refuses to upload, got {code}")
     check("EXAMPLE-BUCKET" in out.getvalue(),
           "the guard names the sentinel it found")
+
+# --- multipart ETags ----------------------------------------------------
+check(part_size(150_019_978, 18) == 8 * MIB, "18 parts of 143 MiB are 8 MiB parts")
+check(part_size(150_019_978, 9) == 16 * MIB, "9 parts of 143 MiB are 16 MiB parts")
+check(part_size(200_000 * MIB, 10_000) == 20 * MIB,
+      "past 10,000 parts the CLI grows the part to a whole MiB")
+
+
+def s3_etag(data: bytes, part: int) -> str:
+    """What S3 reports for ``data`` uploaded in ``part``-byte parts."""
+    chunks = [data[i:i + part] for i in range(0, len(data), part)]
+    joined = b"".join(hashlib.md5(c).digest() for c in chunks)
+    return f"{hashlib.md5(joined).hexdigest()}-{len(chunks)}"
+
+
+with tempfile.TemporaryDirectory() as tmp:
+    root = Path(tmp)
+    blob = bytes(range(256)) * (81_920 + 3)  # 20 MiB and a little
+    big = root / "big.tif"
+    big.write_bytes(blob)
+    small = write(root / "small.parquet", "small")
+    for part in (8 * MIB, 16 * MIB):
+        tag = s3_etag(blob, part)
+        check(expected_etag(big, tag) == tag, f"multipart ETag at {part // MIB} MiB parts")
+    single = hashlib.md5(b"small").hexdigest()
+    check(expected_etag(small, f'"{single}"') == single, "a single-part ETag is the MD5")
+
+    ups = [Upload(big, "p/raster/big.tif", "x"), Upload(small, "p/index/small.parquet", "x")]
+    good = {"p/raster/big.tif": (len(blob), s3_etag(blob, 8 * MIB)),
+            "p/index/small.parquet": (5, single)}
+    check(not any(mismatches(ups, good).values()), "matching objects pass")
+    bad = mismatches(ups, {"p/raster/big.tif": (len(blob), s3_etag(blob[::-1], 8 * MIB))})
+    check(bad == {"missing": ["p/index/small.parquet"], "size": [],
+                  "etag": ["p/raster/big.tif"]},
+          f"a same-size object with other bytes fails on its ETag: {bad}")
+    short = mismatches(ups[1:], {"p/index/small.parquet": (4, single)})
+    check(short["size"] == ["p/index/small.parquet"], "a truncated object fails on size")
+
+    # --verify-only exits 1 on a mismatch and 0 when the bucket matches
+    config = {
+        "write_prefix": "s3://a-bucket/p",
+        "public_base": "https://data.example.org/p",
+        "publish_dir": "catalog",
+        "data_dir": str(root / "staging"),
+    }
+    write(root / "staging/index/small.parquet", "small")
+    argv, real_load, real_index = sys.argv, upload_data.load_config, upload_data.remote_data_index
+    sys.argv = ["upload_data.py", "--verify-only"]
+    upload_data.load_config = lambda *a, **k: config
+    try:
+        codes = []
+        for listing in ({"p/index/small.parquet": (5, single)},
+                        {"p/index/small.parquet": (5, "0" * 32)}):
+            upload_data.remote_data_index = lambda u, c, listing=listing: listing
+            with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+                codes.append(upload_data.main())
+    finally:
+        sys.argv, upload_data.load_config = argv, real_load
+        upload_data.remote_data_index = real_index
+    check(codes == [0, 1], f"--verify-only exits 0 on a match and 1 on a mismatch: {codes}")
 
 if errors:
     print("\n".join(f"error  {e}" for e in errors))

@@ -20,16 +20,23 @@ uploads. The path gate admits only files under ``data_dir``. The extension
 gate admits only the suffixes in PUBLISHABLE_SUFFIXES. Both apply. It never
 deletes, exactly as ``publish.py`` never deletes.
 
-**Change detection is weaker here than it is for the catalog.** A multipart
-ETag is not an MD5, so a multipart object compares on size alone — re-hashing
-a multi-gigabyte PMTiles archive on every run is not viable. A truncated
-object of the correct size stays accepted on every later run. Use ``--force``
-after you replace a file with one of the same size.
+A multipart ETag is the MD5 of the part MD5s plus ``-N``. Change detection
+compares a multipart object on size alone unless ``--hash`` is given, because
+re-hashing every multi-gigabyte archive on each dry run is slow. After an
+upload every uploaded object is checked against the local file by size and
+ETag, multipart included, and the run exits 1 on a mismatch.
+
+    python3 tools/upload_data.py --verify-only            # check the whole staging tree
+    python3 tools/upload_data.py --verify-only --public-check 50   # and 50 public reads
 """
 from __future__ import annotations
 
 import argparse
+import hashlib
+import random
 import sys
+import urllib.request
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
@@ -42,11 +49,111 @@ from publish import (  # noqa: E402
     is_publishable,
     is_unchanged,
     load_config,
+    md5,
     remote_index,
     split_s3_uri,
     unedited_sentinels,
     upload_all,
 )
+
+
+MIB = 1024 * 1024
+# aws s3 cp splits at multipart_chunksize: 8 MiB by default, 16 MiB where a
+# profile sets it (r1's uploads used 16 MiB)
+PART_SIZES = (8 * MIB, 16 * MIB)
+HASH_WORKERS = 8
+EDGE = 64 * 1024
+USER_AGENT = "ftw-global-data-catalog upload check"
+
+
+def part_size(size: int, parts: int) -> int:
+    """The part size of a ``parts``-part upload of ``size`` bytes.
+
+    One of PART_SIZES when it fits; otherwise the whole MiB the CLI grows its
+    chunk to when a file would need more than 10,000 parts.
+    """
+    for p in PART_SIZES:
+        if (parts - 1) * p < size <= parts * p:
+            return p
+    p = -(-size // parts)
+    return -(-p // MIB) * MIB
+
+
+def expected_etag(path: Path, remote_etag: str) -> str:
+    """The ETag S3 gives ``path`` when it is uploaded the way ``remote_etag`` was."""
+    tag = remote_etag.strip('"')
+    if "-" not in tag:
+        return md5(path)
+    parts = int(tag.rsplit("-", 1)[1])
+    size = part_size(path.stat().st_size, parts)
+    digests = b""
+    with path.open("rb") as handle:
+        for chunk in iter(lambda: handle.read(size), b""):
+            digests += hashlib.md5(chunk).digest()  # noqa: S324 - S3 ETag
+    return f"{hashlib.md5(digests).hexdigest()}-{parts}"  # noqa: S324
+
+
+def mismatches(
+    uploads: list[Upload], index: dict[str, tuple[int, str]],
+) -> dict[str, list[str]]:
+    """Keys missing from ``index``, of another size, or with another ETag."""
+    missing = [u.key for u in uploads if u.key not in index]
+    present = [u for u in uploads if u.key in index]
+    size = [u.key for u in present if index[u.key][0] != u.local.stat().st_size]
+    todo = [u for u in present if u.key not in size]
+    with ThreadPoolExecutor(HASH_WORKERS) as pool:
+        tags = list(pool.map(lambda u: expected_etag(u.local, index[u.key][1]), todo))
+    etag = [u.key for u, t in zip(todo, tags) if t != index[u.key][1].strip('"')]
+    return {"missing": missing, "size": size, "etag": etag}
+
+
+def public_check(
+    uploads: list[Upload], public_base: str, prefix: str, n: int, seed: int = 0,
+) -> list[str]:
+    """Read the first and last 64 KiB of ``n`` objects from the public URL.
+
+    Each must equal the local bytes, and the total in Content-Range must equal
+    the local size. Returns the keys that fail.
+    """
+    sample = random.Random(seed).sample(uploads, min(n, len(uploads)))
+    failed = []
+    for u in sample:
+        url = f"{public_base.rstrip('/')}/{u.key[len(prefix):].lstrip('/')}"
+        size = u.local.stat().st_size
+        with u.local.open("rb") as handle:
+            head = handle.read(EDGE)
+            handle.seek(max(0, size - EDGE))
+            tail = handle.read()
+        ok = True
+        for start, want in ((0, head), (max(0, size - EDGE), tail)):
+            req = urllib.request.Request(url, headers={
+                "User-Agent": USER_AGENT,
+                "Range": f"bytes={start}-{start + len(want) - 1}",
+            })
+            try:
+                with urllib.request.urlopen(req, timeout=60) as resp:
+                    got = resp.read()
+                    total = resp.headers.get("Content-Range", "").rsplit("/", 1)[-1]
+            except OSError as exc:
+                print(f"  public read failed: {url}: {exc}", file=sys.stderr)
+                ok = False
+                break
+            if got != want or total != str(size):
+                ok = False
+        if not ok:
+            failed.append(u.key)
+    return failed
+
+
+def report(found: dict[str, list[str]]) -> bool:
+    """Print the mismatches; True when there are none."""
+    bad = [k for keys in found.values() for k in keys]
+    for kind, keys in found.items():
+        if keys:
+            print(f"  {kind}: {len(keys)}", file=sys.stderr)
+    for key in bad[:20]:
+        print(f"    {key}", file=sys.stderr)
+    return not bad
 
 
 def remote_data_index(
@@ -177,6 +284,22 @@ def main() -> int:
         "--retries", type=int, default=4,
         help="retries per object on a transient S3 failure (default: 4)",
     )
+    parser.add_argument(
+        "--hash", action="store_true",
+        help="compare multipart objects by ETag too, not size alone (reads every file)",
+    )
+    parser.add_argument(
+        "--verify-only", action="store_true",
+        help="upload nothing; check every staged file against the bucket by size and ETag",
+    )
+    parser.add_argument(
+        "--no-verify", action="store_true",
+        help="skip the size and ETag check of the uploaded objects",
+    )
+    parser.add_argument(
+        "--public-check", type=int, default=0, metavar="N",
+        help="also read the first and last 64 KiB of N files from public_base",
+    )
     args = parser.parse_args()
 
     config = load_config()
@@ -196,6 +319,20 @@ def main() -> int:
         print(f"nothing under {base}/ to upload", file=sys.stderr)
         return 1
 
+    if args.verify_only:
+        index = remote_data_index(uploads, config)
+        if not index:
+            sys.exit("remote listing failed or empty; nothing verified")
+        print(f"verifying {len(uploads)} file(s) against s3://{bucket}/{prefix}")
+        ok = report(mismatches(uploads, index))
+        if args.public_check:
+            failed = public_check(uploads, config["public_base"], prefix, args.public_check)
+            print(f"public reads: {min(args.public_check, len(uploads)) - len(failed)} "
+                  f"of {min(args.public_check, len(uploads))} match")
+            ok &= not failed
+        print("all match" if ok else "MISMATCH: re-upload the files above with --force")
+        return 0 if ok else 1
+
     index = {} if args.force else remote_data_index(uploads, config)
     if not index and not args.force and args.confirm:
         # Err-toward-upload is right for a dry run; on --confirm it just
@@ -209,6 +346,11 @@ def main() -> int:
         if args.force
         or not is_unchanged(u, index, multipart_matches_on_size=True)
     ]
+    if args.hash and not args.force:
+        changing = {u.key for u in changed}
+        kept = [u for u in uploads if u.key not in changing]
+        stale = {k for keys in mismatches(kept, index).values() for k in keys}
+        changed += [u for u in kept if u.key in stale]
 
     print(f"data_dir:    {base}/")
     print(f"target:      s3://{bucket}/{prefix}")
@@ -240,6 +382,22 @@ def main() -> int:
             print(f"  {key}", file=sys.stderr)
         return 1
     print(f"\nuploaded {len(changed)} file(s)")
+    if args.no_verify:
+        return 0
+    after = remote_data_index(changed, config)
+    if not after:
+        print("could not list the bucket to verify the upload", file=sys.stderr)
+        return 1
+    if not report(mismatches(changed, after)):
+        print("MISMATCH after upload: re-run with --force for the files above",
+              file=sys.stderr)
+        return 1
+    print(f"verified {len(changed)} file(s) by size and ETag")
+    if args.public_check:
+        failed = public_check(changed, config["public_base"], prefix, args.public_check)
+        if failed:
+            print(f"public reads differ for {len(failed)} file(s)", file=sys.stderr)
+            return 1
     return 0
 
 
