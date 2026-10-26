@@ -82,9 +82,8 @@ Four scripts turn probability rasters into released GeoParquet. They run in
 order, and each writes a tree the next one reads.
 
 `outlines.py` vectorizes the probabilities in windows with a core of 8,192
-pixels and a halo of 512. It calls `fbp.methods.parse` with the BoundaryVote
-instance method, so this one script needs the private `fbp` package described
-below. Core centroid ownership decides which window keeps a parcel, which
+pixels and a halo of 512. It runs BoundaryVote as `fbp.FTW_2E` from the
+[`ftw-fbp`](https://pypi.org/project/ftw-fbp/) package. Core centroid ownership decides which window keeps a parcel, which
 holds down duplicates, though a parcel wider than the halo can still be
 truncated or duplicated and is flagged with `touches_window_edge`. Ownership
 follows the tile raster's own bounds and the MGRS longitude bands, including
@@ -438,20 +437,15 @@ for trading precision against recall.
 
 ## Reproducing this
 
-Stages 1, 4 and 5 run on public inputs with public tools. Stage 2 needs the FTW
+Stages 1, 3, 4 and 5 run on public inputs with public tools. Stage 2 needs the FTW
 model checkpoint, which is released separately by the
 [FTW project](https://fieldsofthe.world) along with its model card. Stage 1
 needs CDSE S3 credentials, which any user can obtain through
 [CDSE S3 access](https://documentation.dataspace.copernicus.eu/APIs/S3.html).
 
-Stage 3 is the one gap. `outlines.py` calls `fbp.methods.parse`, and no
-BoundaryVote implementation is vendored here. The private `fbp` package is not
-on PyPI, and it is not the unrelated `fbp` 1.3.6 published there, which does
-not expose `fbp.methods`. It must provide the production method
-`nbg-pb-h0.01-t0.3+R35+F10+G2+A900`; `--backend fast` adds `+q1` and needs that
-variant. Until the package is released, the outline stage requires separately
-authorized access, and it fails with one message naming that need rather than
-once per tile. The other three post-processing scripts run without it.
+Stage 3 runs BoundaryVote from [`ftw-fbp`](https://pypi.org/project/ftw-fbp/), which
+`pipeline/postprocessing/requirements.txt` installs. `fbp.FTW_2E` is the production method,
+recorded as `nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1`.
 
 ### The 2026-10 rerun (r1) is not this code
 

@@ -29,18 +29,22 @@ MP.loader.exec_module(mp)
 
 def test_boundaryvote_spec_is_the_published_one():
     assert ol.SPEC == "nbg-pb-h0.01-t0.5+R25+F10+G2+A900"
-    assert ol.SPEC + "+q1" == "nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1"
-    assert subprocess.run(
-        [sys.executable, str(PP / "outlines.py"), "--help"], capture_output=True, text=True
-    ).stdout.count("fast (default") == 1
+    assert ol.STAMP == {"spec": "nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1", "backend": "fast"}
+
+
+def test_fingerprint_keeps_the_backend_entry(tmp_path):
+    """Outlines written while ``--backend fast`` was a flag must still resume."""
+    src = tmp_path / "score.tif"
+    src.write_bytes(b"x")
+    assert json.loads(ol.fingerprint(src, 2025, 8192, 512, 0.0))[4] == "fast"
 
 
 def test_the_spec_is_part_of_the_outline_fingerprint(tmp_path, monkeypatch):
     src = tmp_path / "score.tif"
     src.write_bytes(b"x")
-    before = ol.fingerprint(src, 2025, 8192, 512, "fast", 0.0)
+    before = ol.fingerprint(src, 2025, 8192, 512, 0.0)
     monkeypatch.setattr(ol, "SPEC", ol.SPEC.replace("t0.5", "t0.3"))
-    assert ol.fingerprint(src, 2025, 8192, 512, "fast", 0.0) != before
+    assert ol.fingerprint(src, 2025, 8192, 512, 0.0) != before
 
 
 def test_every_year_has_land_cover_vintages_that_never_pass_the_product_year():
