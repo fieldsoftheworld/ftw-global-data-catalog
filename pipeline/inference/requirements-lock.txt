@@ -20,7 +20,7 @@ cuda-bindings==13.4.4
     # via torch
 cuda-pathfinder==1.8.4
     # via cuda-bindings
-cuda-toolkit==13.0.2
+cuda-toolkit[cudart,cufft,cufile,cupti,curand,cusolver,cusparse,nvjitlink,nvrtc,nvtx]==13.0.2
     # via torch
 filelock==4.2.4
     # via torch
@@ -93,7 +93,7 @@ packaging==26.3
     # via onnxruntime-gpu
 protobuf==7.36.2
     # via onnxruntime-gpu
-pyarrow==24.0.0
+pyarrow==26.0.0
     # via -r requirements-lock.in
 pyparsing==3.3.3
     # via rasterio
@@ -105,8 +105,6 @@ s3transfer==0.19.3
     # via boto3
 scipy==1.18.0
     # via -r requirements-lock.in
-setuptools==81.0.0
-    # via torch
 six==1.17.0
     # via python-dateutil
 sympy==1.14.0
