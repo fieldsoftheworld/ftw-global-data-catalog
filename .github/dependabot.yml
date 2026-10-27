@@ -1,32 +1,29 @@
 version: 2
+# One PR a week per ecosystem: every update, major included, lands in a single grouped PR.
 updates:
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
+      day: monday
     groups:
       actions:
         patterns: ["*"]
 
+  # torch and ONNX Runtime stay at the versions the golden self-test passed with, because H100
+  # and A100 outputs agree within 1/255 only on these. They move by hand, with a new self-test.
+  # Only pipeline/inference lists them.
   - package-ecosystem: pip
     directories:
+      - /pipeline/inference
       - /pipeline/mosaics
       - /pipeline/postprocessing
     schedule:
       interval: weekly
+      day: monday
     groups:
       python:
-        update-types: [minor, patch]
-
-  # torch and ONNX Runtime stay at the versions the golden self-test passed with: H100 and
-  # A100 outputs agree within 1/255 only on these, so they move with a new self-test, by hand.
-  - package-ecosystem: pip
-    directory: /pipeline/inference
-    schedule:
-      interval: weekly
-    groups:
-      python:
-        update-types: [minor, patch]
+        patterns: ["*"]
     ignore:
       - dependency-name: torch
       - dependency-name: onnxruntime
