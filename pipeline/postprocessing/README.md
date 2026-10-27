@@ -332,14 +332,15 @@ would reserve 40G for tasks that mostly need 1 GB.
 | `simplify.sbatch` < 40 MB, 32 tasks | 1 CPU, 2G | 38 MB file: 0.9 GB, 11 s |
 | `simplify.sbatch` 40-200 MB, 16 tasks | 1 CPU, 8G | about 25 times the file size |
 | `simplify.sbatch` >= 200 MB, 8 tasks | 1 CPU, 40G | 931 MB file (largest of 2025): 23.5 GB, 3 min |
-| `merge.sbatch` | 6 CPUs, 64G, DuckDB 48 GB | production merge: 10-24 min, 4-5 cores busy |
+| `merge.sbatch` | 6 CPUs, 64G, DuckDB 48 GB | published-run merge: 10-24 min, 4-5 cores busy |
 | `fiboa.sbatch` (submits only) | 1 CPU, 2G | seconds |
 | zone jobs | `fiboa_tiers.py` and `fiboa_ranges.py submit` | see [Converting large zones in ranges](#converting-large-zones-in-ranges) |
 | `qa_vector.sbatch` | 4 CPUs, 20G, DuckDB 16 GB | not measured on a full year |
-| `compact.sbatch` | 1 CPU, 8G | production: up to 7.3 GB, 15 min a task at 40 tasks a year |
+| `compact.sbatch` | 1 CPU, 8G | published run: up to 7.3 GB, 15 min a task at 40 tasks a year |
 
-The merge figures come from the production repository's merge of 2017-2025, which had 16 CPUs
-and the same 48 GB DuckDB limit. Compaction is not part of the chain. Run it once the year has merged, and add
+The merge figures come from the merges of the published 2017-2025 vectors, which had 16 CPUs
+and the same 48 GB DuckDB limit. Compaction is not part of the chain. Run it once the year has
+merged, and add
 `DELETE_ORIGINAL=1` to remove each raw tile after its compact file is verified:
 
 ```sh
