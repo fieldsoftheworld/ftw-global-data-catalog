@@ -12,6 +12,9 @@ would run, so a cluster and AWS can split one year by shard. Layout under s3://B
     raster/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile}.tif   the score COG, at the bucket's own key
     _qa/{year}/{tile}.json    sidecar (uploaded first)
 
+The outline fleet (``pipeline/postprocessing/aws``) uses the same queue with ``--outputs
+outlines``: a tile is finished once ``outlines/{year}/{tile}.parquet`` exists.
+
 A claim whose owner stopped heart-beating (STALE_S) or wrote hb/{id}.dead is taken over by
 claiming the next attempt number; tiles that already have a COG are skipped (``todo``). Nothing is
 ever deleted. Rails-reserved claims are never taken over.
@@ -134,7 +137,7 @@ def cmd_reserve(a: argparse.Namespace) -> None:
 
 def _missing(s3: Any, a: argparse.Namespace) -> list[tuple[str, str]]:
     lines = _get(s3, a.bucket, f"{a.prefix}units/{a.unit}.txt").splitlines()
-    have = {y: _cogs(s3, a, y) for y in sorted({ln.split()[0] for ln in lines})}
+    have = {y: _finished(s3, a, y) for y in sorted({ln.split()[0] for ln in lines})}
     return [(y, t) for y, t in (ln.split() for ln in lines) if t not in have[y]]
 
 
@@ -142,6 +145,16 @@ def _cogs(s3: Any, a: argparse.Namespace, year: str) -> set[str]:
     """Tile keys with a COG under raster/{year}/zone=*/gzd=*/{tile}/{tile}.tif."""
     keys = _list(s3, a.bucket, f"{a.prefix}raster/{year}/")
     return {k.rsplit("/", 1)[1][:-4] for k in keys if k.endswith(".tif") and k.count("/") == 3}
+
+
+def _outlines(s3: Any, a: argparse.Namespace, year: str) -> set[str]:
+    """Tile keys with an outline file at outlines/{year}/{tile}.parquet."""
+    keys = _list(s3, a.bucket, f"{a.prefix}outlines/{year}/")
+    return {k[: -len(".parquet")] for k in keys if k.endswith(".parquet") and "/" not in k}
+
+
+def _finished(s3: Any, a: argparse.Namespace, year: str) -> set[str]:
+    return (_outlines if a.outputs == "outlines" else _cogs)(s3, a, year)
 
 
 def cmd_todo(a: argparse.Namespace) -> None:
@@ -201,7 +214,8 @@ def cmd_status(a: argparse.Namespace) -> None:
     print(f"boxes heart-beating: {sum((now - hb[k]).total_seconds() < STALE_S for k in boxes)}")
     years = sorted({u.split("_")[0] for u in units})
     for y in years:
-        print(f"raster/{y}: {len(_cogs(s3, a, y))} COGs")
+        what = "COGs" if a.outputs == "raster" else "outline files"
+        print(f"{a.outputs}/{y}: {len(_finished(s3, a, y))} {what}")
 
 
 def main() -> None:
@@ -230,6 +244,9 @@ def main() -> None:
             p.add_argument("units", nargs="+")
         if name in ("todo", "done"):
             p.add_argument("--unit", required=True)
+        if name in ("todo", "requeue", "status"):
+            p.add_argument("--outputs", choices=("raster", "outlines"), default="raster",
+                           help="what a finished tile leaves: a score COG or an outline file")
         if name == "done":
             p.add_argument("--rc", type=int, required=True)
             p.add_argument("--tiles", type=int, default=0)
