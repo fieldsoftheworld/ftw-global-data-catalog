@@ -25,11 +25,11 @@ os.environ.setdefault("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
 # refuse them before any request. Remote reads carry their own options; see
 # terrain.VSICURL_OPTS.
 
+import contourrs
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import rasterio
-import rasterio.features
 import shapely
 from fbp import FTW_2E, run_windowed
 from pyproj import CRS, Transformer
@@ -565,7 +565,7 @@ def _run_tile(
                 owned = lut[inst[y0:y1, x0:x1]]
                 wtr = tr * rasterio.Affine.translation(x0, y0)
                 parts: dict[int, list] = {}
-                for g, v in rasterio.features.shapes(owned, mask=owned > 0, transform=wtr):
+                for g, v in contourrs.shapes(owned, mask=owned > 0, transform=wtr):
                     parts.setdefault(int(v), []).append(shapely.geometry.shape(g))
                 for i in ids:
                     ps = parts.get(int(i))

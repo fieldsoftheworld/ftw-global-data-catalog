@@ -20,7 +20,9 @@ uncovered (`G2`), and parcels under 900 m² dropped (`A900`). It runs with
 `fast=True` (`+q1`), an integer h-maxima and bucket-queue watershed on the 1/255 grid
 the scores are stored on, as the published run did. The method id is part of each
 tile's resume fingerprint, so an outline tile written under another id is recomputed.
-Only `outlines.py` needs fbp; the other stages run without it.
+Only `outlines.py` needs fbp; the other stages run without it. It polygonizes the parcels with
+[`contourrs`](https://pypi.org/project/contourrs/), whose polygons are identical to
+`rasterio.features.shapes` at 4-connectivity.
 
 ```sh
 .venv/bin/python pipeline/postprocessing/outlines.py --year 2025 \
