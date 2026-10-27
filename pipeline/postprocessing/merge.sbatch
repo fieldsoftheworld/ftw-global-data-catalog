@@ -8,7 +8,7 @@
 #SBATCH --output=pp-merge-%j.out
 #
 # merge_polygons.py over one simplified year, then cross_zone_seams.py. DuckDB holds 48 GB and
-# spills to $OUT/scratch/duckdb. Sizing from the production merge of 2017-2025 (DuckDB at 48 GB):
+# spills to $OUT/scratch/duckdb. Sizing from the published run's merge of 2017-2025 (DuckDB at 48 GB):
 # 10-24 min, 4-5 cores busy on average, memory at the 64G limit.
 #
 #   sbatch --export=ALL,YEAR=2025,OUT=$OUT,TILES=$PWD/tiles.txt pipeline/postprocessing/merge.sbatch

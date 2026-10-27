@@ -8,7 +8,7 @@
 #SBATCH --output=pp-compact-%A_%a.out
 #
 # compact_outlines.py encode over one shard of $OUT/outlines/$YEAR into $OUT/outlines-compact;
-# the array index is the shard and NSHARDS the number of shards. Sizing from the production
+# the array index is the shard and NSHARDS the number of shards. Sizing from the published
 # compaction of 2017-2025 (40 tasks a year): MaxRSS up to 7.3 GB, 4G ran out on some tiles
 # under 300 MB, at most 15 min a task. DELETE_ORIGINAL=1 removes each raw tile once its compact
 # file is verified; run it only after merge has succeeded.
