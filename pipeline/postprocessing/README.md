@@ -293,3 +293,58 @@ Where this directory differs:
 The sea rule here reads the OSM land-polygons snapshot you prepare. The published
 run used the polygons of 2026-10-04 (`land-polygons-split-4326`), so a later
 download can differ along coasts.
+
+## Running a year on SLURM
+
+`run_year.sh` submits one year's chain, each stage `afterok` on the one before:
+`outlines.sbatch` (an array over the tile list) → `simplify.sbatch` (one array per size class) →
+`merge.sbatch` → `fiboa.sbatch`, which runs `fiboa_ranges.py submit` and then submits
+`qa_vector.sbatch` after every zone job it started. The zone jobs follow from each zone's merged
+row count, so they can only be submitted once merge has finished.
+
+```sh
+export SBATCH_ACCOUNT=<account> SBATCH_PARTITION=cpu EXCLUDE='rails[04-15]'
+export AWS_ACCESS_KEY_ID=<EODATA key> AWS_SECRET_ACCESS_KEY=<EODATA secret>
+OUT=/scratch/ftw/2025 SCORES=/scratch/ftw/raster INDEX_DIR=index TILES=tiles_2025.txt \
+  FTW_LAND_POLYGONS=land_polygons.parquet pipeline/postprocessing/run_year.sh 2025
+```
+
+`OUT` is the run root, and the stages write `outlines/`, `simplified/`, `merged/`, `fiboa/`,
+`qa/vector_{year}.json`, `scratch/` and `logs/` under it. `TILES` lists the year's expected
+tiles and is merge's `--keep-list`. `EMPTY` optionally lists tiles without a score COG (no
+source mosaic): outlines skips them and merge receives them as `--empty-list`. sbatch reads the
+account and partition from `SBATCH_ACCOUNT` and `SBATCH_PARTITION`; `EXCLUDE` (the GPU nodes on
+Rails, as above) goes to every job, including the zone jobs. The jobs run
+`$REPO/.venv/bin/python` unless `PY` names another interpreter, and they read the environment
+`run_year.sh` exports, so set the EODATA keys (see the QA context above) before running it.
+`TILES_PER_TASK` (12) and `THROTTLE` (50) set the outline array, `AFTER=<job id>` holds the
+first stage until that job succeeds, and `FROM=simplify|merge|fiboa|qa` starts the chain at a
+later stage. Every stage resumes on its fingerprints, so after a failed or timed-out task,
+running the same command again redoes only the work that is not current.
+
+The sizes below were measured on Rails. Simplification needs about 25 times the outline file's
+size in memory, so it runs as three arrays by file size; sizing every task for the largest tile
+would reserve 40G for tasks that mostly need 1 GB.
+
+| job | per task | measured |
+| --- | --- | --- |
+| `outlines.sbatch`, one worker | 2 CPUs, 26G, 8 h | 17.5 GB MaxRSS, ~24 min a tile with `fbp.run_windowed` |
+| `simplify.sbatch` < 40 MB, 32 tasks | 1 CPU, 2G | 38 MB file: 0.9 GB, 11 s |
+| `simplify.sbatch` 40-200 MB, 16 tasks | 1 CPU, 8G | about 25 times the file size |
+| `simplify.sbatch` >= 200 MB, 8 tasks | 1 CPU, 40G | 931 MB file (largest of 2025): 23.5 GB, 3 min |
+| `merge.sbatch` | 6 CPUs, 64G, DuckDB 48 GB | production merge: 10-24 min, 4-5 cores busy |
+| `fiboa.sbatch` (submits only) | 1 CPU, 2G | seconds |
+| zone jobs | `fiboa_tiers.py` and `fiboa_ranges.py submit` | see [Converting large zones in ranges](#converting-large-zones-in-ranges) |
+| `qa_vector.sbatch` | 4 CPUs, 20G, DuckDB 16 GB | not measured on a full year |
+| `compact.sbatch` | 1 CPU, 8G | production: up to 7.3 GB, 15 min a task at 40 tasks a year |
+
+The merge figures come from the production repository's merge of 2017-2025, which had 16 CPUs
+and the same 48 GB DuckDB limit. Compaction is not part of the chain. Run it once the year has merged, and add
+`DELETE_ORIGINAL=1` to remove each raw tile after its compact file is verified:
+
+```sh
+sbatch --array=0-39 --export=ALL,YEAR=2025,NSHARDS=40,OUT=$OUT pipeline/postprocessing/compact.sbatch
+```
+
+Each `.sbatch` file can also be submitted on its own from the repository root (`REPO` defaults to
+the submit directory); its header lists the variables it needs.
