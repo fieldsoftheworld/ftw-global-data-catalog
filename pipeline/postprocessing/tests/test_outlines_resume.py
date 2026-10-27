@@ -143,10 +143,10 @@ def test_truncated_or_unstamped_output_is_not_current(tmp_path, corrupt):
 
 
 def test_schema_is_declared_not_inferred_from_the_first_tile():
-    """pa.Table.from_pylist(rows) inferred the schema from whichever tile finished.
+    """An inferred schema varies between tiles.
 
-    A column that happened to be all-NULL in one tile came out a different type
-    there, so tiles written by different workers disagreed.
+    A column that is all-NULL in one tile would get a different type there, so tiles
+    written by different workers would disagree.
     """
     assert ol.SCHEMA.names[0] == "tile_key"
     assert ol.SCHEMA.names[-1] == "geometry"
@@ -225,10 +225,9 @@ def _run(cwd: Path, *args: str) -> subprocess.CompletedProcess:
 
 
 def test_an_empty_tile_list_file_means_zero_tiles_not_every_tile(tmp_path):
-    """An empty list is falsy, so `names or glob(...)` globbed the whole year.
+    """An empty list is falsy, so `names or glob(...)` would glob the whole year.
 
-    The caller asked for nothing and would have got ~7,467 tiles; the
-    "no input scores" guard could not fire either.
+    The caller asks for nothing and would get ~7,467 tiles.
     """
     for tk in ("31UFS", "31UFT", "31UFU"):
         _score_cog(tmp_path / f"staging-data/raster/2025/{tk}/{tk}.tif")

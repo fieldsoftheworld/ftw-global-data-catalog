@@ -54,8 +54,8 @@ REAL_TILES = [
     ("15TVG_0_0", 399_960.0, 4_700_040.0, (400_000.0, 4_600_000.0, 500_000.0, 4_700_000.0)),
     ("01KFS_0_0", 600_000.0, 7_700_020.0, (600_000.0, 7_600_000.0, 700_000.0, 7_700_000.0)),
     # southern hemisphere, the two tiles the origin rounding was suspected of mis-owning.
-    # 59GQQ_0_1 is a stacked sub-tile: its square is the 59GQP cell, NOT the one its key
-    # names -- see test_a_stacked_sub_tile_owns_the_cell_its_key_does_not_name.
+    # 59GQQ_0_1 is a stacked sub-tile whose square is the 59GQP cell, not the one its key
+    # names (see test_a_stacked_sub_tile_owns_the_cell_its_key_does_not_name).
     ("59GQQ_0_0", 699_960.0, 5_500_000.0, (700_000.0, 5_400_000.0, 800_000.0, 5_500_000.0)),
     ("59GQQ_0_1", 699_960.0, 5_399_920.0, (700_000.0, 5_300_000.0, 800_000.0, 5_400_000.0)),
     ("60GTU_0_0", 199_980.0, 5_400_040.0, (200_000.0, 5_300_000.0, 300_000.0, 5_400_000.0)),
@@ -80,7 +80,7 @@ def _old_square(c: float, f: float) -> tuple[float, float, float, float]:
 
 @pytest.mark.parametrize("tile,c,f,expected", REAL_TILES, ids=[t[0] for t in REAL_TILES])
 def test_mgrs_square_is_the_100km_cell_the_raster_covers(tile, c, f, expected):
-    "The cell the pixels snap to -- for a `_r_c` sub-tile not the cell its key names."
+    "The cell the pixels snap to, which for a `_r_c` sub-tile is not the cell its key names."
     assert _real(c, f) == expected, tile
 
 
@@ -94,10 +94,10 @@ def _row_letter(y: float) -> str:
 
 
 def test_a_stacked_sub_tile_owns_the_cell_its_key_does_not_name():
-    """59GQQ_0_1 owns the 59GQ**P** cell, and that is correct, not a bug to fix.
+    """59GQQ_0_1 owns the 59GQP cell, and that is correct, not a bug to fix.
 
     A `_0_1` sub-tile starts 100,080 m below `_0_0`, so its origin rounds to the
-    *neighbouring* row: the square follows the raster's pixels, which is what
+    neighbouring row. The square follows the raster's pixels, which is what
     in_mgrs_square must test, while the tile key still carries `_0_0`'s letters.
     27 published items are of this shape (scanned over all 67,197 raster items);
     reconciling the square with the key would hand each of them a 100 km cell its
@@ -111,14 +111,14 @@ def test_a_stacked_sub_tile_owns_the_cell_its_key_does_not_name():
 
 
 def test_stacked_sub_tiles_abut_but_leave_an_80m_unowned_seam():
-    """Measured loss: the 80 m strip between two stacked sub-tiles belongs to nobody.
+    """Known loss: the 80 m strip between two stacked sub-tiles belongs to nobody.
 
     The squares abut exactly at y = 5,400,000, but the rasters abut 80 m lower, at
-    5,399,920: that band has pixels only in `_0_0` while belonging to `_0_1`'s
-    square, so its parcels get in_mgrs_square=False in `_0_0` and have no pixels at
-    all in `_0_1`, and merge_polygons drops them. ~8 km2 per affected item; only
-    59GQQ has both siblings published, so 9 items, one per year. Everywhere else the
-    80 m raster overhang covers the seam -- this is the one gap the snapping leaves.
+    5,399,920. That band has pixels only in `_0_0` but belongs to `_0_1`'s square, so
+    its parcels get in_mgrs_square=False in `_0_0`, have no pixels in `_0_1`, and
+    merge_polygons drops them. That is ~8 km2 per affected item, and only 59GQQ has both
+    siblings published, so 9 items, one per year. Everywhere else the 80 m raster
+    overhang covers the seam, so this is the one gap the snapping leaves.
     """
     upper = _real(699_960.0, 5_500_000.0)  # 59GQQ_0_0
     lower = _real(699_960.0, 5_399_920.0)  # 59GQQ_0_1
@@ -133,7 +133,7 @@ def test_stacked_sub_tiles_abut_but_leave_an_80m_unowned_seam():
 
 @pytest.mark.parametrize("tile,c,f,expected", REAL_TILES, ids=[t[0] for t in REAL_TILES])
 def test_no_tile_loses_area_to_a_shrunken_square(tile, c, f, expected):
-    """The old formula claimed 90.08 x 90.08 km (81%): a 5 km frame owned by nobody."""
+    """The old formula claimed 90.08 x 90.08 km (81%), leaving a 5 km frame unowned."""
     x0, y0, x1, y1 = _real(c, f)
     assert (x1 - x0) * (y1 - y0) == pytest.approx(ol.MGRS_SQUARE_M**2)
     ox0, oy0, ox1, oy1 = _old_square(c, f)
@@ -154,17 +154,15 @@ def test_neighbouring_tiles_own_exactly_abutting_squares():
 
 
 def test_a_parcel_straddling_a_same_zone_seam_is_claimed_by_both_neighbours():
-    """Abutting squares make the cross-tile seam union load-bearing, not optional.
+    """Abutting squares make parcels on a tile boundary depend on the seam union.
 
-    Under the old 5 km inset no owned parcel could reach the raster edge. Now the
-    two rasters share only a 40-120 m overlap band (here 399,960-400,080), so a
-    field spanning the seam is cut at each raster's own data edge -- which
-    `touches_window_edge` does not flag, by construction (outlines only marks the
-    *window* borders interior to the raster) -- and each clipped half's pixel mass
-    centroid falls inside its own tile's square. Both halves are therefore owned
-    and published, and only fiboa_convert's seam union collapses them into one
-    field; above ~1.2 km each side of the seam even that fails (see
-    test_a_wide_field_across_a_same_zone_seam_is_not_rejoined).
+    The two rasters share only a 40-120 m overlap band (here 399,960-400,080), so a
+    field spanning the seam is cut at each raster's own data edge, which
+    `touches_window_edge` does not flag (outlines marks only window borders inside the
+    raster), and each clipped half's pixel-mass centroid falls inside its own tile's
+    square. Both halves are therefore owned and published, and only fiboa_convert's
+    seam union collapses them into one field. Above ~1.2 km each side of the seam even
+    that fails (see test_a_wide_field_across_a_same_zone_seam_is_not_rejoined).
     """
     west = _real(300_000.0, 6_600_000.0)   # 32VLL, data 300,000-400,080
     east = _real(399_960.0, 6_600_000.0)   # its eastern neighbour, data 399,960-500,040
@@ -238,7 +236,7 @@ def test_absent_dem_gives_nan_slope_not_flat_slope():
 
 
 def test_non_utm_crs_is_rejected_before_any_network_work():
-    "utm_zone is None for 4326/3857/54009/5041; the old code raised TypeError late."
+    "utm_zone is None for 4326/3857/54009/5041, so the CRS is checked before aux_rasters."
     for epsg in ("EPSG:4326", "EPSG:3857", "EPSG:5041"):
         assert CRS(epsg).utm_zone is None
     assert CRS("EPSG:32632").utm_zone == "32N"

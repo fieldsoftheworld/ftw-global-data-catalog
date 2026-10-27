@@ -90,8 +90,7 @@ def test_documented_invocation_with_disjoint_lists_works(tmp_path):
     """tiles.txt and empty.txt are disjoint, and simplify carries empty tiles forward.
 
     So a verified-empty tile always arrives as an input that is not in the keep
-    list. `unexpected = have - expected` aborted on exactly that: measured
-    "unexpected input tiles: ['31UFT']", exit 1, on the README's own command.
+    list, and `unexpected = have - expected` would abort the README's own command.
     """
     _tile(tmp_path / "simplified/2025/31UFS.parquet", "31UFS", 3)
     _tile(tmp_path / "simplified/2025/31UFT.parquet", "31UFT", 0)
@@ -143,11 +142,10 @@ def test_missing_aux_without_allow_missing_still_fails(tmp_path):
 
 
 def test_over_matching_aux_glob_does_not_duplicate_parcels(tmp_path):
-    """`{aux}/{zone}*.parquet` matched a stray rerun file and the join fanned out.
+    """A `{aux}/{zone}*.parquet` glob matches a stray rerun file and the join fans out.
 
-    Measured: 3 parcels in, "3 -> 3 parcels" printed, parcels_out 3 in
-    _summary.json, 6 rows over 3 distinct keys written -- duplicate parcel ids in
-    the release, which catalog/vector/{year}/AGENTS.md promises cannot happen.
+    3 parcels in would print "3 -> 3 parcels" yet write 6 rows over 3 distinct keys,
+    duplicate parcel ids that catalog/vector/{year}/AGENTS.md promises cannot happen.
     """
     _tile(tmp_path / "simplified/2025/31UFS.parquet", "31UFS", 3)
     _aux(tmp_path / "aux/2025/31UFS.parquet", "31UFS", 3)
@@ -220,7 +218,7 @@ def test_a_fully_resumed_run_succeeds_and_keeps_its_totals(tmp_path):
 
 
 def test_temp_file_is_pid_scoped_and_not_a_parquet_glob_match(tmp_path):
-    "The corruption class main fixed in 7b889a1: a shared *.parquet temp in the tree."
+    "A shared *.parquet temp file in the published tree is picked up and clobbered."
     _tile(tmp_path / "simplified/2025/31UFS.parquet", "31UFS", 3)
     assert _run(tmp_path, "--no-aux", *_lists(tmp_path, "31UFS\n")).returncode == 0
     part = _written(tmp_path).parent
@@ -327,8 +325,8 @@ def test_a_mixed_year_states_both_methods_not_the_first_one(tmp_path):
     """Two zones built by different methods: the release says so, in both ids.
 
     With one spec the `" / ".join` is indistinguishable from "first spec wins", which is
-    the behaviour the union exists to prevent -- measured: reducing the join to
-    `specs[0]` left the whole suite green.
+    the behaviour the union exists to prevent, and without this test reducing the join to
+    `specs[0]` leaves the suite green.
     """
     import fiboa_convert as fc
 

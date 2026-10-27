@@ -69,7 +69,7 @@ def test_partial_nodata_cells_are_all_flagged(tmp_path):
 
     with rasterio.open(src) as ds:
         got = context.nodata_cells(ds, h40, w40)
-        # the old path, for the record
+        # the decimated-value comparison, which misses cells
         old = ds.read(1, out_shape=(h40, w40), resampling=Resampling.nearest) == ND
 
     assert np.array_equal(got, any_nd), f"{(any_nd & ~got).sum()} cells missed"
