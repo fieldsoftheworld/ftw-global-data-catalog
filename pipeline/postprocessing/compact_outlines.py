@@ -5,9 +5,10 @@ encode: {in-root}/YEAR/TILE.parquet -> {out-root}/YEAR/TILE.parquet. The compact
         coordinates (same rings and vertices); only then is it moved into place (and the original
         removed with --delete-original).
 decode: compact file -> GeoParquet-compatible WKB file with the original geo metadata.
-Outlines live on the 2.5 m UTM grid; compact files store grid integers; decoding gives coordinates
-equal to the original to float precision (the PROJ inverse can differ in the last bit between
-machines).
+Outlines live on the 2.5 m UTM grid, so compact files store grid integers. Decoding gives
+coordinates equal to the original to float precision (the PROJ inverse can differ in the last
+bit between machines).
+
 Usage:
     python pipeline/postprocessing/compact_outlines.py encode --year 2023 [--in-root outlines]
         [--out-root outlines-compact] [--shard 0 --num-shards 8] [--min-mb 300] [--delete-original]
@@ -105,7 +106,7 @@ def encode_file(src, dst, tile_key):
 
 
 def _verify(path, original, epsg):
-    """The compact file holds the original attributes and the grid integers of the original geometry."""
+    """Check that the compact file holds the original attributes and grid integers."""
     back = pq.read_table(path)
     if back.num_rows != original.num_rows:
         raise ValueError("row count differs")

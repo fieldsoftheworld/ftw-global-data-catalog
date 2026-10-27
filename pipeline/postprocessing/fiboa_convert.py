@@ -52,10 +52,10 @@ MAX_PARCEL_M2 = 5.0e6
 def require_geo_metadata(src: Path) -> None:
     """Fail early if the GeoParquet ``geo`` footer was stripped from ``src``.
 
-    DuckDB only auto-converts the BLOB ``geometry`` column to GEOMETRY because of
-    that footer. Without it ``merge_polygons``' ST_Hilbert(ST_Centroid(...)) and
-    this module's ST_MakeValid both die with a bare "Binder Error: No function
-    matches 'ST_Centroid(BLOB)'" that says nothing about the real cause.
+    DuckDB converts the BLOB ``geometry`` column to GEOMETRY only because of that
+    footer. Without it ``merge_polygons``' ST_Hilbert(ST_Centroid(...)) and this
+    module's ST_MakeValid both fail with "Binder Error: No function matches
+    'ST_Centroid(BLOB)'", which does not name the cause.
     """
     md = pq.ParquetFile(src).schema_arrow.metadata or {}
     if b"geo" not in md:
@@ -71,8 +71,8 @@ def method_ids(summary: dict | None = None, spec: str | None = None) -> str:
     merge already joined them: one id normally, several for a mixed year, and
     ``SPEC_UNRECORDED`` as one of them when some tiles carried no readable stamp. A
     ``_summary.json`` written before the stamp existed has no ``spec`` at all. ``spec``
-    (from ``--spec``) names the method for the unrecorded tiles -- and only those --
-    without claiming the run recorded it.
+    (from ``--spec``) names the method for the unrecorded tiles only, without claiming
+    the run recorded it.
     """
     stated = (summary or {}).get("spec") or SPEC_UNRECORDED
     if spec:
@@ -181,17 +181,13 @@ WINDOW_MIN_OVERLAP_FRAC = 0.1
 STRIP_PAD_DEG = 0.0005
 GRID_DEG = 0.01
 
-#: Two pieces are the same field seen twice only if they genuinely OVERLAP.
+#: Two pieces are the same field seen twice only if they overlap.
 #:
-#: The cross-tile branch used to accept a bare shared edge of JOIN_MIN_EDGE_M = 20 m
-#: with no overlap at all, but a shared edge is *adjacency*, not duplication: two
-#: distinct neighbouring fields that merely touch along a tile seam were fused into
-#: one parcel with a blended score (measured: two 4,668 m2 fields touching along
-#: x = -3.0 published as one 9,336 m2 feature at score 70, while the identical pair
-#: inside a single tile correctly published two). Seams run for tens of thousands of
-#: km, so that bar produced false merges at scale. Both branches now require the
-#: same positive fractional overlap; cross-tile additionally needs an absolute
-#: floor so two slivers cannot pair up.
+#: A shared edge alone means two neighbouring fields. Joining on one fuses them into a
+#: parcel with a blended score (two 4,668 m2 fields touching along x = -3.0 became one
+#: 9,336 m2 feature at score 70), and seams run for tens of thousands of km. Both
+#: branches require the same fractional overlap, and the cross-tile branch also needs an
+#: absolute floor so two slivers cannot pair up.
 MIN_OVERLAP = (
     f"ST_Area(x) >= {WINDOW_MIN_OVERLAP_FRAC} * amin "
     f"AND (NOT xt OR ST_Area(x) >= {JOIN_MIN_OVERLAP_M2})"
@@ -209,9 +205,8 @@ IN_STRIP = (
 def repaired(src: Path, where: str) -> str:
     """Validity-repaired parcels of the zone file matching ``where``.
 
-    Repair only: every size filter now runs once, after the seam union, in
-    ``fiboa_common.final_select``. The hemisphere split this used to carry is
-    gone too -- see ``fiboa_common.zone_utm``.
+    Repair only. Every size filter runs once, after the seam union, in
+    ``fiboa_common.final_select``, and metric work uses ``fiboa_common.zone_utm``.
     """
     return (
         f"SELECT tile_key || '-' || parcel_id AS id, tile_key, g, pf_mean "
@@ -324,8 +319,7 @@ def zone_extent(con: duckdb.DuckDBPyConnection, src: Path, zone: str, year: int)
         f"from read_parquet('{src}')"
     ).fetchall()[0]
     if row is None or row[4] == 0 or any(v is None for v in row[:4]):
-        # An all-NULL aggregate is a row, so the old `assert bbox is not None`
-        # could not catch it and float(None) raised naming nothing.
+        # An all-NULL aggregate is still a row, so the values are checked too.
         raise SystemExit(f"zone {zone} ({year}): {src} has no usable rows ({row})")
     return [float(v) for v in row[:4]], int(row[4])
 
@@ -402,10 +396,10 @@ def convert(
 def _validator(zone: str, n_in: int):
     """Check the staged file before it is published; ``write_sorted`` discards it on raise.
 
-    The seam union and the size filters only ever reduce the row count, so more
-    rows out than in means the inputs fanned out (a duplicated ``(tile_key,
-    parcel_id)`` key, for instance) and the published parcel ids are not unique --
-    which ``catalog/vector/{year}/AGENTS.md`` promises they are.
+    The seam union and the size filters only reduce the row count, so more rows out
+    than in means the inputs fanned out (a duplicated ``(tile_key, parcel_id)`` key, for
+    instance) and the parcel ids are not unique, which ``catalog/vector/{year}/AGENTS.md``
+    promises they are.
     """
 
     def check(tmp: Path) -> None:

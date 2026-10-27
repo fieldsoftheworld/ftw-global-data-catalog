@@ -38,14 +38,14 @@ CLAIM_STEP_M = 200.0  # spacing of the claim test points along a parcel's centro
 
 
 def lon_in_zone(zn: int, band: str, lon: float) -> bool:
-    """Is ``lon`` inside UTM zone ``zn`` on the grid the Sentinel-2 tiles use?
+    """True when ``lon`` is inside UTM zone ``zn`` on the grid the Sentinel-2 tiles use.
 
-    Band V (56-64N) is not on the nominal 6-degree pitch: 32V is widened to 3-12E
-    and 31V narrowed to 0-3E, the convention MGRS and the Sentinel-2 tiling grid
-    both follow. Testing 32V against the nominal 6-12E band rejects every parcel
-    between 3E and 6E -- Bergen 5.32, Stavanger 5.73, Jaeren 5.60 -- and because
-    no 31V tile covers 3-6E those parcels are lost outright rather than claimed by
-    a neighbour. Band V lies well inside this catalog's 65.82N extent.
+    Band V (56-64N) is not on the nominal 6-degree pitch. 32V is widened to 3-12E and
+    31V narrowed to 0-3E, the convention MGRS and the Sentinel-2 tiling grid both
+    follow. Testing 32V against the nominal 6-12E band would reject every parcel between
+    3E and 6E (Bergen 5.32, Stavanger 5.73, Jaeren 5.60), and because no 31V tile covers
+    3-6E those parcels would be lost rather than claimed by a neighbour. Band V lies well
+    inside this catalog's 65.82N extent.
 
     Band X (72-84N) has its own, different exceptions (32X/34X/36X do not exist)
     and begins above that extent, so it is rejected rather than guessed at.
@@ -121,7 +121,7 @@ def claimer(lon: float, lat: float, squares: frozenset) -> int | None:
 
 
 def claims(zone: int, points: list[tuple[float, float]], squares: frozenset) -> bool:
-    """Does a tile of ``zone`` keep a parcel of its own square that lies outside its zone?
+    """True when a tile of ``zone`` keeps a parcel of its own square outside its zone.
 
     Any of ``points`` unowned and claimed by ``zone`` is enough, so a field that a cut-off
     neighbour piece would cede is kept whole.

@@ -14,8 +14,8 @@ from rasterio.warp import transform_bounds
 from rasterio.windows import Window
 from terrain import CROP, VSICURL_OPTS, WATER, _dem_name, _warp
 
-#: B04 nodata in the CDSE sentinel-2-global-mosaics product (int16). Verified against
-#: the band's own ``nodata`` on open rather than trusted.
+#: B04 nodata in the CDSE sentinel-2-global-mosaics product (int16), checked against the
+#: band's own ``nodata`` on open.
 NODATA = -32768
 
 #: Columns of the QA source index that ``mosaics/download.py --index-output`` writes.
@@ -26,11 +26,9 @@ INDEX_COLUMNS = ["quarter", "b04_s3_href", "b04_s3_endpoint"]
 
 #: IO annual land-cover vintages sampled per product year, for ``frac_crops_ever``.
 #:
-#: ``year`` used to be accepted and ignored, so the 2020 product was scored against
-#: 2024 land cover -- reading the future. ``frac_crops_ever`` is "cropland in ANY
-#: sampled year", so the sample must never reach past the product year. IO's series
-#: currently ends at 2024, which is why 2025 shares 2024's vintages. ``frac_water`` is
-#: the deliberate exception, see ``WATER_VINTAGE``.
+#: ``frac_crops_ever`` is cropland in any sampled year, so the sample never reaches past
+#: the product year. IO's series currently ends at 2024, which is why 2025 shares 2024's
+#: vintages. ``frac_water`` is the exception, see ``WATER_VINTAGE``.
 LULC_BY_YEAR = {
     2017: (2017,),
     2018: (2017,),
@@ -65,12 +63,10 @@ def lulc_years(year: int) -> tuple[int, ...]:
 def dem_lons(west: float, east: float) -> list[int]:
     """Integer DEM longitudes covering [west, east], handling the antimeridian.
 
-    ``transform_bounds`` reports a dateline-crossing tile as west > east -- a
-    measured zone-1 tile gives w = 178.913, e = -178.779 -- and NOT as an unwrapped
-    span. The old guard tested ``e - w > 180``, which is -357.69 for that tile, so
-    the plain branch ran and ``range(178, -178)`` enumerated NOTHING: no DEM tile was
-    fetched at all, silently, and every parcel on an antimeridian tile got a NaN
-    elevation (published as slope 0.0 before the slope fix).
+    ``transform_bounds`` reports a dateline-crossing tile as west > east (a zone-1 tile
+    gives w = 178.913, e = -178.779), not as an unwrapped span, so the test is
+    ``east < west``. A plain ``range(178, -178)`` would fetch no DEM tile and leave every
+    parcel on an antimeridian tile without an elevation.
     """
     if east < west:
         return [*range(math.floor(west), 180), *range(-180, math.ceil(east))]
@@ -99,20 +95,18 @@ QA_FACTOR = 4
 
 
 def nodata_cells(ds, h40: int, w40: int, stripe: int = 512) -> np.ndarray:
-    """Which 40 m cells contain ANY nodata source pixel, reduced at FULL resolution.
+    """Which 40 m cells contain any nodata source pixel, reduced at full resolution.
 
-    Never compare a resampled value to an exact sentinel. ``ds.read(1,
-    out_shape=...)`` at 4x decimation is served from the COG's overviews, which are
-    built by interpolation, so a cell straddling a swath edge comes back as some
-    blend that never equals -32768. Measured on a ragged-swath fixture with cubic
-    overviews, the value comparison missed 494 of 2,086 partially-nodata cells
-    (24%) -- and ``read_masks`` at a reduced ``out_shape`` is defeated the same way,
-    because GDAL derives the overview mask from the overview values. So the
-    reduction happens here, over full-resolution pixels, in row stripes aligned to
-    the 4x factor.
+    A decimated read (``ds.read(1, out_shape=...)``) is served from the COG's overviews,
+    which are interpolated, so a cell straddling a swath edge comes back as a blend that
+    never equals -32768. On a ragged-swath fixture with cubic overviews that comparison
+    missed 494 of 2,086 partially-nodata cells (24%). ``read_masks`` at a reduced
+    ``out_shape`` fails the same way, because GDAL derives the overview mask from the
+    overview values. The reduction therefore runs here over full-resolution pixels, in row
+    stripes aligned to the 4x factor.
 
-    A cell counts as nodata for its quarter if ANY of its 16 source pixels is,
-    which is the conservative reading frac_nodata_1q/3q exist to give.
+    A cell counts as nodata for its quarter if any of its 16 source pixels is, which is
+    the conservative reading frac_nodata_1q/3q are meant to give.
     """
     f = QA_FACTOR
     if (ds.height, ds.width) != (h40 * f, w40 * f):
@@ -143,7 +137,7 @@ def _require_credentials() -> None:
 
 
 def aux_rasters(tk: str, year: int, index: Path, crs, tr10, shape10) -> dict:
-    "Per-tile context rasters: nodata-quarter count (40 m), and on a 30 m grid:"
+    "Per-tile context: nodata-quarter count (40 m); DEM, slope, water and crops (30 m)."
     vintages = lulc_years(year)
     t = pq.read_table(index, filters=[("tile_key", "=", tk)], columns=INDEX_COLUMNS).to_pylist()
     if len(t) != 4 or {r["quarter"] for r in t} != {"Q1", "Q2", "Q3", "Q4"}:
@@ -162,8 +156,7 @@ def aux_rasters(tk: str, year: int, index: Path, crs, tr10, shape10) -> dict:
                     )
                 nod += nodata_cells(ds, h40, w40)
         except RasterioIOError as exc:
-            # A bare GDAL message names neither the tile nor which of a tile's four
-            # quarterly hrefs failed; mirror terrain._warp's guard and say.
+            # Name the tile and quarter, which a bare GDAL message omits (as terrain._warp does).
             raise RasterioIOError(f"{tk} {r['quarter']}: cannot read {src}: {exc}") from exc
     h30, w30 = math.ceil(shape10[0] / 3), math.ceil(shape10[1] / 3)
     tr30 = tr10 * tr10.scale(3)

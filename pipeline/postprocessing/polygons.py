@@ -8,20 +8,19 @@ import shapely
 def simplify_coverage(geoms: np.ndarray, tolerance_m: float, label: str = "") -> np.ndarray:
     """Simplify the coverage so shared edges stay shared.
 
-    The whole valid coverage goes through ONE ``coverage_simplify`` pass. Splitting
-    it into a good half simplified by ``coverage_simplify`` and a bad half simplified
-    by per-geometry Douglas-Peucker at a different tolerance reintroduced exactly the
-    defects coverage simplification exists to avoid: measured 26.06 m2 of overlap and
-    15.29 m2 of gap across one shared 20-vertex edge, both under
-    ``fiboa_convert.JOIN_MIN_OVERLAP_M2`` = 100 m2, so the seam repair downstream
-    would never have noticed them. The same fixture through one whole-coverage pass
-    measures 0 m2 of each.
+    The whole coverage goes through one ``coverage_simplify`` pass. Simplifying the
+    coverage-invalid geometries separately with per-geometry Douglas-Peucker at another
+    tolerance creates the gaps and overlaps that coverage simplification avoids. On the
+    test fixture that gives 26.06 m2 of overlap and 15.29 m2 of gap across one shared
+    20-vertex edge, both under ``fiboa_convert.JOIN_MIN_OVERLAP_M2`` = 100 m2, so the
+    seam repair downstream would not catch them. One whole-coverage pass gives 0 m2 of
+    each.
 
-    Invalid-coverage geometries therefore stay in the pass rather than being pulled
-    out of it, which would remove their neighbours' shared edges from the pass too.
-    They are repaired first, individually, and anything still invalid afterwards is
-    cleaned up with ``make_valid``, which only nodes and rebuilds -- it never moves a
-    vertex, so a shared edge survives it.
+    Invalid-coverage geometries therefore stay in the pass, since pulling them out would
+    also remove their neighbours' shared edges from it. They are repaired first,
+    individually, and anything still invalid afterwards is cleaned up with
+    ``make_valid``, which only nodes and rebuilds and never moves a vertex, so a shared
+    edge survives it.
     """
     if len(geoms) == 0:
         return geoms
@@ -35,8 +34,8 @@ def simplify_coverage(geoms: np.ndarray, tolerance_m: float, label: str = "") ->
     try:
         out = np.asarray(coarsen.coverage_simplify(out, tolerance_m, threads=1), dtype=object)
     except (shapely.errors.GEOSException, ValueError) as exc:
-        # Better an unsimplified coverage than one with fresh gaps: any per-geometry
-        # fallback would simplify the two sides of a shared edge independently.
+        # Return the coverage unsimplified rather than fall back per geometry, which would
+        # simplify the two sides of a shared edge independently and open gaps.
         print(f"  {label or 'coverage'}: not simplified ({exc})", flush=True)
         return out
     inv = ~shapely.is_valid(out)
@@ -46,10 +45,9 @@ def simplify_coverage(geoms: np.ndarray, tolerance_m: float, label: str = "") ->
     return out
 
 
-#: Per-parcel relative area change worth reporting. Coverage simplification moves
-#: shared edges, which is zero-sum across the coverage, so a *large* change on a
-#: single parcel is a symptom, not the job. ``is_valid`` is not a sufficient
-#: post-check on its own: a valid-but-wrong result passes it silently.
+#: Per-parcel relative area change worth reporting. Coverage simplification moves shared
+#: edges, which is zero-sum across the coverage, so a large change on one parcel points
+#: to a problem. ``is_valid`` alone would pass a valid but wrong result.
 AREA_DRIFT_FRAC = 0.25
 
 
@@ -71,14 +69,11 @@ def _report_area_drift(before: np.ndarray, after: np.ndarray, label: str) -> Non
 def _reject_missing(geoms: np.ndarray, label: str) -> None:
     """Refuse None up front, naming the tile and the offending indices.
 
-    ``coverage_invalid_edges`` does not keep a None input in place: it drops it and
-    pads the result with a trailing None, so ``[a, None, b]`` comes back as
-    ``[EMPTY, EMPTY, None]`` wherever the None was (verified shapely 2.1.2). Any mask
-    taken from that result is misaligned -- a real polygon gets flagged as invalid
-    coverage and the None is handed to ``coverage_simplify``, which dies with
-    "cannot reshape array of size 2 into shape (3,)". ``_polygonal`` likewise raised
-    AttributeError on None. Aligning masks by construction means never letting a
-    None into the array in the first place.
+    ``coverage_invalid_edges`` drops a None input and pads the result with a trailing
+    None, so ``[a, None, b]`` comes back as ``[EMPTY, EMPTY, None]`` (shapely 2.1.2). A
+    mask taken from that result is misaligned, and ``coverage_simplify`` then fails with
+    "cannot reshape array of size 2 into shape (3,)". ``_polygonal`` cannot take None
+    either, so None is rejected before any mask is built.
     """
     missing = np.nonzero(shapely.is_missing(geoms))[0]
     if len(missing):
@@ -100,10 +95,9 @@ def _polygonal(geoms: np.ndarray, label: str = "") -> np.ndarray:
         if parts:
             out[i] = shapely.union_all(parts)
         else:
-            # Nothing polygonal survived repair. The column is declared
-            # Polygon/MultiPolygon, so the old else-branch wrote a LineString into
-            # it; an empty polygon keeps the declared type and is dropped downstream
-            # by the NOT ST_IsEmpty(g) filters.
+            # Nothing polygonal survived repair. An empty polygon keeps the declared
+            # Polygon/MultiPolygon type, and the NOT ST_IsEmpty(g) filters drop it
+            # downstream.
             out[i] = shapely.Polygon()
             dropped += 1
     if dropped:
