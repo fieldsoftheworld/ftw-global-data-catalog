@@ -104,6 +104,19 @@ def process_tile(tk: str, year: int, tol: float, in_root: Path, out_root: Path) 
     return tk, len(simp), n0, n1, time.perf_counter() - t
 
 
+def by_size(tiles: list[str], src_dir: Path, min_mb: float, max_mb: float) -> list[str]:
+    """The tiles whose outline file is at least ``min_mb`` and under ``max_mb`` MB.
+
+    Peak memory is about 25 times the file size, so Slurm arrays are sized per class. A missing
+    file counts as 0 MB and fails in its worker as it would without the bounds.
+    """
+    def mb(t: str) -> float:
+        p = src_dir / f"{t}.parquet"
+        return p.stat().st_size / 1e6 if p.exists() else 0.0
+
+    return [t for t in tiles if min_mb <= mb(t) < max_mb]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--year", type=int, required=True)
@@ -117,6 +130,9 @@ def main() -> None:
         "--num-shards", type=int, default=int(os.environ.get("SLURM_ARRAY_TASK_COUNT", 1))
     )
     ap.add_argument("--workers", type=int, default=4)
+    ap.add_argument("--min-mb", type=float, default=0, help="skip outline files under this size")
+    ap.add_argument("--max-mb", type=float, default=float("inf"),
+                    help="skip outline files of this size or more")
     a = ap.parse_args()
     if a.in_root.resolve() == a.out_root.resolve():
         ap.error("input and output roots must differ")
@@ -127,7 +143,7 @@ def main() -> None:
         if a.tile_list
         else sorted(p.stem for p in (a.in_root / str(a.year)).glob("*.parquet"))
     )
-    tiles = tiles[a.shard :: a.num_shards]
+    tiles = by_size(tiles, a.in_root / str(a.year), a.min_mb, a.max_mb)[a.shard :: a.num_shards]
     tiles = [
         t
         for t in tiles
