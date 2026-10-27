@@ -11,7 +11,10 @@ import golden
 import qa
 from predict import NATIVE, OVERLAP, UP
 from qa import NODATA, input_stats, model_sha256, output_stats, provenance, to_tags
-from stream import MODEL_BANDS, QUARTERS, check_grid, is_stale, source_items, work_list, write_tile
+from stream import (
+    MODEL_BANDS, QUARTERS, check_grid, is_stale, release, source_items, to_shared, work_list,
+    write_shared, write_tile,
+)
 
 
 def _stack(h=64, w=96):
@@ -72,6 +75,30 @@ def test_write_tile_writes_the_cog_tags_and_sidecar(tmp_path):
     assert not is_stale(dst, "abc")
     assert is_stale(dst, "other")
     assert not is_stale(tmp_path / "missing.tif", "abc")
+
+
+def test_a_writer_process_writes_the_same_cog_from_shared_memory(tmp_path):
+    import multiprocessing
+    from concurrent.futures import ProcessPoolExecutor
+    from multiprocessing import shared_memory
+
+    out = np.random.default_rng(0).integers(0, 256, (2, 256, 256)).astype(np.uint8)
+    tr = Affine(2.5, 0, 500000, 0, -2.5, 5000000)
+    tags = {"tile_key": "31UFS_0_0", **to_tags("prov_", {"fingerprint": "abc"})}
+    qa = {"in": {"nodata_any": 0.0}, "prov": {"fingerprint": "abc"}}
+    direct, proc = tmp_path / "direct/t.tif", tmp_path / "proc/t.tif"
+    write_tile(direct, tmp_path / "direct/qa.json", out, "EPSG:32631", tr, tags, qa, 128)
+    shm = to_shared(out)
+    name = shm.name
+    with ProcessPoolExecutor(1, mp_context=multiprocessing.get_context("spawn")) as pool:
+        fut = pool.submit(write_shared, name, out.shape, proc, tmp_path / "proc/qa.json",
+                          "EPSG:32631", tr, tags, qa, 128)
+        release(fut, shm)
+    with rasterio.open(direct) as a, rasterio.open(proc) as b:
+        np.testing.assert_array_equal(a.read(), b.read())
+        assert a.tags() == b.tags()
+    with pytest.raises(FileNotFoundError):
+        shared_memory.SharedMemory(name=name)
 
 
 def test_input_stats_nodata_per_quarter_and_any():
