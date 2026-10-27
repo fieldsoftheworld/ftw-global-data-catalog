@@ -20,4 +20,4 @@ jobs:
       - run: python -m pip install -r pipeline/postprocessing/requirements.txt pytest pyflakes
       - run: python -m pyflakes pipeline/postprocessing/*.py
       - run: python -c 'import duckdb; duckdb.sql("INSTALL spatial")'
-      - run: python -m pytest -q pipeline/postprocessing/tests
+      - run: python -m pytest -q pipeline/postprocessing/tests pipeline/postprocessing/aws
