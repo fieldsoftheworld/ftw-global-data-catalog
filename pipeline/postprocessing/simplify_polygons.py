@@ -86,20 +86,15 @@ def process_tile(tk: str, year: int, tol: float, in_root: Path, out_root: Path) 
     cols = {k: tbl[k] for k in tbl.column_names}
     for j, k in enumerate(("xmin", "ymin", "xmax", "ymax")):
         cols[k] = pa.array(b[:, j])
-    # area_m2 and n_parts describe the geometry, so they must describe the geometry
-    # actually written. Only the bounds and the WKB used to be refreshed, so a row
-    # measured area_m2 = 1006.0 against a written geometry of 250.9 m2 -- and
-    # merge_polygons reads area_m2 for both its --max-km2 cap and its _summary.json
-    # totals, so the cap filtered on and the release reported numbers that described
-    # a geometry nobody published. ``simp`` is in UTM metres, so its area is m2.
+    # area_m2 and n_parts must describe the geometry actually written, because
+    # merge_polygons reads area_m2 for its --max-km2 cap and its _summary.json totals.
+    # ``simp`` is in UTM metres, so its area is m2.
     cols["area_m2"] = pa.array(shapely.area(simp))
     cols["n_parts"] = pa.array(shapely.get_num_geometries(simp), type=pa.int64())
     cols["geometry"] = pa.array(shapely.to_wkb(back))
-    # Carrying the source schema metadata forward is load-bearing, not tidiness:
-    # the GeoParquet `geo` footer is the only reason DuckDB reads the BLOB geometry
-    # column as GEOMETRY. Drop it and merge_polygons' ST_Hilbert(ST_Centroid(...))
-    # and fiboa_convert's ST_MakeValid both die with "Binder Error: No function
-    # matches 'ST_Centroid(BLOB)'". fiboa_convert.require_geo_metadata checks for it.
+    # Keep the source schema metadata. Its GeoParquet `geo` footer is what makes DuckDB
+    # read the BLOB geometry column as GEOMETRY in merge_polygons and fiboa_convert
+    # (fiboa_convert.require_geo_metadata checks for it).
     write_atomic(pa.table(cols).replace_schema_metadata(tbl.schema.metadata), dst, fp)
     return tk, len(simp), n0, n1, time.perf_counter() - t
 

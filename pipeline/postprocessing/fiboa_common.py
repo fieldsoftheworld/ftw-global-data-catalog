@@ -37,15 +37,14 @@ def connect(threads: int, memory_limit: str, tmp_dir: Path) -> duckdb.DuckDBPyCo
 
 
 def zone_utm(geom: str) -> str:
-    """The zone's **north** UTM CRS, for every metric and every geometry comparison.
+    """The zone's north UTM CRS, for every metric and every geometry comparison.
 
-    326NN and 327NN differ only by a 10,000,000 m false northing, so areas,
-    perimeters and intersections are identical in either (measured: 49196.90717479
-    vs 49196.90717492 m2 for the same equator-straddling box). A *per-row*
-    hemisphere EPSG, however, places the two halves of an equator-straddling field
-    10,000 km apart -- northing -221.06 in 32630 against 9,999,778.94 in 32730 --
-    so ST_Intersects can never match them and no cross-equator seam join fires.
-    One CRS per zone keeps the arithmetic identical and the comparison meaningful.
+    326NN and 327NN differ only by a 10,000,000 m false northing, so areas, perimeters
+    and intersections are the same in either (49196.90717479 vs 49196.90717492 m2 for
+    the same equator-straddling box). A per-row hemisphere EPSG would place the two
+    halves of an equator-straddling field 10,000 km apart (northing -221.06 in 32630
+    against 9,999,778.94 in 32730), so ST_Intersects could never match them and no
+    cross-equator seam join would fire.
     """
     return f"ST_Transform({geom}, 'EPSG:4326', 'EPSG:326' || tile_key[1:2], true)"
 
@@ -65,10 +64,10 @@ MIN_PART_M2 = 900.0
 #: leaves half-pixel (3.125 m2) holes inside ~40% of parcels; larger holes (farm
 #: buildings, ponds, a neighbouring field) are kept.
 MIN_HOLE_M2 = 20.0
-#: Stands in for a BoundaryVote method id no tile recorded -- outlines written before the
-#: stamp existed, or a stamp that would not parse. Said by both the stage that finds the
-#: gap (``merge_polygons``) and the one that publishes it (``fiboa_convert``), so the two
-#: cannot drift: better an admitted unknown than a plausible-looking hardcoded string.
+#: Stands in for a BoundaryVote method id no tile recorded (outlines written before the
+#: stamp existed, or a stamp that would not parse). Both the stage that finds the gap
+#: (``merge_polygons``) and the one that publishes it (``fiboa_convert``) use it, so the
+#: two cannot drift, and an unknown method is stated as unknown instead of a guessed id.
 SPEC_UNRECORDED = "method id not recorded in the run"
 
 
@@ -91,28 +90,27 @@ def drop_small_holes(poly: str) -> str:
 def final_select(rows: str, cid: str, year: int, bbox: list[float], max_m2: float) -> str:
     """Final columns + hk from rows (id, tile_key, g, pf_mean), unsorted.
 
-    Both size filters, both metrics and the bbox are derived from the SAME final
-    geometry, **after** the seam union. Filtering earlier deleted real fields: a
-    field cut by a tile seam into two sub-``MIN_PARCEL_M2`` halves never reached
-    ST_Union_Agg and vanished from the release, while a cap applied to merge's
-    pre-union pixel area let a 6.4 km2 union through a 5 km2 cap. A bbox copied
-    from the source row likewise disagreed with a geometry that ST_MakeValid and
-    the part filter had since changed. Holes under ``MIN_HOLE_M2`` are filled in the
-    same pass, after the union, so a seam-cut field's halves cannot leave one behind.
+    Both size filters, both metrics and the bbox come from the same final geometry,
+    after the seam union. Filtering earlier would delete a field cut by a tile seam into
+    two halves under ``MIN_PARCEL_M2`` before ST_Union_Agg sees it, and a cap applied to
+    merge's pre-union pixel area let a 6.4 km2 union through a 5 km2 cap. A bbox copied
+    from the source row would disagree with a geometry that ST_MakeValid and the part
+    filter changed. Holes under ``MIN_HOLE_M2`` are filled in the same pass, after the
+    union, so a seam-cut field's halves cannot leave one behind.
     """
     score = "CAST(LEAST(100, GREATEST(0, ROUND(pf_mean * 100))) AS UTINYINT)"
     det = (
         f"TIMESTAMPTZ '{year}-01-01 00:00:00+00' AS \"determination:datetime\", "
         f"'{DET_METHOD}' AS \"determination:method\""
     )
-    # Branch on the geometry TYPE, not the part count: a one-part MULTIPOLYGON has
-    # ST_NumGeometries = 1 but is not a Polygon, so the ring functions in
-    # ``drop_small_holes`` return NULL for it and the row would vanish at the
-    # ``g IS NOT NULL`` filter below. Every MULTIPOLYGON is dumped, however many parts.
-    # Fill first, then filter: MIN_PART_M2 has to see the same post-fill part area
-    # that MIN_PARCEL_M2, the metrics and the bbox see, or a part just under 900 m2
-    # net of a small hole is deleted while the identical standalone Polygon -- filled
-    # by the ELSE branch before its own size test -- is published.
+    # Branch on the geometry type, not the part count. A one-part MULTIPOLYGON is not a
+    # Polygon, so the ring functions in ``drop_small_holes`` return NULL for it and the
+    # row would vanish at the ``g IS NOT NULL`` filter below. Every MULTIPOLYGON is
+    # dumped, however many parts it has.
+    # Fill first, then filter, so MIN_PART_M2 sees the same post-fill part area that
+    # MIN_PARCEL_M2, the metrics and the bbox see. Otherwise a part just under 900 m2 net
+    # of a small hole is deleted while the identical standalone Polygon (filled by the
+    # ELSE branch before its own size test) is published.
     parts = (
         f"SELECT id, tile_key, pf_mean, CASE WHEN ST_GeometryType(g) = 'MULTIPOLYGON' "
         f"THEN ST_Collect(list_filter(list_transform(ST_Dump(g), "

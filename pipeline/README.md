@@ -85,52 +85,60 @@ order, and each writes a tree the next one reads.
 
 `outlines.py` vectorizes the probabilities in windows with a core of 8,192
 pixels and a halo of 512. It runs BoundaryVote as `fbp.FTW_2E` from the
-[`ftw-fbp`](https://pypi.org/project/ftw-fbp/) package. Core centroid ownership decides which window keeps a parcel, which
-holds down duplicates, though a parcel wider than the halo can still be
-truncated or duplicated and is flagged with `touches_window_edge`. Ownership
-follows the tile raster's own bounds and the MGRS longitude bands, including
-the 31V/32V exception the Sentinel-2 grid uses.
+[`ftw-fbp`](https://pypi.org/project/ftw-fbp/) package. Each parcel is kept by
+the window whose core holds its centroid, which limits duplicates, though a
+parcel wider than the halo can still be truncated or duplicated and is flagged
+with `touches_window_edge`. A tile keeps the parcels whose centroid lies in its
+UTM zone and its 100 km MGRS square. Both tests use the tile raster's own bounds
+and the MGRS longitude bands, including the 31V/32V exception the Sentinel-2
+grid uses.
 
 This stage also attaches quality context to every parcel. `context.py` warps
 the Copernicus DEM GLO-30 and the Impact Observatory 10 m annual land cover
-over each window, and `outlines.py` reduces them to five per-parcel
+over each tile, and `outlines.py` reduces them to five per-parcel
 attributes: `frac_water`, `frac_crops_ever`, `slope_mean`, `frac_slope_gt30`
 and `elev_mean`. Land-cover vintages follow the product year through
 `context.LULC_BY_YEAR`, so a 2020 product is never scored against 2024 land
 cover, and a year absent from that table fails rather than borrowing another
-year's vintages. None of these four attributes filters anything, and none of
-them reaches the released file. See
+year's vintages. `frac_water` is the exception and always uses the 2024
+vintage. Only `frac_water` takes part in a retention test, and none of the five
+attributes reaches the released file. See
 [What is filtered, and what is not](#what-is-filtered-and-what-is-not).
 
 `simplify_polygons.py` simplifies at 5 m in UTM across the whole coverage in
 one pass, so edges shared between neighbors stay shared. Results are repaired
-rather than re-simplified per geometry, and attributes survive. The Rust
-implementation comes from the `coarsen` package on PyPI.
+rather than re-simplified per geometry, attributes are kept, and `area_m2` is
+recomputed from the simplified geometry. The coverage simplification comes from
+the `coarsen` package on PyPI (a Rust implementation).
 
-`merge_polygons.py` applies the only retention test in the pipeline,
-`in_utm_zone AND in_mgrs_square AND area_m2 <= 5e6`, and writes one partition
-per UTM zone. Zones resume on a fingerprint covering the input files and the
-filter, so regenerated inputs and changed flags are rewritten rather than
-skipped. A zone that retains nothing on a rerun has its partition removed, so
+`merge_polygons.py` applies the retention test
+`in_utm_zone AND in_mgrs_square AND area_m2 <= 5e6 AND frac_water < 0.7` and
+writes one partition per UTM zone. Zones resume on a fingerprint covering the
+input files and the filter, so regenerated inputs and changed flags are
+rewritten rather than skipped. A zone that retains nothing on a rerun has its partition removed, so
 no stale generation survives into conversion. Missing inputs fail unless
 `--allow-missing` is passed, and with it the summary records what was missing
-and the next stage stamps "INCOMPLETE" into the metadata.
+and the next stage stamps "INCOMPLETE" into the metadata. Merge ends with
+`cross_zone_seams.py`, which unions a parcel a tile claimed across a zone edge
+with the neighbouring zone's piece of the same field.
 
 `fiboa_convert.py` repairs geometry, joins parcels split across tile seams,
 and then, on the unioned geometry, fills interior rings under 20 m², drops
-parts and parcels below 900 m² and re-applies the 5 km² cap. The order
-matters. Filtering before the union deleted fields that a seam had cut into
-two sub-minimum halves, and a cap applied to the pre-union pixel area let an
-over-cap union through; the hole fill runs before both size tests, so a part
+parts and parcels below 900 m² and re-applies the 5 km² cap. With
+`--land-polygons` it then drops parcels with less than half their area on
+OpenStreetMap land (`sea_filter.py`). The size rules run after the union
+because filtering before it deleted fields that a seam had cut into two halves
+below the minimum, and a cap applied to the pre-union pixel area let an
+over-cap union through. The hole fill runs before both size tests, so a part
 and a standalone parcel of the same shape are judged on the same area.
 Polygonizing the 2.5 m probability raster leaves half-pixel (3.125 m²) holes
-inside roughly 40% of parcels — 20 m² is about three pixels, and larger holes
+inside roughly 40% of parcels. 20 m² is about three pixels, and larger holes
 (farm buildings, ponds, a neighbouring field) are kept. All metric
 work uses the zone's north UTM CRS, so the two halves of a field straddling
 the equator stay comparable. Output is
 `{year}/zone={NN}/utm{NN}.parquet`, sorted by Hilbert index, carrying fiboa
 v0.3.0 metadata and the nine released columns. The staged file is validated
-before publication: more rows out than in, or any duplicate parcel id, aborts
+before publication, and more rows out than in or any duplicate parcel id aborts
 the run.
 
 ## Stage 4: map tiles
@@ -414,19 +422,19 @@ Apart from the mask, a parcel is removed for the reasons below. The retention te
 which drops parcels a neighboring tile owns, parcels over the area cap and parcels that are
 at least 70% io-lulc 2024 water. `fiboa_convert.py` then
 drops parts and whole parcels under 900 m² after the seam union, and
-re-applies the cap to the unioned geometry. One geometry change is not a
-removal: interior rings under 20 m² are filled rather than published, so a
-parcel keeps its outline but loses the pixel-scale holes polygonization left
-in it. Nothing is removed by that step. The cap is read from merge's
+re-applies the cap to the unioned geometry. Interior rings under 20 m² are
+filled rather than published, which changes geometry but removes no parcel, so
+a parcel keeps its outline but loses the pixel-scale holes polygonization left
+in it. The cap is read from merge's
 `_summary.json` rather than hard-coded, so it traces back to merge's
 `--max-km2`; the 5 km² constant in `fiboa_convert.py` is only the fallback for
 a missing summary.
 
 Apart from the water rule, land cover and terrain are read per parcel only to describe it.
 `frac_crops_ever`, `slope_mean`, `frac_slope_gt30` and `elev_mean` appear in no retention
-test, and none of the five attributes is published: the released projection in
-`fiboa_common.py` selects nine columns, and `write_sorted` casts to that
-schema, so anything else is dropped structurally. Water, scrub and built-up
+test, and none of the five attributes is published, because the released
+projection in `fiboa_common.py` selects nine columns and `write_sorted` casts to
+that schema. Water, scrub and built-up
 ground can therefore carry predicted parcels (on added tiles, only within the
 crop-mask buffer), and a user who needs them gone
 has to mask them downstream without the attributes that would have helped.
@@ -454,24 +462,25 @@ needs CDSE S3 credentials, which any user can obtain through
 [CDSE S3 access](https://documentation.dataspace.copernicus.eu/APIs/S3.html).
 
 Stage 3 runs BoundaryVote from [`ftw-fbp`](https://pypi.org/project/ftw-fbp/), which
-`pipeline/postprocessing/requirements.txt` installs. `fbp.FTW_2E` is the production method,
-recorded as `nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1`.
+`pipeline/postprocessing/requirements.txt` installs. `fbp.FTW_2E` is the method of the
+published vectors, recorded as `nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1`.
 
-### How this code differs from the 2026-10 rerun (r1)
+### How this code differs from the 2026-10 rerun
 
-All nine years were regenerated by the production pipeline (`taylor-geospatial/global-ftw-2e`, run r1).
-This directory has the same BoundaryVote method, the claim rule with the same owned squares, the cross-zone seam pass, the 31V/32V band exception, and the water and sea rules.
-It differs from r1 in three places, so its output is close to r1 but not identical.
-r1 simplified OGC-invalid polygons separately with Douglas-Peucker at up to 1.2 m, and this code runs one coverage simplify over every polygon.
-r1 applied the 5 km² merge cap to the pixel-count area, and this code applies it to the area after simplification.
-r1 dropped pieces under 900 m² before the seam union as well as after it, and this code drops them only after it.
+All nine years were regenerated in October 2026 (the 2026-10 rerun) by an earlier, unpublished version of this pipeline.
+This code has the same BoundaryVote method, the claim rule with the same owned squares, the cross-zone seam pass, the 31V/32V band exception, and the water and sea rules.
+It differs from the rerun in three places that change the output, so its output is close to the rerun's but not identical.
+The rerun simplified OGC-invalid polygons separately with Douglas-Peucker at up to 1.2 m, and this code runs one coverage simplify over every polygon.
+The rerun applied the 5 km² merge cap to the pixel-count area, and this code applies it to the area after simplification.
+The rerun dropped pieces under 900 m² before the seam union as well as after it, and this code drops them only after it.
+[`postprocessing/README.md`](postprocessing/README.md#where-the-published-2017-2025-vectors-differ-from-this-code) lists these and the smaller differences.
 Each year's footer (`determination:details`) states what produced that year's file.
 
 ### The published descriptions
 
 The collection descriptions for all nine years are generated from the parquet footers the 2026-10 rerun wrote.
 Each footer records the BoundaryVote spec (`nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1`), the band order B04/B03/B02/B08 the model requires, the 20 m² hole fill, and the removal rules (parcels over 5 km² after the seam union, inland water, sea).
-This directory's `fiboa_convert.py` builds the footer from merge's `_summary.json`, so its wording differs from r1's fixed text, and so does each file's `file:checksum`.
+This directory's `fiboa_convert.py` builds the footer from merge's `_summary.json`, so its wording differs from the rerun's fixed text, and so does each file's `file:checksum`.
 
 `context.LULC_BY_YEAR` gives the land-cover vintages for every year from 2017 to 2025, never one later than the product year.
 `frac_water` is measured against 2024 for every year.

@@ -176,20 +176,19 @@ def test_a_narrow_field_across_a_same_zone_seam_is_rejoined(tmp_path, monkeypatc
 
 
 def test_a_wide_field_across_a_same_zone_seam_is_not_rejoined(tmp_path, monkeypatch):
-    """Recorded loss: MIN_OVERLAP's 10% rule cannot rejoin a wide seam-crossing field.
+    """Known loss: MIN_OVERLAP's 10% rule cannot rejoin a wide seam-crossing field.
 
-    Since outlines' MGRS square became the raster's own 100 km cell, both halves of
-    a field straddling a same-zone tile seam are owned and published (the old 90.08 km
-    square dropped them with the 5 km frame, so nothing downstream had ever had to
-    handle this). Rejoining them is now the seam union's job, but same-zone rasters
-    overlap by only 40-120 m, so the shared area is a fixed ~120 m band while the
-    smaller half grows with the field: past roughly 1.2 km each side of the seam the
-    band is under WINDOW_MIN_OVERLAP_FRAC of it and the pair is never grouped, so the
-    field is published as two overlapping clipped halves.
+    With outlines' MGRS square equal to the raster's own 100 km cell, both halves of a
+    field straddling a same-zone tile seam are owned and published, and rejoining them
+    is the seam union's job. Same-zone rasters overlap by only 40-120 m, so the shared
+    area is a fixed ~120 m band while the smaller half grows with the field. Past
+    roughly 1.2 km each side of the seam the band is under WINDOW_MIN_OVERLAP_FRAC of
+    it, the pair is never grouped, and the field is published as two overlapping
+    clipped halves.
 
-    This test records the limit rather than blessing it: loosening the cross-tile
-    branch for a shared tile boundary is the fix, and it must land before the next
-    generation runs. Keep the narrow control above passing when it does.
+    This test records the limit; it is not the intended behaviour. The fix is to loosen
+    the cross-tile branch for a shared tile boundary before the next generation runs,
+    and the narrow control above must keep passing when that lands.
     """
     rows = _convert(tmp_path, monkeypatch, _clipped_seam_pair(0.024))  # ~2 km each side
     assert [r[0] for r in rows] == ["30TXM_0_0-1", "30TYM_0_0-1"], "known: two halves"
@@ -200,9 +199,8 @@ def test_a_wide_field_across_a_same_zone_seam_is_not_rejoined(tmp_path, monkeypa
 def test_minimum_area_applies_after_the_seam_union(tmp_path, monkeypatch):
     """A field cut into two sub-900 m2 halves must publish its ~1,300 m2 union.
 
-    The 900 m2 minimum used to run inside repaired(), which builds ``cand``, so
-    both halves were deleted before ST_Union_Agg ever saw them and the field
-    vanished from the release entirely.
+    If the 900 m2 minimum ran inside repaired(), which builds ``cand``, both halves
+    would be deleted before ST_Union_Agg saw them and the field would vanish.
     """
     rows = _convert(tmp_path, monkeypatch, _seam_pair(-3.0, 41.0, 0.0003, 0.0003, "30TXM", "30TYM"))
     assert [r[0] for r in rows] == ["30TXM_0_0-1"]
@@ -211,7 +209,7 @@ def test_minimum_area_applies_after_the_seam_union(tmp_path, monkeypatch):
 
 
 def test_minimum_area_still_drops_a_genuinely_tiny_parcel(tmp_path, monkeypatch):
-    "Control: the minimum must still apply -- to the final geometry."
+    "Control: the minimum must still apply, to the final geometry."
     rows = _convert(
         tmp_path,
         monkeypatch,
@@ -252,9 +250,8 @@ def test_max_area_cap_applies_after_the_seam_union(tmp_path, monkeypatch):
 def test_bbox_describes_the_published_geometry(tmp_path, monkeypatch):
     """The bbox struct is the covering readers prune on; it must match geometry.
 
-    It used to be copied from the source row while ``g`` had been through
-    ST_MakeValid and per-part 900 m2 filtering, publishing a bbox ~4 km wider
-    than the geometry.
+    A bbox copied from the source row, after ``g`` went through ST_MakeValid and
+    per-part 900 m2 filtering, was ~4 km wider than the published geometry.
     """
     src = tmp_path / "merged" / "2025" / "zone=30" / "part-0.parquet"
     src.parent.mkdir(parents=True)
@@ -279,7 +276,7 @@ def test_bbox_describes_the_published_geometry(tmp_path, monkeypatch):
 
 
 def test_duplicate_parcel_ids_are_refused_before_publication(tmp_path, monkeypatch):
-    """write_sorted's validate hook was never passed and n was only printed.
+    """A duplicated parcel id is refused before the staged file replaces the output.
 
     catalog/vector/{year}/AGENTS.md promises parcel ids are unique within a zone
     file, so a duplicated (tile_key, parcel_id) must not reach the release.
@@ -375,9 +372,10 @@ def test_zone_index_validation(tmp_path, monkeypatch):
 
 
 def test_window_seam_duplicates_join(tmp_path, monkeypatch):
-    # W1/W2 (and 5/6, where only one copy is truncated): one field seen by two windows of the same tile (both touch a window edge,
-    # overlap ~60%) -> one parcel. N1 also touches a window edge but only overlaps W2 by a sliver
-    # (a real neighbour from the other window) and stays separate, as does interior parcel I1.
+    # W1/W2 (and 5/6, where only one copy is truncated) are one field seen by two windows of
+    # the same tile (both touch a window edge, overlap ~60%) and become one parcel. N1 also
+    # touches a window edge but overlaps W2 only by a sliver (a real neighbour from the other
+    # window), so it stays separate, as does the interior parcel I1.
     src = tmp_path / "merged" / "2025" / "zone=30" / "part-0.parquet"
     src.parent.mkdir(parents=True)
     boxes = [  # tile_key, parcel_id, x0, y0, x1, y1, pf_mean, touches_window_edge
@@ -504,7 +502,7 @@ def test_hole_fill_keeps_every_geometry_shape(tmp_path, monkeypatch, tile_key, l
     wkts = [
         f"POLYGON{_utm_box_wkt(32630, cx, cy, *box, hole=(0, 0, *small))}",  # 0: filled
         f"POLYGON{_utm_box_wkt(32630, cx, cy + 1000, *box, hole=(0, 0, *large))}",  # 1: kept
-        # 2: single-part MULTIPOLYGON with a small hole (used to be dropped)
+        # 2: single-part MULTIPOLYGON with a small hole (must not be dropped)
         f"MULTIPOLYGON({_utm_box_wkt(32630, cx, cy + 2000, *box, hole=(0, 0, *small))})",
         # 3: single-part MULTIPOLYGON with a large hole
         f"MULTIPOLYGON({_utm_box_wkt(32630, cx, cy + 3000, *box, hole=(0, 0, *large))})",

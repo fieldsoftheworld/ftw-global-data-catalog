@@ -4,8 +4,10 @@ Every raw tile must have exactly one compact file (same stem), no extra compact 
 counts, and the list of tiles that produced no parcels is saved next to them as ``_empty.txt``.
 The manifest maps each compact file to its size and sha256; ``--check`` re-hashes a copy (for
 example one pulled from the bucket) against it.
-Usage: compact_verify.py YEAR --raw-list RAW.txt --empty-list EMPTY.txt --compact-dir DIR --manifest OUT.json
-       compact_verify.py YEAR --compact-dir DIR --manifest M.json --check   # re-hash a pulled copy against the manifest
+Usage:
+    compact_verify.py YEAR --raw-list RAW.txt --empty-list EMPTY.txt --compact-dir DIR \
+        --manifest OUT.json
+    compact_verify.py YEAR --compact-dir DIR --manifest M.json --check  # re-hash a copy
 """
 
 import argparse

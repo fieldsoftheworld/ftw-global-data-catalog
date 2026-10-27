@@ -60,7 +60,7 @@ def test_resume_requires_a_matching_fingerprint(tmp_path):
     """Resume used to test only that the output exists.
 
     A regenerated score COG or a changed flag then published the previous run's
-    parcels. Built like PR2's run.py inference_fingerprint and
+    parcels. Built like inference/run.py's inference_fingerprint and
     simplify_polygons' simplify_fingerprint.
     """
     src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
@@ -111,7 +111,7 @@ def test_a_regenerated_score_cog_is_not_current(tmp_path):
 
 
 def test_the_cogs_inference_fingerprint_identifies_the_source(tmp_path):
-    "Prefer PR2's tag: it identifies the model and inputs, not just the bytes."
+    "Prefer the inference/run.py tag: it identifies the model and inputs, not just the bytes."
     src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif", tags={"inference_fingerprint": "A"})
     fp_a = _fp(src)
     assert "A" in fp_a
@@ -143,10 +143,10 @@ def test_truncated_or_unstamped_output_is_not_current(tmp_path, corrupt):
 
 
 def test_schema_is_declared_not_inferred_from_the_first_tile():
-    """pa.Table.from_pylist(rows) inferred the schema from whichever tile finished.
+    """An inferred schema varies between tiles.
 
-    A column that happened to be all-NULL in one tile came out a different type
-    there, so tiles written by different workers disagreed.
+    A column that is all-NULL in one tile would get a different type there, so tiles
+    written by different workers would disagree.
     """
     assert ol.SCHEMA.names[0] == "tile_key"
     assert ol.SCHEMA.names[-1] == "geometry"
@@ -225,10 +225,9 @@ def _run(cwd: Path, *args: str) -> subprocess.CompletedProcess:
 
 
 def test_an_empty_tile_list_file_means_zero_tiles_not_every_tile(tmp_path):
-    """An empty list is falsy, so `names or glob(...)` globbed the whole year.
+    """An empty list is falsy, so `names or glob(...)` would glob the whole year.
 
-    The caller asked for nothing and would have got ~7,467 tiles; the
-    "no input scores" guard could not fire either.
+    The caller asks for nothing and would get ~7,467 tiles.
     """
     for tk in ("31UFS", "31UFT", "31UFU"):
         _score_cog(tmp_path / f"staging-data/raster/2025/{tk}/{tk}.tif")
