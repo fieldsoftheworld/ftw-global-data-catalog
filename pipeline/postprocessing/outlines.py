@@ -381,10 +381,10 @@ def fingerprint(
 
     Resume used to test only that the output file exists, so a regenerated score
     COG or a changed --core/--halo/--simplify-m silently published the
-    previous run's parcels. Built like the siblings: PR2's run.py
+    previous run's parcels. Built like the siblings: inference/run.py's
     inference_fingerprint (size, mtime, model hash, flags) and
     simplify_polygons.simplify_fingerprint (tol, size, mtime). The COG's own
-    inference_fingerprint tag is preferred when PR2 stamped one, because it
+    inference_fingerprint tag is preferred when inference stamped one, because it
     identifies the model and inputs as well as the bytes. A ``stream.py`` COG is
     identified by its run (``prov_fingerprint``) and its inputs (``qa_in_etag_sha``).
 
@@ -666,8 +666,8 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument(
         "--owned-squares", type=Path, default=SQUARES,
-        help="squares of the run's keep-list tiles (ownership.py squares); r1 used "
-        "owned_squares_2e.csv",
+        help="squares of the run's keep-list tiles (ownership.py squares); the published "
+        "vectors used owned_squares_2e.csv",
     )
     ap.add_argument("--force", action="store_true", help="rerun tiles that are already current")
     ap.add_argument("--shard", type=int, default=int(os.environ.get("SLURM_ARRAY_TASK_ID", 0)))

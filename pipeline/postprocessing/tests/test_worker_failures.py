@@ -139,7 +139,7 @@ def test_absent_is_classified_on_status_not_on_prose():
     assert not tfa.is_absent("/vsicurl/https://h/Nodes(B04.tif)/$value", allow_list_reject)
 
 
-#: PR1's CDSE source-mosaic href shape: the ``.tif`` is inside a Nodes() segment and
+#: The CDSE source-mosaic href shape: the ``.tif`` is inside a Nodes() segment and
 #: the URL ends in ``/$value``, so an extension allow-list rejects it.
 CDSE_HREF = (
     "/vsicurl/https://cdse.invalid/odata/v1/Products(x)/Nodes(B04.tif)/$value"
@@ -180,7 +180,7 @@ def test_extension_allow_list_would_refuse_cdse_hrefs(monkeypatch):
     assert _EXT_REJECT in str(e.value)
 
 
-#: PR1's QA index row: the S3 object its downloader fetches, plus the endpoint the
+#: A QA index row from mosaics/download.py: the S3 object it fetches, plus the endpoint the
 #: row was written against. b04_odata_href is provenance only and never opened.
 S3_HREF = "s3://eodata/Sentinel-2/MSI/MSI_L3__MCQ/2025/Q1/T31UFS/B04.tif"
 S3_ENDPOINT = "https://eodata.dataspace.copernicus.eu"

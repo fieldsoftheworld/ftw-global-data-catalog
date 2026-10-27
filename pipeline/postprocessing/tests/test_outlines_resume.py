@@ -60,7 +60,7 @@ def test_resume_requires_a_matching_fingerprint(tmp_path):
     """Resume used to test only that the output exists.
 
     A regenerated score COG or a changed flag then published the previous run's
-    parcels. Built like PR2's run.py inference_fingerprint and
+    parcels. Built like inference/run.py's inference_fingerprint and
     simplify_polygons' simplify_fingerprint.
     """
     src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif")
@@ -111,7 +111,7 @@ def test_a_regenerated_score_cog_is_not_current(tmp_path):
 
 
 def test_the_cogs_inference_fingerprint_identifies_the_source(tmp_path):
-    "Prefer PR2's tag: it identifies the model and inputs, not just the bytes."
+    "Prefer the inference/run.py tag: it identifies the model and inputs, not just the bytes."
     src = _score_cog(tmp_path / "staging-data/raster/2025/31UFS/31UFS.tif", tags={"inference_fingerprint": "A"})
     fp_a = _fp(src)
     assert "A" in fp_a

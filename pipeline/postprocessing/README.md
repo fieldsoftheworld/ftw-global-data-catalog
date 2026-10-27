@@ -249,8 +249,8 @@ python qa_vector.py 2025 --root fiboa --out qa/vector_2025.json --release releas
 
 ## Where the published 2017-2025 vectors differ from this code
 
-The vectors were made by the production repository (`global-ftw-2e`, commit
-`5d01d4b`, not public), not by this directory. The spec, the inland-water rule,
+The vectors were made in the 2026-10 rerun by an earlier, unpublished version of
+this code, not by this directory. The spec, the inland-water rule,
 the sea rule and the footer wording above are the same rules. Row groups of 8,192
 rows, zstd 19, the nine columns, the Hilbert order of the bbox centre, the seam
 overlap rule (10% of the smaller piece and 100 m²), the 20 m² hole fill, the 900 m²
@@ -271,7 +271,7 @@ Where this directory differs:
   They are not in the released nine columns and no rule uses them; nothing here
   writes them.
 - **Simplification.** The run simplified with a Rust port of GEOS 3.13.1 coverage
-  simplification kept in the production repository, one tile at a time in shards of
+  simplification, one tile at a time in shards of
   8 threads. `polygons.py` here calls the `coarsen` package, which returns the same
   geometry as one GEOS 3.13.1 `coverage_simplify` pass over the same input (802 of
   802 parcels of a 2019 tile). The run did not make one pass: polygons GEOS reports

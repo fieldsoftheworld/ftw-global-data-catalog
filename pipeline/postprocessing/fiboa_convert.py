@@ -39,7 +39,7 @@ SDL = "https://vecorel.org/sdl/v0.2.0/schema.json"
 SCORE_DESC = "Mean model field probability inside the parcel, x 100 rounded (0-100)"
 GEOMETRY_METRICS = "https://vecorel.org/geometry-metrics-extension/v0.1.0/schema.yaml"
 
-#: Band order PR1 stacks and PR2's run.py stamps as ``input_bands``.
+#: Band order mosaics/download.py stacks and inference/run.py stamps as ``input_bands``.
 INPUT_BANDS = "B04/B03/B02/B08"
 #: How ``--spec`` reads in the details, so a hand-supplied id is never mistaken for one the
 #: run recorded. Used for the released years, whose outlines predate the stamp but whose

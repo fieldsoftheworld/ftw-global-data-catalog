@@ -14,7 +14,8 @@ that reaches into the next zone's first square overlaps that tile's own piece of
 ``cross_zone_seams.py`` unions the two after merge.
 
 The owned squares are the run's keep-list tiles. ``owned_squares_2e.csv`` is the 2nd Edition's
-(7,467 tiles, the r1 run); ``owned_squares.csv`` is the current keep-list's (14,608 tiles).
+(7,467 tiles, used by the 2026-10 rerun) and ``owned_squares.csv`` is the current keep-list's
+(14,608 tiles).
 
     python ownership.py squares --keep-list keep.txt --footprints tile_footprints.parquet \\
         --out owned_squares.csv

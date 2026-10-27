@@ -114,7 +114,7 @@ def test_polygon_union_flattens_nested_collections():
 
 def test_invalid_ring_in_a_neighbour_piece_is_repaired_before_the_overlay(tmp_path):
     # an unrepaired coverage-simplify ring (a hole crossing its shell) made GEOS raise in the
-    # 2025 r1 run; the piece is made valid, paired and absorbed
+    # 2025 rerun; the piece is made valid, paired and absorbed
     bad = ("POLYGON((6.030 52.700, 6.040 52.700, 6.040 52.705, 6.030 52.705, 6.030 52.700),"
            "(6.035 52.702, 6.045 52.702, 6.045 52.703, 6.035 52.703, 6.035 52.702))")
     _zone(tmp_path, "31", [("31UGU_0_0", 7, 6.020, 52.700, 6.040, 52.705, 0.6, True)], True)

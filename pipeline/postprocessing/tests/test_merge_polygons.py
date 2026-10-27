@@ -276,7 +276,7 @@ def test_determination_details_names_the_real_band_order():
     import fiboa_convert as fc
 
     details = fc.collection_metadata("ftw-s2-2025", 2025, {})["determination:details"]
-    assert "B04/B03/B02/B08" in details, "PR2 stamps input_bands as B04,B03,B02,B08"
+    assert "B04/B03/B02/B08" in details, "inference/run.py stamps input_bands as B04,B03,B02,B08"
     assert "B02/B03/B04/B08" not in details
 
 

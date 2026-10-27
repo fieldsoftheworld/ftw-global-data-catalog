@@ -18,10 +18,10 @@ from terrain import CROP, VSICURL_OPTS, WATER, _dem_name, _warp
 #: the band's own ``nodata`` on open rather than trusted.
 NODATA = -32768
 
-#: Columns of PR1's QA source index. ``b04_s3_href`` is the object its downloader
-#: actually fetches; ``b04_odata_href`` is the OIDC-authenticated OData URL, which
-#: GDAL cannot open, and is carried for provenance only. There is no public
-#: unauthenticated https form of these assets, so there is no https fallback.
+#: Columns of the QA source index that ``mosaics/download.py --index-output`` writes.
+#: ``b04_s3_href`` is the object the downloader fetches. ``b04_odata_href`` is the
+#: OIDC-authenticated OData URL, which GDAL cannot open, so it is carried for provenance
+#: only. These assets have no public unauthenticated https form, so there is no fallback.
 INDEX_COLUMNS = ["quarter", "b04_s3_href", "b04_s3_endpoint"]
 
 #: IO annual land-cover vintages sampled per product year, for ``frac_crops_ever``.
@@ -88,8 +88,7 @@ def _vsis3(s3_href: str, endpoint: str) -> tuple[str, dict]:
         raise ValueError(f"malformed s3 href {s3_href!r}")
     return f"/vsis3/{bucket}/{key}", {
         **VSICURL_OPTS,
-        # The row's own endpoint, never a hardcoded one: PR1 honours
-        # EODATA_S3_ENDPOINT and the index records what it used.
+        # The endpoint the index row records (mosaics/download.py honours EODATA_S3_ENDPOINT).
         "AWS_S3_ENDPOINT": endpoint,
         "AWS_VIRTUAL_HOSTING": "FALSE",
     }
