@@ -48,3 +48,30 @@ def test_a_field_across_a_window_seam_is_one_parcel(tmp_path, monkeypatch):
     assert all(r["in_utm_zone"] and r["in_mgrs_square"] and not r["claimed"] for r in t)
     assert all(r["frac_crops_ever"] == 1.0 and r["slope_mean"] == 2.0 for r in t)
     assert sorted(r["parcel_id"] for r in t) == [1, 2]
+
+
+def test_contourrs_polygons_equal_rasterio_shapes():
+    import contourrs
+    import rasterio.features
+    import shapely
+
+    lab = np.zeros((40, 50), np.int32)
+    lab[2:20, 2:20] = 1
+    lab[8:12, 8:12] = 0  # a hole
+    lab[9:11, 9:11] = 2  # a parcel inside the hole
+    lab[22:30, 22:30] = 3
+    lab[30:35, 30:35] = 3  # touches the first part only at a corner: two parts
+    lab[5:38, 40:48] = 4
+    tr = rasterio.Affine(2.5, 0, X0, 0, -2.5, Y0)
+
+    def by_value(pairs):
+        d = {}
+        for g, v in pairs:
+            d.setdefault(int(v), []).append(shapely.geometry.shape(g))
+        return {v: shapely.normalize(shapely.MultiPolygon(ps)) for v, ps in d.items()}
+
+    want = by_value(rasterio.features.shapes(lab, mask=lab > 0, transform=tr))
+    got = by_value(contourrs.shapes(lab, mask=lab > 0, transform=tr))
+    assert want.keys() == got.keys() == {1, 2, 3, 4}
+    assert len(got[3].geoms) == 2
+    assert all(shapely.to_wkb(got[v]) == shapely.to_wkb(want[v]) for v in want)
