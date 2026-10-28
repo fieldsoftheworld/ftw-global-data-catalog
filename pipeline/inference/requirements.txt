@@ -1,5 +1,5 @@
 numpy
-pyarrow>=19
+pyarrow>=26.0.0
 pandas
 boto3
 rasterio>=1.4
