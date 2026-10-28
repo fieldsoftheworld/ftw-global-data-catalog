@@ -139,7 +139,7 @@ def test_absent_is_classified_on_status_not_on_prose():
     assert not tfa.is_absent("/vsicurl/https://h/Nodes(B04.tif)/$value", allow_list_reject)
 
 
-#: PR1's CDSE source-mosaic href shape: the ``.tif`` is inside a Nodes() segment and
+#: The CDSE source-mosaic href shape: the ``.tif`` is inside a Nodes() segment and
 #: the URL ends in ``/$value``, so an extension allow-list rejects it.
 CDSE_HREF = (
     "/vsicurl/https://cdse.invalid/odata/v1/Products(x)/Nodes(B04.tif)/$value"
@@ -180,7 +180,7 @@ def test_extension_allow_list_would_refuse_cdse_hrefs(monkeypatch):
     assert _EXT_REJECT in str(e.value)
 
 
-#: PR1's QA index row: the S3 object its downloader fetches, plus the endpoint the
+#: A QA index row from mosaics/download.py: the S3 object it fetches, plus the endpoint the
 #: row was written against. b04_odata_href is provenance only and never opened.
 S3_HREF = "s3://eodata/Sentinel-2/MSI/MSI_L3__MCQ/2025/Q1/T31UFS/B04.tif"
 S3_ENDPOINT = "https://eodata.dataspace.copernicus.eu"
@@ -241,9 +241,8 @@ def test_missing_credentials_fail_with_a_message_naming_the_need(tmp_path, monke
 def test_antimeridian_dem_longitudes_are_not_empty():
     """A dateline tile reports west > east, not an unwrapped span.
 
-    Measured for a zone-1 tile: w = 178.913, e = -178.779, so e - w = -357.69 is
-    not > 180 and the plain branch ran range(178, -178) -- EMPTY. No DEM tile was
-    fetched at all and every parcel got a NaN elevation.
+    For a zone-1 tile w = 178.913 and e = -178.779. A plain range(178, -178) is
+    empty, so no DEM tile would be fetched and every parcel would get a NaN elevation.
     """
     import context
 
@@ -294,9 +293,8 @@ def test_simplify_rejects_truncated_and_unstamped_outputs(tmp_path):
 def test_simplify_refreshes_area_and_part_count(tmp_path):
     """area_m2 and n_parts must describe the geometry actually written.
 
-    Only the bounds and the WKB used to be refreshed, so a measured row kept
-    area_m2 = 1006.0 against a written geometry of 250.9 m2 -- and merge reads
-    area_m2 for both its --max-km2 cap and its _summary.json totals.
+    merge reads area_m2 for both its --max-km2 cap and its _summary.json totals, so a
+    stale value (1006.0 m2 against a written geometry of 250.9 m2) misstates both.
     """
     import shapely
     from pyproj import Transformer

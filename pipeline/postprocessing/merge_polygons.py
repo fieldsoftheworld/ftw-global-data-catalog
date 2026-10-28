@@ -35,7 +35,10 @@ MAX_FRAC_WATER = 0.7
 
 
 def keep_filter(max_km2: float, max_frac_water: float = MAX_FRAC_WATER) -> str:
-    """SQL on the raw parcel columns for the parcels merge keeps (``--max-frac-water 2`` keeps all water)."""
+    """SQL on the raw parcel columns for the parcels merge keeps.
+
+    ``--max-frac-water 2`` keeps all water.
+    """
     return (
         f"in_utm_zone AND in_mgrs_square AND area_m2 <= {max_km2 * 1e6} "
         f"AND coalesce(frac_water, 0) < {max_frac_water}"
@@ -54,13 +57,9 @@ def read_tiles(path: Path) -> set[str]:
 def classify(have: set[str], expected: set[str], empty: set[str]) -> tuple[set[str], set[str]]:
     """``(unexpected inputs, expected but absent)``.
 
-    Both guards subtract ``empty`` -- they used to disagree. ``find_gaps`` excused a
-    tile listed in empty.txt while the ``unexpected`` check did not, so the
-    invocation the README documents aborted: tiles.txt and empty.txt are disjoint
-    lists, and outlines writes a parquet for every zero-parcel tile which simplify
-    carries forward, so a verified-empty tile always arrives as an input that is not
-    in the keep list. Measured before this change: "unexpected input tiles:
-    ['31UFT']", exit 1, on exactly the documented command.
+    Both subtract ``empty``. tiles.txt and empty.txt are disjoint, and outlines writes a
+    parquet for every zero-parcel tile, which simplify carries forward, so a verified-empty
+    tile always arrives as an input that is not in the keep list.
     """
     return have - expected - empty, expected - empty - have
 
@@ -86,15 +85,12 @@ def report_gaps(gaps: dict[str, list[str]], allow_missing: bool) -> None:
 
 
 def aux_files(aux: Path | None, tiles: list[str]) -> list[Path]:
-    """The aux file for each named tile, matched EXACTLY.
+    """The aux file for each named tile, matched exactly.
 
-    A ``{aux}/{zone}*.parquet`` glob over-matches: with a stray
-    ``31UFS_0_0_rerun.parquet`` beside ``31UFS_0_0.parquet`` both matched ``31*``
-    and the LEFT JOIN fanned out. Measured, 3 input parcels became 6 written rows
-    over 3 distinct keys while the run printed "3 -> 3 parcels" -- the stats query
-    bypasses the join, so every reported count was the pre-join count -- and fiboa
-    published duplicate parcel ids, which catalog/vector/{year}/AGENTS.md promises
-    cannot happen.
+    A ``{aux}/{zone}*.parquet`` glob would also match a stray ``31UFS_0_0_rerun.parquet``
+    beside ``31UFS_0_0.parquet``, and the LEFT JOIN would fan out into duplicate parcel
+    ids, which catalog/vector/{year}/AGENTS.md promises cannot happen. The stats query
+    bypasses the join, so the printed counts would not show it.
     """
     if aux is None:
         return []
@@ -133,8 +129,8 @@ def select_sql(files: list[Path], aux: list[Path]) -> str:
 def fingerprint(files: list[Path], aux: list[Path], keep: str) -> str:
     """Identity of everything that decides a zone's contents.
 
-    Hashed, not spelled out: a zone can hold a couple of hundred tiles and this
-    goes into the parquet footer.
+    Hashed because a zone can hold a couple of hundred tiles and this goes into the
+    parquet footer.
     """
     parts = [[p.name, p.stat().st_size, p.stat().st_mtime_ns] for p in sorted(files + aux)]
     body = json.dumps([keep, parts], sort_keys=True).encode()
@@ -144,9 +140,7 @@ def fingerprint(files: list[Path], aux: list[Path], keep: str) -> str:
 def is_current(dst: Path, fp: str) -> bool:
     """True when ``dst`` was written from exactly these inputs under this filter.
 
-    Existence alone is not enough -- that is what let regenerated inputs and
-    changed flags publish stale zone files -- and a truncated or unstamped file
-    must not count as current either.
+    A missing, truncated or unstamped file is not current.
     """
     if not dst.is_file():
         return False
@@ -177,10 +171,9 @@ def simplify_tolerance(files: list[Path]) -> float | None:
 def _stamp(path: Path) -> dict:
     """The outline stage's stamp on ``path``, or ``{}``.
 
-    Guarded like ``_metadata``: one tile with a truncated stamp -- a worker killed
-    mid-write -- used to abort the merge with a bare JSONDecodeError hours in, after
-    some zone partitions had been rewritten and before ``_summary.json`` was, which
-    is the incomplete-merge state ``clear_partition`` exists to prevent.
+    Guarded like ``_metadata``, so one tile with a truncated stamp (a worker killed
+    mid-write) cannot abort the merge after some zone partitions are rewritten and before
+    ``_summary.json`` is, which is the incomplete state ``clear_partition`` prevents.
     """
     raw = _metadata(path).get(OUTLINE_PROVENANCE)
     if not raw:
@@ -203,10 +196,10 @@ def provenance(files: list[Path]) -> dict:
 def outline_specs(files: list[Path]) -> tuple[set[str], int]:
     """``(method ids the outline stage stamped, tiles carrying no readable id)``.
 
-    Every file is opened, not just the first: ``fingerprint`` does not cover the stamp,
-    so a resumed run keeps outlines written before the stamp existed as "current" and
-    rewrites only the rest. Counting those is what lets the release say a year is mixed
-    instead of attributing all of it to the one id the scan happened to find.
+    Every file is opened, not just the first. ``fingerprint`` does not cover the stamp,
+    so a resumed run can keep outlines written before the stamp existed and rewrite only
+    the rest. Counting those lets the release say a year is mixed instead of attributing
+    all of it to the one id the scan found first.
     """
     out, unrecorded = set(), 0
     for p in files:
@@ -220,10 +213,8 @@ def outline_specs(files: list[Path]) -> tuple[set[str], int]:
 def clear_partition(part: Path) -> None:
     """Remove a zone partition whose rerun retained nothing.
 
-    Leaving it meant the previous run's part-0.parquet stayed live with no
-    _summary.json entry, and fiboa_convert.discover_zones still converted it: a
-    mixed-generation release. Measured, a rerun that retained zero parcels printed
-    "no retained parcels" and left the stale file in place.
+    Otherwise the previous run's part-0.parquet stays with no _summary.json entry, and
+    fiboa_convert.discover_zones still converts it into a mixed-generation release.
     """
     if part.exists():
         shutil.rmtree(part)
@@ -273,9 +264,9 @@ def main() -> None:
     gaps = find_gaps(have, expected, empty, aux_have)
     report_gaps(gaps, a.allow_missing)
     out.mkdir(parents=True, exist_ok=True)
-    # The spill directory must live outside the published tree: a crash mid-COPY
-    # used to leave DuckDB's temp files inside out/, where the catalog's own
-    # zone=*/*.parquet globs would walk them.
+    # The spill directory must be outside the published tree, because a crash mid-COPY
+    # leaves DuckDB's temp files behind, where the catalog's zone=*/*.parquet globs would
+    # find them.
     tmp_dir = a.tmp_dir / f"merge-{a.year}-{os.getpid()}"
     root, spill = a.out_root.resolve(), a.tmp_dir.resolve()
     if spill == root or root in spill.parents:
@@ -330,8 +321,8 @@ def main() -> None:
             fp = fingerprint(files, axf, keep)
             if not a.force and is_current(dst, fp):
                 print(f"zone {z}: current, skipped", flush=True)
-                # Carry the previous run's counts forward, so a fully-resumed run
-                # still writes truthful totals instead of zeroing them.
+                # Carry the previous run's counts forward so a fully resumed run still
+                # reports real totals.
                 summary["zones"][z] = {**prev_zones.get(z, {}), "skipped": True}
                 continue
             lst = ", ".join(f"'{p}'" for p in files)
@@ -352,10 +343,8 @@ def main() -> None:
                 }
                 continue
             part.mkdir(exist_ok=True)
-            # *.tmp-<pid> and not *.parquet: a temp file named part-0.tmp.parquet
-            # inside the published partition is picked up by every zone=*/*.parquet
-            # glob, and without the pid two array tasks sharing a zone clobber it --
-            # the corruption class main fixed in 7b889a1.
+            # Named *.tmp-<pid>, not *.parquet, so zone=*/*.parquet globs skip it and two
+            # array tasks sharing a zone cannot overwrite each other's temp file.
             tmp = part / f"part-0.parquet.tmp-{os.getpid()}"
             try:
                 con.sql(
@@ -366,8 +355,8 @@ def main() -> None:
                 )
                 written = pq.ParquetFile(tmp).metadata.num_rows
                 if written != n_out:
-                    # The stats query bypasses the aux join, so it is the only count
-                    # that sees fan-out: 3 parcels in once became 6 rows out.
+                    # The stats query bypasses the aux join, so a mismatch with it
+                    # means the join fanned out.
                     raise SystemExit(
                         f"zone {z}: wrote {written:,} rows where the filter retains "
                         f"{n_out:,}; the aux join fanned out and parcel ids would not "
@@ -392,9 +381,8 @@ def main() -> None:
         con.close()
         shutil.rmtree(tmp_dir, ignore_errors=True)
 
-    # One method for the whole year is the normal case. A mixed year -- tiles rerun with a
-    # newer method, or outlines kept from before the stamp existed -- is stated as such
-    # rather than hidden behind whichever id the stamped tiles happen to carry.
+    # A mixed year (tiles rerun with a newer method, or outlines kept from before the stamp
+    # existed) lists every id rather than whichever one the stamped tiles carry.
     ids = list(summary["specs"])
     if summary["tiles_unrecorded_spec"] or not ids:
         ids.append(SPEC_UNRECORDED)
@@ -422,9 +410,8 @@ def main() -> None:
         summary["cross_zone"] = {"zones": r["zones"], "pairs": len(r["pairs"])}
         print(f"cross-zone seams: {len(r['pairs'])} pairs, {r['zones']}", flush=True)
     summary["seconds"] = time.perf_counter() - t_all
-    # Written before the empty-result check: a rerun that retains nothing used to
-    # abort with the PREVIOUS run's _summary.json still in place, so an incomplete
-    # merge was byte-indistinguishable from a complete one.
+    # Written before the empty-result check, so a rerun that retains nothing does not
+    # leave the previous run's _summary.json in place.
     prev.write_text(json.dumps(summary, indent=1))
     if not tot["parcels_out"]:
         raise SystemExit("no retained parcels in any zone")

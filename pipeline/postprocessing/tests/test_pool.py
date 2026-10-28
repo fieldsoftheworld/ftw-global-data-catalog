@@ -24,10 +24,10 @@ def _suicide(i: int) -> int:
 
 
 def test_broken_pool_aborts_the_drain_instead_of_recording_every_task(capsys):
-    """BrokenProcessPool subclasses RuntimeError, so `except Exception` ate it.
+    """BrokenProcessPool subclasses RuntimeError, so `except Exception` would catch it.
 
-    Measured before the fix: one self-SIGKILLed task out of 40 gave 0 successes
-    and 40 identical BrokenProcessPool failures, none naming the culprit.
+    One self-SIGKILLed task out of 40 then gives 0 successes and 40 identical
+    BrokenProcessPool failures, none naming the culprit.
     """
     with pytest.raises(BrokenProcessPool):
         with ProcessPoolExecutor(2, max_tasks_per_child=1, mp_context=ol.MP_CONTEXT) as pool:

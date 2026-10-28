@@ -187,8 +187,8 @@ def run(root: Path, year: int, sources: set[int] | None = None) -> dict:
     files = zone_files(root, year)
     report = {"year": year, "zones": {}}
     zones = sorted(set(p["unions"]) | set(p["drops"]))
-    # every rewritten file first, then the swaps: a failure part-way leaves each zone file as
-    # merge wrote it, so a rerun plans from the same input
+    # write every file before swapping any, so a failure part-way leaves each zone file as
+    # merge wrote it and a rerun plans from the same input
     tmps = {z: rewrite(files[z], p["unions"].get(z, []), p["drops"].get(z, set())) for z in zones}
     for z in zones:
         report["zones"][f"{z:02d}"] = {

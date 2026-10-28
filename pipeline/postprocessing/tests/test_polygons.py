@@ -27,9 +27,8 @@ def test_shared_edge_stays_shared_with_an_invalid_coverage_member():
     """0 m2 gap and 0 m2 overlap across a shared simplified edge.
 
     Splitting the coverage into a coverage_simplify half and a Douglas-Peucker
-    half at min(tol, 1.2) m measured 26.06 m2 of overlap and 15.29 m2 of gap on
-    this fixture -- both under fiboa's 100 m2 seam-repair floor, so they would
-    have shipped.
+    half at min(tol, 1.2) m gives 26.06 m2 of overlap and 15.29 m2 of gap on this
+    fixture, both under fiboa's 100 m2 seam-repair floor, so they would be published.
     """
     left, right, overlapping = _shared_edge_pair()
     arr = np.array([left, right, overlapping], dtype=object)

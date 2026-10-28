@@ -1,4 +1,4 @@
-"""The rules the published 2017-2025 vectors were made with: BoundaryVote spec, inland water, sea."""
+"""Rules of the published 2017-2025 vectors: the BoundaryVote spec, inland water and sea."""
 
 import importlib.util
 import json

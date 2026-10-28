@@ -159,7 +159,8 @@ class SeaFilter:
                 )
                 self.cells[c] = got[m]
         parts = [self.cells[c] for c in cells]
-        # a piece listed under two cells is tested twice: harmless (unioned before measuring)
+        # a piece listed under two cells is tested twice, which is harmless because pieces
+        # are unioned before measuring
         return np.concatenate(parts) if parts else np.array([], dtype=object)
 
     def __call__(self, batches: Iterable[pa.RecordBatch]) -> Iterator[pa.RecordBatch]:

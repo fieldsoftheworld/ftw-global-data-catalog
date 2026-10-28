@@ -49,9 +49,8 @@ def check_file(path: Path, sample: int, rng: random.Random) -> tuple[int, int, l
     geo = json.loads((f.schema_arrow.metadata or {}).get(b"geo", b"{}"))
     if not geo.get("columns", {}).get("geometry", {}).get("crs"):
         errs.append("no geometry crs in geo metadata")
-    # Only sample when the columns are the ones below: schema drift is the likeliest
-    # real defect, and reading named columns out of a drifted file raises instead of
-    # reporting it, losing this file's problems and every later file's.
+    # Sample only when the schema matches, because reading named columns from a drifted
+    # file raises instead of reporting the drift.
     if md.num_rows and schema_ok:
         rg = rng.randrange(md.num_row_groups)
         t = f.read_row_group(rg, columns=["id", "geometry", "metrics:area", "score"])
@@ -62,8 +61,8 @@ def check_file(path: Path, sample: int, rng: random.Random) -> tuple[int, int, l
         empty = int(shapely.is_empty(geoms).sum())
         if invalid or empty:
             errs.append(f"sample: {invalid} invalid, {empty} empty of {n}")
-        # metrics:area is nullable, and a null arrives here as NaN, for which
-        # `area <= 0` is False -- so test the positive case and negate it.
+        # metrics:area is nullable and a null arrives as NaN, for which `area <= 0` is
+        # False, so test the positive case and negate it.
         area = t["metrics:area"].to_numpy(zero_copy_only=False)
         if not (area > 0).all():
             errs.append("non-positive or null area in sample")

@@ -25,11 +25,11 @@ os.environ.setdefault("GDAL_DISABLE_READDIR_ON_OPEN", "EMPTY_DIR")
 # refuse them before any request. Remote reads carry their own options; see
 # terrain.VSICURL_OPTS.
 
+import contourrs
 import numpy as np
 import pyarrow as pa
 import pyarrow.parquet as pq
 import rasterio
-import rasterio.features
 import shapely
 from fbp import FTW_2E, run_windowed
 from pyproj import CRS, Transformer
@@ -42,13 +42,11 @@ from pool_utils import drain, exit_on_failures, retry_io_failures
 
 PX_M2 = 6.25
 
-#: ``max_tasks_per_child`` silently selects the **spawn** context (measured: a plain
-#: ProcessPoolExecutor gets ForkContext, one with max_tasks_per_child=1 gets
-#: SpawnContext), so the choice is made explicit here rather than inferred. Spawn is
-#: what we want: a fresh process per tile is the point of max_tasks_per_child=1, the
-#: workers start an RSS-sampling thread and forking a threaded parent is a known
-#: hazard, and a spawned child re-imports this module, which is where the
-#: single-thread BLAS/GDAL environment is set.
+#: Passing ``max_tasks_per_child`` switches ProcessPoolExecutor from the fork to the spawn
+#: context, so the context is named here explicitly. Spawn suits this pool because each tile
+#: gets a fresh process, the workers start an RSS-sampling thread (forking a threaded parent
+#: is unsafe), and a spawned child re-imports this module, which sets the single-thread
+#: BLAS/GDAL environment.
 MP_CONTEXT = multiprocessing.get_context("spawn")
 
 
@@ -140,9 +138,9 @@ def parcel_attrs(inst: np.ndarray, read, aux: dict, n_id: int, rows: int = 2048)
         "frac_nodata_3q": mean["nod3"],
         "frac_water": mean["water"],
         "frac_crops_ever": mean["crops"],
-        # Where the DEM has no coverage slope is unknown, not flat: bincount propagates NaN
-        # into slope_mean, and the steep share is masked to match rather than counting an
-        # unknown as not steep (nan_to_num once made coastal parcels pass as 0 degrees)
+        # Without DEM coverage the slope is unknown, not flat. bincount propagates NaN into
+        # slope_mean, and the steep share is masked to match (nan_to_num here would report
+        # coastal parcels as 0 degrees).
         "slope_mean": mean["slope"],
         "frac_slope_gt30": np.where(np.isnan(mean["slope"]), np.nan, mean["steep"]),
         "elev_mean": mean["dem"],
@@ -182,8 +180,8 @@ MGRS_SQUARE_M = 100_000.0
 MGRS_FIT_TOLERANCE_M = 250.0
 #: Version of the parcel-ownership rules (``in_utm_zone``, ``in_mgrs_square``, ``claimed``).
 #: It is part of the outline fingerprint, so a changed rule rewrites every tile on the next run
-#: instead of resuming onto parquet written under the old one -- otherwise a release silently
-#: mixes vintages and the parquet does not say which. Bump it with every rule change.
+#: instead of resuming onto parquet written under the old one, which would mix rule versions in
+#: one release with no record of which. Bump it with every rule change.
 #: 1: ``origin + 5 km`` / ``extent - 5 km`` (a 90.08 km square). 2: the raster's own 100 km cell.
 #: 3: orphan-strip claims (``ownership.py``); the owned-squares file is in the fingerprint too.
 OWNERSHIP_RULES = 3
@@ -192,41 +190,39 @@ OWNERSHIP_RULES = 3
 def mgrs_square(tr, height: int, width: int) -> tuple[float, float, float, float]:
     """The 100 km UTM/MGRS cell the raster's north-west corner snaps to, as (x0, y0, x1, y1).
 
-    The published score rasters are 100.08 km (40,032 px x 2.5 m) with their origin 0-80 m
-    off the square, so the square is the 100 km grid cell that the raster's north-west corner
-    snaps to: ``round(origin / 100 km)``. Rounding to the *nearest* cell is stable for any
-    offset or padding under 50 km, which a floor/ceil of ``origin +/- pad`` is not (a sub-pixel
-    offset flips floor/ceil by a whole 100 km at the exact boundary the origin sits on).
+    The published score rasters are 100.08 km wide (40,032 px x 2.5 m) with their origin
+    0-80 m off the square, so the square is ``round(origin / 100 km)``. Rounding to the
+    nearest cell is stable for any offset or padding under 50 km. A floor or ceil of
+    ``origin +/- pad`` is not, because a sub-pixel offset flips it by a whole 100 km at the
+    boundary the origin sits on.
 
-    It is the cell the raster's *pixels* cover, which for a stacked ``_r_c`` sub-tile is not
-    the cell its key names: 59GQQ_0_1 begins 100,080 m below 59GQQ_0_0 and so owns the 59GQP
-    cell (27 published items are of that shape). The square follows the pixels, not the key;
-    a mismatch between the two is correct and must not be "fixed" back to the key.
+    The square follows the raster's pixels, not its tile key. For a stacked ``_r_c`` sub-tile
+    the two differ: 59GQQ_0_1 begins 100,080 m below 59GQQ_0_0 and so owns the 59GQP cell
+    (27 published items have that shape). That mismatch is correct and must not be "fixed"
+    back to the key.
 
     Two stacked sub-tiles therefore claim abutting squares whose shared edge sits 80 m north
-    of where their rasters abut, so an 80 m x 100 km strip (~8 km2) has pixels only in the
-    upper tile while belonging to the lower tile's square, and is owned by neither. Only
-    59GQQ has both siblings present, so that costs 9 items -- one per year.
+    of where their rasters abut. An 80 m x 100 km strip (~8 km2) has pixels only in the upper
+    tile but belongs to the lower tile's square, so neither tile owns it. Only 59GQQ has both
+    siblings present, so this costs 9 items, one per year.
 
-    Neighbouring squares abut exactly, which makes ``fiboa_convert``'s cross-tile seam union
-    load-bearing for parcels on the boundary: such a parcel is truncated at each raster's own
-    data edge -- not flagged, since ``touches_window_edge`` deliberately excludes the raster
-    boundary -- and each neighbour's piece is centred inside its own square, so both publish a
-    partial copy unless the union rejoins them. Same-zone rasters overlap by only 40-120 m and
-    ``MIN_OVERLAP`` wants 10% of the smaller piece, so a field reaching more than ~1.2 km each
-    side of a same-zone seam stays two overlapping halves (recorded in test_fiboa_convert).
+    Neighbouring squares abut exactly, so parcels on a tile boundary rely on
+    ``fiboa_convert``'s cross-tile seam union. Such a parcel is truncated at each raster's own
+    data edge, which ``touches_window_edge`` does not flag because it excludes the raster
+    boundary, and each neighbour's piece is centred inside its own square, so both tiles
+    publish a partial copy unless the union rejoins them. Same-zone rasters overlap by only
+    40-120 m and ``MIN_OVERLAP`` wants 10% of the smaller piece, so a field reaching more
+    than ~1.2 km each side of a same-zone seam stays two overlapping halves (recorded in
+    test_fiboa_convert).
 
-    An earlier version took ``origin + 5 km`` and ``extent - 5 km`` as the square, which
-    assumes a 110 km raster with a 5 km pad. On the real 100.08 km rasters that claims a
-    90.08 km square (81% of the true area): the outer ~5 km frame of every tile is owned by
-    nobody and silently dropped. The square is checked against the raster extent so a
-    raster that cannot contain it fails loudly instead of owning a wrong square.
-
-    Recovering that frame is not pure gain: it also admits the inference edge artifact
-    pipeline/README.md measures -- spurious high field probability in the outermost rows of
-    some score COGs, e.g. ~640 m of DN 109 over open North Sea on 31UET_0_0 -- which the
-    5 km inset had been masking by accident. Nothing downstream filters it, so the vector
-    product now carries those parcels.
+    The square is checked against the raster extent, so a raster that cannot contain it
+    fails instead of owning a wrong square. An earlier ``origin + 5 km`` / ``extent - 5 km``
+    square assumed a 110 km raster with a 5 km pad, and on the real rasters it claimed a
+    90.08 km square (81% of the true area), dropping the outer ~5 km frame of every tile.
+    That inset also hid the inference edge artifact that pipeline/README.md measures
+    (spurious high field probability in the outermost rows of some score COGs, e.g. ~640 m
+    of DN 109 over open North Sea on 31UET_0_0). Nothing downstream filters it, so the vector
+    product carries those parcels.
     """
     x0 = round(tr.c / MGRS_SQUARE_M) * MGRS_SQUARE_M
     y1 = round(tr.f / MGRS_SQUARE_M) * MGRS_SQUARE_M
@@ -291,12 +287,10 @@ def _probe(prof: dict, stage: str) -> None:
 FP_KEY = b"outline_fingerprint"
 PROVENANCE_KEY = b"outline_provenance"
 
-#: The per-tile schema, declared once and used for the empty and non-empty cases
-#: alike. ``pa.Table.from_pylist(rows)`` inferred it from the rows, so the column
-#: ORDER followed insertion and a column that happened to be all-NULL in one tile
-#: (slope_mean on a tile with no DEM, say) came out a different type there --
-#: tiles written by different workers then disagreed, and a whole-year read of
-#: them fails or silently casts.
+#: The per-tile schema, declared once for empty and non-empty tiles. A schema inferred
+#: from the rows would let the column order and the type of an all-NULL column (slope_mean
+#: on a tile with no DEM) vary between tiles, and a whole-year read of them would fail or
+#: cast silently.
 SCHEMA = pa.schema(
     [
         pa.field("tile_key", pa.string()),
@@ -379,22 +373,19 @@ def fingerprint(
 ) -> str:
     """Identity of the source COG plus every flag that changes the output.
 
-    Resume used to test only that the output file exists, so a regenerated score
-    COG or a changed --core/--halo/--simplify-m silently published the
-    previous run's parcels. Built like the siblings: PR2's run.py
-    inference_fingerprint (size, mtime, model hash, flags) and
+    Resume compares this fingerprint rather than testing that the output exists, so a
+    regenerated score COG or a changed --core/--halo/--simplify-m is recomputed. It follows
+    inference/run.py's inference_fingerprint (size, mtime, model hash, flags) and
     simplify_polygons.simplify_fingerprint (tol, size, mtime). The COG's own
-    inference_fingerprint tag is preferred when PR2 stamped one, because it
+    inference_fingerprint tag is preferred when inference stamped one, because it
     identifies the model and inputs as well as the bytes. A ``stream.py`` COG is
     identified by its run (``prov_fingerprint``) and its inputs (``qa_in_etag_sha``).
 
-    OWNERSHIP_RULES is in here too, because which parcels a tile claims is as
-    result-affecting as any flag: without it a resumed run after an ownership
-    change keeps the previous rule's parquet, and the release silently mixes
-    vintages that the parquet cannot be asked to tell apart. The same goes for
-    ``SPEC``, the BoundaryVote method id, and the owned squares, which decide the claims.
-    The ``"fast"`` entry is the backend, which used to be
-    a flag; it stays so outlines written before the flag was dropped still resume.
+    OWNERSHIP_RULES, ``SPEC`` (the BoundaryVote method id) and the owned squares are
+    included because they decide which parcels a tile keeps, so an ownership change is
+    not resumed onto the previous rule's parquet. The ``"fast"`` entry is the backend,
+    which used to be a flag; it stays so that outlines written before the flag was
+    dropped still resume.
     """
     st = src.stat()
     ident: object = [st.st_size, st.st_mtime_ns]
@@ -428,10 +419,9 @@ def is_current(dst: Path, fp: str) -> bool:
 def source_provenance(src: Path, year: int) -> dict:
     """The score COG's own tags, so a release can name the model it came from.
 
-    Without this the provenance chain dies here: no published field carried
-    model_sha256 or the input bands, so releases built from different checkpoints
-    were byte-indistinguishable. Also cross-checks the COG's ``year`` tag against
-    --year, since mixing years is silent otherwise.
+    Without them no output field records model_sha256 or the input bands, and releases
+    built from different checkpoints cannot be told apart. Also checks the COG's ``year``
+    tag against --year, since a mixed-up year raises no other error.
     """
     try:
         with rasterio.open(src) as ds:
@@ -466,7 +456,7 @@ def process_tile(
     simplify_m: float = 0.0,
     squares: Path = SQUARES,
 ) -> dict:
-    "Stage the tile's COG locally if the scratch copy is gone, run it, clean up."
+    "Run one score COG that is already on local disk and return its profile."
     if not path.is_file():
         raise FileNotFoundError(path)
     prof = _run_tile(str(path), path.stem, year, out_dir, index, core, halo, simplify_m, squares)
@@ -510,10 +500,8 @@ def _run_tile(
         crs, tr, H, W = ds.crs, ds.transform, ds.height, ds.width
     if not np.isclose(tr.a, 2.5) or not np.isclose(tr.e, -2.5) or tr.b != 0 or tr.d != 0:
         raise ValueError("expected north-up 2.5 m score grid")
-    # Validate the grid BEFORE aux_rasters: that call fetches a DEM and three
-    # land-cover years over the network, and utm_zone is None for any non-UTM CRS
-    # (4326, 3857, 54009 and 5041 all measured None), so int(zone[:-1]) used to
-    # raise TypeError only after all of that work had already been done.
+    # Validate the grid before aux_rasters, which fetches a DEM and three land-cover years
+    # over the network. utm_zone is None for any non-UTM CRS (4326, 3857, 54009 and 5041).
     zone = CRS(crs).utm_zone
     if not zone:
         raise ValueError(f"{tk}: score grid CRS {crs} is not UTM (no zone); cannot own parcels")
@@ -565,7 +553,7 @@ def _run_tile(
                 owned = lut[inst[y0:y1, x0:x1]]
                 wtr = tr * rasterio.Affine.translation(x0, y0)
                 parts: dict[int, list] = {}
-                for g, v in rasterio.features.shapes(owned, mask=owned > 0, transform=wtr):
+                for g, v in contourrs.shapes(owned, mask=owned > 0, transform=wtr):
                     parts.setdefault(int(v), []).append(shapely.geometry.shape(g))
                 for i in ids:
                     ps = parts.get(int(i))
@@ -666,8 +654,8 @@ def main() -> None:
     ap.add_argument("--workers", type=int, default=1)
     ap.add_argument(
         "--owned-squares", type=Path, default=SQUARES,
-        help="squares of the run's keep-list tiles (ownership.py squares); r1 used "
-        "owned_squares_2e.csv",
+        help="squares of the run's keep-list tiles (ownership.py squares); the published "
+        "vectors used owned_squares_2e.csv",
     )
     ap.add_argument("--force", action="store_true", help="rerun tiles that are already current")
     ap.add_argument("--shard", type=int, default=int(os.environ.get("SLURM_ARRAY_TASK_ID", 0)))
@@ -679,10 +667,8 @@ def main() -> None:
     a = ap.parse_args()
 
     src = a.scores / str(a.year)
-    # `names or glob` would glob every tile in the year when --tile-list names an
-    # EMPTY file, because an empty list is falsy -- the opposite of what the caller
-    # asked for, and the "no input scores" guard below cannot fire either.
-    # simplify_polygons globs only when no list was given at all; match that.
+    # An empty --tile-list means no tiles, not every tile, so test for None rather than
+    # truthiness. Like simplify_polygons, glob only when no list was given.
     names = a.tiles if a.tiles is not None else None
     if names is None and a.tile_list is not None:
         names = a.tile_list.read_text().split()
@@ -702,8 +688,7 @@ def main() -> None:
         ap.error("score and outline directories must differ")
     out_dir = a.out_root / str(a.year)
     out_dir.mkdir(parents=True, exist_ok=True)
-    # Resume on the fingerprint, not on mere existence: a regenerated score COG or a
-    # changed --core/--halo/--simplify-m used to be skipped silently.
+    # Resume on the fingerprint, not on existence, so regenerated COGs and changed flags rerun.
     if not a.force:
         n0 = len(paths)
         paths = [

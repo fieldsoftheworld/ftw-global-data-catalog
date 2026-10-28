@@ -14,12 +14,10 @@ def drain(
 ) -> list[tuple[str, str]]:
     """Run on_result for each success; return [(key, traceback)] for failures after all finish.
 
-    ``BrokenProcessPool`` is re-raised rather than recorded. It subclasses
-    RuntimeError, so a bare ``except Exception`` swallowed it, and one killed
-    worker breaks the pool for every task that follows: measured, a single
-    self-SIGKILLed task out of 40 produced 0 successes and 40 identical
-    BrokenProcessPool failures, none of which named the culprit. At 10k tiles that
-    is 10k useless tracebacks hiding one OOM.
+    ``BrokenProcessPool`` is re-raised rather than recorded. One killed worker breaks the
+    pool for every task that follows (one SIGKILLed task out of 40 gives 0 successes and
+    40 identical BrokenProcessPool failures, none naming the culprit), so recording them
+    would hide a single OOM behind one traceback per task.
     """
     failures = []
     pending = dict(futs)
