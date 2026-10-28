@@ -8,21 +8,21 @@ area and length (measured in the zone's north UTM CRS, as in conversion), and th
 footer's ``determination:details`` gains the hole-fill clause so the file's
 provenance names the filter that produced it.
 
-**It has no work to do on the 2e release.** Every published zone file sampled
+It has no work to do on the 2e release. Every published zone file sampled
 (2017/2021/2024/2025, zones 01 and 57) already has zero interior rings under
-MIN_HOLE_M2 -- the smallest measured is 21.875 m2, 3.5 px at 2.5 m -- so the
-released data was converted with the rule in force. A file with no small holes is
-therefore reported and **not written**: a rewrite is never byte-identical (fresh
-zstd-19 compression, fresh footer), and the catalog commits ``file:size`` and a
-multihash ``file:checksum`` per zone file, so an identical-content rewrite would
-re-upload the file and invalidate its committed checksum for nothing.
+MIN_HOLE_M2 (the smallest measured is 21.875 m2, 3.5 px at 2.5 m), so the released
+data was converted with the rule in force. A file with no small holes is reported and
+not written, because a rewrite is never byte-identical (fresh zstd-19 compression,
+fresh footer). The catalog commits ``file:size`` and a multihash ``file:checksum`` per
+zone file, so a rewrite with identical content would force a re-upload and invalidate
+the committed checksum.
 
 Do not point this at the published tree. If a patched file ever does reach
 publication, four places record numbers this script changes and none of them
 recompute: each item's ``file:size`` / ``file:checksum`` and its
 "N parcels, N km2 of field area" description, the collection description's parcel /
 area / GiB totals, and ``index/vector.parquet``'s ``size_bytes`` / ``area_km2``
-(``tools/rebuild_index.py`` only rewrites hrefs -- it recomputes nothing). Regenerate
+(``tools/rebuild_index.py`` only rewrites hrefs and recomputes nothing). Regenerate
 all four from the patched files before publishing.
 
     python fill_small_holes.py --in-root fiboa --out-root fiboa-filled --year 2024 --zone 43

@@ -6,7 +6,9 @@ at the bucket's own key, ``{out-root}/raster/{year}/zone=ZZ/gzd=ZZL/{tile}/{tile
 finished year uploads with ``tools/upload_data.py`` as is.
 
 Downloads, the GPU and the COG writers overlap: ``--tile-workers`` tiles download at once, at
-most ``--prefetch`` decoded tiles wait for the GPU, and ``--writers`` threads write COGs.
+most ``--prefetch`` decoded tiles wait for the GPU, and ``--writers`` processes write COGs.
+The writers are processes, not threads, because writer threads slowed the GPU loop in the same
+process by up to 45%; each tile's scores reach its writer through shared memory.
 
 The work list is ``tile_index_{year}.parquet`` (``pipeline/mosaics/indexes.py``) filtered by the
 keep-list; a tile runs only with all four quarters. Every COG carries ``prov_fingerprint``
@@ -17,6 +19,7 @@ keep-list; a tile runs only with all four quarters. Every COG carries ``prov_fin
 import argparse
 import hashlib
 import json
+import multiprocessing
 import os
 import random
 import sys
@@ -24,7 +27,8 @@ import time
 import urllib.error
 import urllib.request
 from collections import deque
-from concurrent.futures import FIRST_COMPLETED, ThreadPoolExecutor, wait
+from concurrent.futures import FIRST_COMPLETED, ProcessPoolExecutor, ThreadPoolExecutor, wait
+from multiprocessing import shared_memory
 from pathlib import Path
 
 import numpy as np
@@ -157,6 +161,32 @@ def write_tile(dst: Path, qa_path: Path, out: np.ndarray, crs, transform: Affine
     return time.perf_counter() - t0
 
 
+def to_shared(out: np.ndarray) -> shared_memory.SharedMemory:
+    shm = shared_memory.SharedMemory(create=True, size=out.nbytes)
+    np.ndarray(out.shape, out.dtype, buffer=shm.buf)[...] = out
+    return shm
+
+
+def release(fut, shm: shared_memory.SharedMemory) -> None:
+    """Wait for a write, then free its shared memory whether or not it failed."""
+    try:
+        fut.result()
+    finally:
+        shm.close()
+        shm.unlink()
+
+
+def write_shared(name: str, shape: tuple[int, ...], *args) -> float:
+    """``write_tile`` in a writer process, on scores in the shared memory block ``name``."""
+    shm = shared_memory.SharedMemory(name=name, track=False)  # the parent unlinks it
+    out = np.ndarray(shape, np.uint8, buffer=shm.buf)
+    try:
+        return write_tile(args[0], args[1], out, *args[2:])
+    finally:
+        del out
+        shm.close()
+
+
 def is_stale(dst: Path, fingerprint: str) -> bool:
     """An existing output written by another run (or without provenance)."""
     if not dst.exists():
@@ -182,7 +212,7 @@ def main() -> None:
     ap.add_argument("--tile-workers", type=int, default=3, help="tiles downloading at once")
     ap.add_argument("--band-workers", type=int, default=16, help="band GETs per tile")
     ap.add_argument("--prefetch", type=int, default=3, help="decoded tiles held in RAM")
-    ap.add_argument("--writers", type=int, default=2, help="COG writer threads")
+    ap.add_argument("--writers", type=int, default=2, help="COG writer processes")
     ap.add_argument("--shard", type=int, default=int(os.environ.get("SLURM_PROCID", 0)))
     ap.add_argument("--num-shards", type=int, default=int(os.environ.get("SLURM_NTASKS", 1)))
     ap.add_argument("--limit", type=int, default=0, help="stop after N tiles (testing)")
@@ -247,7 +277,7 @@ def main() -> None:
     failed: list[str] = []
     band_pool = ThreadPoolExecutor(a.tile_workers * a.band_workers)
     tile_pool = ThreadPoolExecutor(a.tile_workers)
-    writer = ThreadPoolExecutor(a.writers)
+    writer = ProcessPoolExecutor(a.writers, mp_context=multiprocessing.get_context("spawn"))
     pending: deque = deque()
     todo = deque(jobs)
     inflight: set = set()
@@ -298,13 +328,17 @@ def main() -> None:
         compute_s = time.perf_counter() - t1
         del tile["arr"]
         while len(pending) > a.writers:  # each score array is ~3.2 GB
-            pending.popleft().result()
-        pending.append(writer.submit(
-            write_tile, dst_of(tk), a.out_root / "_qa" / str(a.year) / f"{tk}.json", out,
+            release(*pending.popleft())
+        shm = to_shared(out)
+        shape = out.shape
+        del out
+        pending.append((writer.submit(
+            write_shared, shm.name, shape, dst_of(tk),
+            a.out_root / "_qa" / str(a.year) / f"{tk}.json",
             tile["crs"], tile["transform"] * Affine.scale(1.0 / UP),
             {**tags, "tile_key": tk, "source_items": source_items(a.year, tk)},
             {"in": {**tile["in_stats"], **stats}, "prov": prov}, a.patch,
-        ))
+        ), shm))
         if a.stats_file:
             with a.stats_file.open("a") as fh:
                 fh.write(json.dumps({"tile_key": tk, "year": a.year, "dl_s": tile["dl_s"],
@@ -316,8 +350,9 @@ def main() -> None:
         print(f"[{int(done)}/{len(jobs)}] {tk}: dl {tile['bytes'] / 1e9:.2f} GB in "
               f"{tile['dl_s']:.0f}s | gpu idle {wait_s:.1f}s compute {compute_s:.1f}s "
               f"({npatch / compute_s:.0f} patches/s)", flush=True)
-    for f in pending:
-        f.result()
+    while pending:
+        release(*pending.popleft())
+    writer.shutdown()
     wall = time.perf_counter() - t_start
     print(f"done {int(done)} tiles in {wall:.0f}s: {wall / max(done, 1):.1f}s/tile, "
           f"GPU busy {100 * gpu_s / wall:.0f}%, GPU waiting on data {idle_s:.0f}s", flush=True)

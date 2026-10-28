@@ -1,4 +1,4 @@
-"""Lossless codec for BoundaryVote outline tiles: WKB lon/lat <-> int32 deltas on the 2.5 m UTM grid.
+"""Lossless codec for BoundaryVote outline tiles, WKB lon/lat <-> int32 deltas on the UTM grid.
 
 Outlines live on the 2.5 m UTM grid: every vertex is a pixel corner, so the geometry is stored as
 grid integers and rebuilt through the inverse projection. Decoding gives coordinates equal to the
