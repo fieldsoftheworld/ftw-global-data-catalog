@@ -1,5 +1,7 @@
 # Quarterly-mosaic inference
 
+**Current production continuation:** use the immutable [November 2026 runtime](production/20261102/README.md) and [RAILS instructions](RAILS.md). Its source bytes and dependency lock match the running AWS deployment; the general runner and lock below evolve independently.
+
 FP32 ONNX inference on 16-band, north-up 10 m UTM stacks. Band order:
 Q1–Q4, each B04/B03/B02/B08 (red, green, blue, NIR). Every input must
 carry that order: either `Q1_B04`…`Q4_B08` band descriptions or an
