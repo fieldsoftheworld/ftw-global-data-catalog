@@ -144,7 +144,6 @@
     "data": {
       "type": "image/tiff; application=geotiff; profile=cloud-optimized",
       "title": "Field & boundary probabilities (COG)",
-      "description": "One MGRS-based tile: a two-band uint8 Cloud-Optimized GeoTIFF at 2.5 m in the tile's UTM zone, band 1 `field` and band 2 `boundary`, probability = value × 1/255. No nodata is declared, so every pixel carries a probability.",
       "roles": [
         "data"
       ],
@@ -172,7 +171,6 @@
     "thumbnail": {
       "type": "image/png",
       "title": "Field probability preview",
-      "description": "Small PNG render of the tile's `field` band, for browsing.",
       "roles": [
         "thumbnail"
       ]

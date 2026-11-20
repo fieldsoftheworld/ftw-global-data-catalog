@@ -1,95 +1,95 @@
 {
-  "type": "Catalog",
-  "stac_version": "1.1.0",
-  "stac_extensions": [
-    "https://schemas.portolan-sdi.org/portolan/v0.3.0/schema.json"
-  ],
+  "description": "Per-year collections of predicted agricultural field boundaries as per-UTM-zone GeoParquet, derived from Sentinel-2 imagery. The 2018, 2020, 2021, 2022, 2023, 2024 and 2025 collections describe the updated processing recipe. The other year links retain previously published collections; their presence does not indicate completion of the updated processing for those years. Use each year collection for its provenance and asset inventory.",
   "id": "vector",
-  "title": "FTW Global (2nd Edition) — Vector field boundaries",
-  "description": "Per-year collections of predicted agricultural field boundaries as per-UTM-zone cloud-native GeoParquet, 2017–2025. Explore them on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/) or in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/catalog.json); the files are listed on [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
   "links": [
     {
+      "href": "../catalog.json",
       "rel": "root",
-      "href": "../catalog.json",
-      "type": "application/json",
-      "title": "Fields of the World — Global Data"
-    },
-    {
-      "rel": "parent",
-      "href": "../catalog.json",
+      "title": "Fields of the World — Global Data",
       "type": "application/json"
     },
     {
-      "rel": "vcs",
+      "href": "../catalog.json",
+      "rel": "parent",
+      "type": "application/json"
+    },
+    {
       "href": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
-      "type": "text/html",
-      "title": "Catalog source repository (metadata and pipeline)"
+      "rel": "vcs",
+      "title": "Catalog source repository (metadata and pipeline)",
+      "type": "text/html"
     },
     {
-      "rel": "describedby",
       "href": "./README.md",
-      "type": "text/markdown",
-      "title": "Vector tree README"
+      "rel": "describedby",
+      "title": "Vector tree README",
+      "type": "text/markdown"
     },
     {
-      "rel": "agents",
       "href": "./AGENTS.md",
-      "type": "text/markdown",
-      "title": "Vector tree agent guide"
+      "rel": "agents",
+      "title": "Vector tree agent guide",
+      "type": "text/markdown"
     },
     {
-      "rel": "child",
       "href": "./2017/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field Boundaries 2017 (GeoParquet)"
+      "rel": "child",
+      "title": "FTW Global — Field Boundaries 2017 (GeoParquet)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2018/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field Boundaries 2018 (GeoParquet)"
+      "rel": "child",
+      "title": "FTW Global — Field Boundaries 2018 (GeoParquet)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2019/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field Boundaries 2019 (GeoParquet)"
+      "rel": "child",
+      "title": "FTW Global — Field Boundaries 2019 (GeoParquet)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2020/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field Boundaries 2020 (GeoParquet)"
+      "rel": "child",
+      "title": "FTW Global — Field Boundaries 2020 (GeoParquet)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2021/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field Boundaries 2021 (GeoParquet)"
+      "rel": "child",
+      "title": "FTW Global — Field Boundaries 2021 (GeoParquet)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2022/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field Boundaries 2022 (GeoParquet)"
+      "rel": "child",
+      "title": "FTW Global — Field Boundaries 2022 (GeoParquet)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2023/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field Boundaries 2023 (GeoParquet)"
+      "rel": "child",
+      "title": "FTW Global — Field Boundaries 2023 (GeoParquet)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2024/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field Boundaries 2024 (GeoParquet)"
+      "rel": "child",
+      "title": "FTW Global — Field Boundaries 2024 (GeoParquet)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2025/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field Boundaries 2025 (GeoParquet)"
+      "rel": "child",
+      "title": "FTW Global — Field Boundaries 2025 (GeoParquet)",
+      "type": "application/json"
     }
-  ]
+  ],
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.3.0/schema.json"
+  ],
+  "stac_version": "1.1.0",
+  "title": "FTW Global (2nd Edition) — Vector field boundaries",
+  "type": "Catalog"
 }

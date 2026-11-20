@@ -1,0 +1,137 @@
+{
+  "assets": {
+    "data": {
+      "alternate": {
+        "s3": {
+          "href": "s3://us-west-2.opendata.source.coop/ftw/global-data-2e/vector/2023/zone=30/utm30.parquet",
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
+        }
+      },
+      "file:checksum": "1220bbb53e59d243db7f61914fff2f6a403f620ed0aa3393bad84a72ce4b90eefe96",
+      "file:size": 5729777981,
+      "href": "../zone=30/utm30.parquet",
+      "roles": [
+        "data"
+      ],
+      "title": "UTM zone 30 — 2023 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2023 collection: 8,658,879 predicted field parcels in UTM zone 30, WGS 84, 5.3 GiB. Columns are described in this item's `table:columns`.",
+      "type": "application/vnd.apache.parquet"
+    }
+  },
+  "bbox": [
+    -6.008574037662361,
+    4.830998228536197,
+    0.9068903631360019,
+    60.76073413376268
+  ],
+  "collection": "ftw-s2-2023",
+  "geometry": {
+    "coordinates": [
+      [
+        [
+          0.9068903631360019,
+          4.830998228536197
+        ],
+        [
+          0.9068903631360019,
+          60.76073413376268
+        ],
+        [
+          -6.008574037662361,
+          60.76073413376268
+        ],
+        [
+          -6.008574037662361,
+          4.830998228536197
+        ],
+        [
+          0.9068903631360019,
+          4.830998228536197
+        ]
+      ]
+    ],
+    "type": "Polygon"
+  },
+  "id": "utm30",
+  "links": [
+    {
+      "href": "../../../catalog.json",
+      "rel": "root",
+      "type": "application/json"
+    },
+    {
+      "href": "../collection.json",
+      "rel": "parent",
+      "type": "application/json"
+    },
+    {
+      "href": "../collection.json",
+      "rel": "collection",
+      "type": "application/json"
+    }
+  ],
+  "properties": {
+    "datetime": "2023-01-01T00:00:00Z",
+    "description": "Predicted field boundaries falling in UTM zone 30 for 2023: 8,658,879 parcels, 235,563 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "end_datetime": "2023-12-31T23:59:59Z",
+    "proj:code": "EPSG:4326",
+    "start_datetime": "2023-01-01T00:00:00Z",
+    "table:columns": [
+      {
+        "description": "Parcel identifier, unique per collection ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
+        "name": "id",
+        "type": "string"
+      },
+      {
+        "description": "The vecorel collection the parcel belongs to (constant per year, e.g. `ftw-s2-2025`).",
+        "name": "collection",
+        "type": "string"
+      },
+      {
+        "description": "Parcel footprint (WKB Polygon/MultiPolygon, WGS 84).",
+        "name": "geometry",
+        "type": "binary"
+      },
+      {
+        "description": "Bounding box of the parcel (xmin, ymin, xmax, ymax).",
+        "name": "bbox",
+        "type": "struct"
+      },
+      {
+        "description": "Area of the parcel in square meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics).",
+        "name": "metrics:area",
+        "type": "float"
+      },
+      {
+        "description": "Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics).",
+        "name": "metrics:perimeter",
+        "type": "float"
+      },
+      {
+        "description": "Mean model field probability inside the parcel, × 100 rounded (0–100).",
+        "name": "score",
+        "type": "uint8"
+      },
+      {
+        "description": "The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
+        "name": "determination:datetime",
+        "type": "timestamp"
+      },
+      {
+        "description": "Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
+        "name": "determination:method",
+        "type": "string"
+      }
+    ],
+    "table:row_count": 8658879,
+    "title": "UTM zone 30 — 2023 field boundaries"
+  },
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+  ],
+  "stac_version": "1.1.0",
+  "type": "Feature"
+}

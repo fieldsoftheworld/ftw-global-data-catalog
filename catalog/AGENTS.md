@@ -1,22 +1,10 @@
-# AGENTS.md — Fields of the World — Global Data
+# AGENTS.md — Fields of the World — Global Data (2nd Edition)
+
+The 2018, 2020, 2021, 2022, 2023, 2024 and 2025 collections use the updated processing documented in their year collections. Other year links retain historical published collections; they do not imply completion of the updated recipe for those years. Consult each collection for its provenance, footprint and asset inventory.
 
 Guidance for AI agents and automated clients working with this Portolan/STAC
 catalog. Every claim in this file is quoted from a source or measured from the
 data.
-
-**Editions.** This catalog is the entry point for FTW global field-boundary
-data. Its own collections are the **2nd Edition** (current): 2.5 m
-field/boundary probability COGs and per-UTM-zone GeoParquet polygons for
-2017–2025, under
-`https://data.source.coop/ftw/global-data-2e/`. The **1st Edition** — 10 m
-PRUE predictions for 2024 and 2025, with confidence layers, probability Zarr
-and Sentinel-2 composites — is a separate published catalog at
-[`https://data.source.coop/ftw/global-data/first-edition/catalog.json`](https://data.source.coop/ftw/global-data/first-edition/catalog.json),
-reached through the `child` link of that title on the root. The two editions
-come from different models at different resolutions over different years; they
-are not interchangeable, and a parcel id in one means nothing in the other.
-Everything below this paragraph describes the 2nd Edition only — read the 1st
-Edition's own AGENTS.md before querying it.
 
 Around this file: [catalog.json](https://data.source.coop/ftw/global-data-2e/catalog.json) is the normative root and
 [README.md](https://source.coop/ftw/global-data-2e) is the human landing page. For a person rather than
@@ -40,7 +28,7 @@ it carries the measured numbers and the quirks this file does not repeat.
 - Resolve structural links relative to this object.
 - Bucket layout:
   - `vector/{year}/zone=NN/utm{NN}.parquet` — field polygons, hive-partitioned
-    by UTM zone, 54 zones per year. A whole-year read globs
+    by UTM zone; the updated 2018/2020/2021/2022/2023/2024/2025 collections contain 60 zones each. A whole-year read globs
     `s3://us-west-2.opendata.source.coop/ftw/global-data-2e/vector/{year}/zone=*/utm*.parquet`.
   - `vector/{year}/fields-{year}.pmtiles` and `vector/{year}/styles/*.json` —
     map tiles and MapLibre styles
@@ -49,13 +37,7 @@ it carries the measured numbers and the quirks this file does not repeat.
     GZD come from the tile key: `01KFS_0_0` → `zone=01/gzd=01K/`)
   - `index/vector.parquet`, `index/raster.parquet` — manifests listing hrefs,
     sizes and bboxes for every data file
-- Read in place over HTTP range requests; there is no reason to download.
-  Use `https://` URLs for single files (`s3://` hangs on some networks). To
-  glob the vector partitions you need `s3://` with
-  `CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2', URL_STYLE 'path')`
-  and `hive_partitioning=1` — http URLs cannot expand a wildcard. A
-  browser-like `User-Agent` is needed for the bucket list API only, not for
-  file reads.
+- Use explicit HTTPS asset URLs for anonymous reads, with a browser-like User-Agent. Direct S3 clients use bucket us-west-2.opendata.source.coop, prefix ftw/global-data-2e/, region us-west-2 and path-style addressing through https://s3.us-west-2.amazonaws.com. Canonical HTTPS URLs remain unchanged. Listing and authenticated access depend on account permissions; anonymous bucket listing is not assumed. HTTPS URLs cannot expand wildcards, so enumerate assets from validated item or index inventories.
 
 ## Coordinate systems, with consequences
 
@@ -75,18 +57,10 @@ it carries the measured numbers and the quirks this file does not repeat.
   parcel. This is not a land-tenure product, so do not answer ownership,
   tenure or legal-boundary questions from it. See
   [Fields of the World](https://fieldsofthe.world).
-- Coverage is cropland-gated and therefore not global. Only MGRS tiles with
-  at least 1% cropland were processed, so an empty region means the pipeline
-  never ran there. Never report absence of parcels as absence of fields;
-  check `index/raster.parquet` for whether a tile exists at all.
-- Inside a processed tile, parcels that are mostly inland water or that fall
-  on the sea are removed, along with parcels over 5 km² and parcels owned by a
-  neighboring tile. No other land-cover or terrain rule applies, so scrub and
-  built-up ground can still carry predicted parcels.
-- In tiles where the Sentinel-2 mosaics have large nodata gaps, mainly the
-  sparse 2017–2019 mosaics, detections are probably under-reported even after
-  the gaps were filled. Parcel counts for 2017, 2018 and 2019 are about 9–12%
-  below 2025, and part of that gap is the input, not the land.
+- Check the actual year raster inventory before interpreting missing polygons. Coverage differs by year and version; absence of published polygons does not establish absence of fields.
+
+- For 2018, 2020, 2021, 2022, 2023, 2024 and 2025, extraction uses a minimum mean field probability of 0.10, fills enclosed holes strictly smaller than 100 m², and uses a minimum area of 900 m². Independent crop filtering evaluates polygons with finite area from 900 through 5,000,000 m² against the union of native cropland observations from 2017, 2020 and 2024, removing polygons with less than 5% overlap. Unknown or incomplete coverage, nonfinite areas and polygons outside that size interval are retained by this filtering stage. Downstream vector cleanup is documented separately in each vector collection; its 20 m² hole-cleanup description is distinct from extraction hole filling.
+
 - The vector `score` (uint8 0–100) is the mean model field probability inside
   the parcel × 100 — a ranking for filtering, not a calibrated probability.
   No calibration against ground truth is published for this 2nd Edition.
@@ -96,16 +70,4 @@ it carries the measured numbers and the quirks this file does not repeat.
 
 ## Fixing this metadata
 
-`catalog/` in
-[the repository](https://github.com/fieldsoftheworld/ftw-global-data-catalog)
-**is** this catalog: it syncs 1:1 to the bucket through `tools/publish.py`, so
-a merged change lands here on the next publish. Publishing never deletes, and
-no data bytes live in git — the repository carries only the metadata that
-describes them. The vector tree is generated by `tools/build_vector_items.py`
-and the raster tree by `tools/build_raster_items.py`; edit the generator and
-re-run it, never the generated output. CI validates every change.
-
-That repository also holds the processing pipeline that produced the data.
-[pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md)
-documents every stage, and is the place to check what a column means before
-inferring it from the data.
+Validate changes against the exact year collection, source inventory, artifact checksums and schema/link checks before publication. The [catalog repository](https://github.com/fieldsoftheworld/ftw-global-data-catalog) retains the original generators; [production processing](https://github.com/taylor-geospatial/global-ftw-2e) records the updated recipe and versioned metadata adapters.

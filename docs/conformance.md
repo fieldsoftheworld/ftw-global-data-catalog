@@ -74,15 +74,17 @@ to `image/tiff; application=geotiff; profile=cloud-optimized`, and rashid
 0.4.0 then stops reading the asset as a derivative that needs a MapLibre
 style: a COG's styling is the classified-vs-continuous raster question, not
 the PMTiles one. Measured both ways — flipping that one media type back on
-`raster/2017/collection.json` brings the finding straight back, 1×. So
-`ACCEPTED` is empty, and this section stays as the record of why the rule
+`raster/2017/collection.json` brings the finding straight back, 1×. The
+seven re-processed years arrived from the publisher already declaring the
+COG media type, so only 2017 and 2019 needed the correction. `ACCEPTED` is
+empty, and this section stays as the record of why the rule
 used to fire.
 
 The colormap is documented instead — in each year's README.md and in
 `pipeline/make_overview.py`, which is the code that applies it. The rule as
 written does not distinguish a client-styled asset from a baked one; filed as
 [rashid#202](https://github.com/portolan-sdi/rashid/issues/202). Nine
-findings, one per year.
+findings when every year declared the plain GeoTIFF media type.
 
 Portolan v0.3.0 does not close this. Its Visualization Styles section still
 says "Styling for continuous and multiband rasters is still under discussion"
@@ -419,9 +421,9 @@ What changed in the catalog, with the requirement each change answers:
 |---|---|
 | Schema URI `v0.2.0` → `v0.3.0` on the root, both tree catalogs and all 18 collections | PORTO-CORE-006, PORTO-CORE-009 |
 | The vector year collections' glob `data` asset removed; the glob lives in `partition:glob` alone, and the collection description names it | PORTO-FMT-065 |
-| `partition:glob` rewritten from the relative `./zone=*/utm*.parquet` to the absolute `s3://us-west-2.opendata.source.coop/...` URL | PORTO-FMT-064, PORTO-FMT-075 |
-| `storage:schemes` added to the vector collections (storage extension v2.0.0, `type: aws-s3`, path-style endpoint because the bucket name has dots) | PORTO-FMT-066 |
-| `description` added to every asset that lacked one: 486 item data assets, and the collections' `pmtiles`, `thumbnail`, `coverage` and four `styles/*` assets | PORTO-CORE-088 |
+| `partition:glob` rewritten from the relative `./zone=*/utm*.parquet` to `s3://ftw/global-data-2e/...`, listable through the Source Cooperative data proxy | PORTO-FMT-064, PORTO-FMT-075 |
+| `storage:schemes` added to the vector collections (storage extension v2.0.0, `type: custom-s3`, endpoint `https://data.source.coop`, path-style). rashid resolves the glob through it: without the entry the listing is denied, measured | PORTO-FMT-066 |
+| `title` and `description` filled on every asset that lacked them: 528 item data assets, and per year `pmtiles`, `thumbnail`, `coverage`, `mirror`, `cells-a5r7`, `cells-pmtiles`, eight `webcells-a5r*` and four `styles/*` | PORTO-CORE-088 |
 | The raster `overview` asset re-typed from `image/tiff; application=geotiff` to the COG media type, and given `start_datetime`/`end_datetime` | the media-type table in core.md; PORTO-FMT-072 |
 | `item_assets` definitions and the generated raster item assets given descriptions | PORTO-CORE-088 |
 
@@ -440,14 +442,16 @@ Not changed, with the reason:
   as one (HTTP cannot list, so the wildcard never expanded), and v0.3 forbids
   it. The per-partition https URL and the s3 glob are both in the collection
   description, the README and AGENTS.md.
-- **`file:checksum` on the per-year `overview.tif`** stays absent, under the
-  existing "no `file:checksum` on the raster COG assets" policy above: it is a
-  multi-GB mosaic, nine of them, ~19.7 GB to read. PTL-AST-003 reports it as a
-  warning, so the gate stays honest without an `ACCEPTED` entry.
+- **`file:checksum` on `overview.tif` for 2017 and 2019** stays absent, under
+  the existing "no `file:checksum` on the raster COG assets" policy above: a
+  multi-GB mosaic each, ~4.3 GB to read for the two. The seven re-processed
+  years' overviews arrived from the publisher with checksums, so PTL-AST-003
+  is down from 27 findings to 2, and it is a warning, so the gate stays honest
+  without an `ACCEPTED` entry.
 - **PTL-CAT-001** (warning, 9×) still fires on the vector year collections:
-  each holds 54 `item` links with no subcatalog grouping them. Grouping them
-  would change 486 published item URLs for a browse nicety; the raster tree is
-  grouped because it has 7,466 items a year, not 54.
+  each holds 54 or 60 `item` links with no subcatalog grouping them. Grouping
+  them would change 528 published item URLs for a browse nicety; the raster
+  tree is grouped because it has thousands of items a year, not dozens.
 
 ### The 1st-edition `child` link 404s until ftw-data-catalog republishes
 
@@ -469,32 +473,123 @@ it — `CI_LIGHT=1` skips every href whose bytes are not in the checkout — so
 this is a finding for whoever runs the gate locally before publishing. Do not
 publish this catalog's root until the link resolves.
 
-### Why this migration patched generated output
+### catalog/ now mirrors the published catalog (2026-11-20)
 
-`catalog/vector/**` and `catalog/raster/*/collection.json` are generated, and
-the rule in this repository is to edit the generator and re-run it. This
-migration edited the generators **and** applied the same change to the
-committed output, because re-running them would have changed much more than
-the metadata:
+`catalog/` **is** the published catalog, and for most of 2026 this
+repository's generators were what wrote it. That stopped being true before
+this migration: the current generation was produced by the pipeline in
+`taylor-geospatial/global-ftw-2e`, which is private and whose generator
+changes are not here. Git described the previous generation, the bucket
+served the current one, and the two had drifted:
 
-- `index/vector.parquet` now lists **60** zones a year, and
-  `index/raster.parquet` ~**14,580** tiles a year, for 2018 and 2020–2025. The
-  committed tree describes 54 zones and ~7,466 tiles. Only 2017 and 2019 still
-  match. The published bucket copy of `vector/2022/collection.json` matches the
-  newer index, not this tree, so the bucket is ahead of `main` for those years.
-- `collections` derives the 54 `child` links per year from the gitignored item
-  tree, so a checkout without that tree would emit year collections with no
-  children at all.
+| | git `main` before this branch | published, adopted here |
+|---|---|---|
+| vector partitions a year | 54 | **60** for 2018 and 2020–2025 |
+| raster tiles a year | ~7,466 | **~14,580** for the same years |
+| vector item paths | `vector/{year}/zone=NN/utmNN.json` | `vector/{year}/utmNN/utmNN.json` for those years |
+| collection-level vector assets | 10 | 18 — `cells-a5r7` replaces `cells`, and `webcells-a5r4` … `webcells-a5r11` are new |
+| grand total parcels | 1,242,648,258 | **1,773,302,757** |
 
-So the equivalence was proved instead of assumed: for 2017 and 2019, the two
-years whose index rows still match, the generators were run into a scratch
-tree and their `collection.json`, `README.md` and `AGENTS.md` came out
-**byte-identical** to the patched committed files. Reconciling the newer index
-with this tree is a separate job, and it is a data change, not a metadata one.
+The published copy is authoritative, so this branch adopted it: every tracked
+metadata object was fetched from
+`https://data.source.coop/ftw/global-data-2e/` and replaced its committed
+version. 682 objects, every one size-checked against the bucket listing it
+came from. The manifest:
+
+```
+tracked in git main : 640
+published (adopted) : 682
+identical           : 169     (all of 2017 and 2019, and the shared assets)
+changed             :  93
+only in git main    : 378     vector/{7 years}/zone=NN/utmNN.json
+only published      : 420     vector/{7 years}/utmNN/utmNN.json
+```
+
+2017 and 2019 came back byte-identical, which is the same result this branch
+had already proved by regenerating those two years. The 378 `zone=NN/utmNN.json`
+item files are the previous generation's items for the seven re-processed
+years. They are **still in the bucket** — publishing never deletes — but the
+published collections do not link them, so they are orphans and this
+repository no longer tracks them. Pruning them from the bucket is a separate
+decision for the data owner.
+
+### The generators cannot reproduce this tree, and what still holds
+
+`tools/build_vector_items.py` and `tools/build_raster_items.py` describe the
+previous generation. Do not run them over `catalog/` expecting a no-op:
+
+- They read `index/vector.parquet` and `index/raster.parquet`, which now
+  describe the current generation, so a run would rewrite every year's
+  numbers, and they write items to `zone=NN/`, not `utmNN/`.
+- They know nothing about the `webcells-a5r*` assets or `cells-a5r7`.
+- `build_raster_items.py collections` derives its `child` links from the
+  gitignored item tree, so a checkout without that tree emits year
+  collections with no children at all.
+
+These equivalence claims still hold, and were re-checked on this branch:
+
+- The **2017 and 2019** vector collections, items, READMEs and AGENTS.md are
+  what `build_vector_items.py` produces, byte for byte — the published copies
+  and a generator run agree.
+- The **2017 and 2019** raster collections, READMEs and AGENTS.md are what
+  `build_raster_items.py collections` produces, byte for byte, when its child
+  links are supplied from the committed tree.
+
+These no longer hold, and are the work waiting on the upstream generator:
+
+- Every other year's vector and raster metadata. The pipeline changes that
+  produce it are in `taylor-geospatial/global-ftw-2e` and are to be
+  upstreamed into this repository; no code was copied from there.
+
+Until they are, the fields this repository owns are re-applied by
+`tools/apply_v03_metadata.py`, which is idempotent and gated by
+`tests/test_v03_metadata.py` — a `--check` run that fails when `catalog/`
+stops matching what the script says it should be. That is what replaces
+"edit the generator and re-run it" for the years the generators no longer
+describe. The script is also the specification of what to upstream: every
+field in it is one the published tree lacked.
 
 Two generator traps were closed on the way, both of the "a re-run silently
 drops metadata" kind that `tiles_meta_for` already guarded against:
-`build_vector_items.py` now reads the 486 item `file:checksum` values back out
-of the committed items when no `--checksums` sidecar is given, and
+`build_vector_items.py` reads the item `file:checksum` values back out of the
+committed items when no `--checksums` sidecar is given, and
 `build_raster_items.py` reads the `mirror` digest back out of the committed
 collection when the staged `items.parquet` is absent.
+
+### The published summary tables disagreed with the published collections
+
+`catalog/README.md` and `catalog/vector/README.md` carry a
+`| Year | Processing | Raster tiles | Predicted parcels |` table. As
+published, its last column disagreed with the collections for four years:
+
+| Year | Published table | Collection, year README and items | Difference |
+|---|---:|---:|---:|
+| 2018 | 207,772,743 | 207,793,034 | 20,291 |
+| 2023 | 217,506,501 | 217,529,063 | 22,562 |
+| 2024 | 204,609,812 | 204,629,903 | 20,091 |
+| 2025 | 225,519,173 | 225,542,717 | 23,544 |
+
+2020, 2021 and 2022 agree. The collections, the year READMEs and the item
+`table:row_count` values all agree with each other, so the table is the
+outlier; `tools/apply_v03_metadata.py` corrects it from the sum over the
+items. `tests/test_counts.py` is the gate that found this, and it reads every
+copy of every count back — 1,060 conditional checks on the current tree.
+Reported for the pipeline that writes those tables; the cause is upstream, not
+here.
+
+### What `tests/test_counts.py` stopped requiring, and why
+
+Two shapes of document are now in the tree. This repository's year README
+leads with `**N parcels** in K per-UTM-zone GeoParquet files (G GiB)`; the
+published one for a re-processed year leads with `N parcels in K UTM-zone
+files` and has no GiB, no "largest zone" sentence, and an AGENTS.md with no
+counts at all. The gate therefore checks each number **where it appears**
+rather than requiring every document to state every number. What stayed
+unconditional: the collection description's parcel count and GiB, the year
+README's leading count, the summary-table rows, and the two repo-level grand
+totals. What became conditional: the item `properties.description` counts,
+the "largest zone" sentence, the AGENTS.md count, and the grand total in
+`catalog/README.md`, `catalog/vector/README.md` and `catalog/catalog.json`,
+none of which the published documents state any more. The gate prints how
+many conditional checks ran, so a document quietly losing its numbers shows
+up as that number falling.

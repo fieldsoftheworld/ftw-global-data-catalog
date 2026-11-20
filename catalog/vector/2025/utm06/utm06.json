@@ -1,0 +1,137 @@
+{
+  "assets": {
+    "data": {
+      "alternate": {
+        "s3": {
+          "href": "s3://us-west-2.opendata.source.coop/ftw/global-data-2e/vector/2025/zone=06/utm06.parquet",
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
+        }
+      },
+      "file:checksum": "12204749adcd207c2d83548c01e74adf52de9c12a22a9b06803cd98559473ce51173",
+      "file:size": 3260543,
+      "href": "../zone=06/utm06.parquet",
+      "roles": [
+        "data"
+      ],
+      "title": "UTM zone 6 — 2025 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2025 collection: 9,613 predicted field parcels in UTM zone 6, WGS 84, 3.1 MiB. Columns are described in this item's `table:columns`.",
+      "type": "application/vnd.apache.parquet"
+    }
+  },
+  "bbox": [
+    -150.00099433230704,
+    -27.649516118832334,
+    -142.6636510637957,
+    67.58327425165268
+  ],
+  "collection": "ftw-s2-2025",
+  "geometry": {
+    "coordinates": [
+      [
+        [
+          -142.6636510637957,
+          -27.649516118832334
+        ],
+        [
+          -142.6636510637957,
+          67.58327425165268
+        ],
+        [
+          -150.00099433230704,
+          67.58327425165268
+        ],
+        [
+          -150.00099433230704,
+          -27.649516118832334
+        ],
+        [
+          -142.6636510637957,
+          -27.649516118832334
+        ]
+      ]
+    ],
+    "type": "Polygon"
+  },
+  "id": "utm06",
+  "links": [
+    {
+      "href": "../../../catalog.json",
+      "rel": "root",
+      "type": "application/json"
+    },
+    {
+      "href": "../collection.json",
+      "rel": "parent",
+      "type": "application/json"
+    },
+    {
+      "href": "../collection.json",
+      "rel": "collection",
+      "type": "application/json"
+    }
+  ],
+  "properties": {
+    "datetime": "2025-01-01T00:00:00Z",
+    "description": "Predicted field boundaries falling in UTM zone 6 for 2025: 9,613 parcels, 192 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "end_datetime": "2025-12-31T23:59:59Z",
+    "proj:code": "EPSG:4326",
+    "start_datetime": "2025-01-01T00:00:00Z",
+    "table:columns": [
+      {
+        "description": "Parcel identifier, unique per collection ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
+        "name": "id",
+        "type": "string"
+      },
+      {
+        "description": "The vecorel collection the parcel belongs to (constant per year, e.g. `ftw-s2-2025`).",
+        "name": "collection",
+        "type": "string"
+      },
+      {
+        "description": "Parcel footprint (WKB Polygon/MultiPolygon, WGS 84).",
+        "name": "geometry",
+        "type": "binary"
+      },
+      {
+        "description": "Bounding box of the parcel (xmin, ymin, xmax, ymax).",
+        "name": "bbox",
+        "type": "struct"
+      },
+      {
+        "description": "Area of the parcel in square meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics).",
+        "name": "metrics:area",
+        "type": "float"
+      },
+      {
+        "description": "Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics).",
+        "name": "metrics:perimeter",
+        "type": "float"
+      },
+      {
+        "description": "Mean model field probability inside the parcel, × 100 rounded (0–100).",
+        "name": "score",
+        "type": "uint8"
+      },
+      {
+        "description": "The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
+        "name": "determination:datetime",
+        "type": "timestamp"
+      },
+      {
+        "description": "Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
+        "name": "determination:method",
+        "type": "string"
+      }
+    ],
+    "table:row_count": 9613,
+    "title": "UTM zone 6 — 2025 field boundaries"
+  },
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+  ],
+  "stac_version": "1.1.0",
+  "type": "Feature"
+}

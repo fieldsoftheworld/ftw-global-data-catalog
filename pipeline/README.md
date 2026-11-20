@@ -1,8 +1,8 @@
 # The FTW 2nd Edition processing pipeline
 
 This directory holds the code that turns Sentinel-2 imagery into the two
-products the catalog publishes: 1,242,648,258 field polygons as per-UTM-zone
-GeoParquet, and 67,197 field/boundary-probability COGs at 2.5 m, both covering
+products the catalog publishes: 1,773,302,757 field polygons as per-UTM-zone
+GeoParquet, and 117,023 field/boundary-probability COGs at 2.5 m, both covering
 2017 through 2025. The published result is the
 [FTW Global Data 2nd Edition](https://source.coop/ftw/global-data-2e) catalog,
 and the repository around this directory is

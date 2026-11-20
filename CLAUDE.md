@@ -109,13 +109,21 @@ as an absolute `s3://` URL with a `storage:schemes` entry beside it; every asset
 (with stac-check + pyflakes). Never widen `ACCEPTED` in
 `tests/test_portolan_conformance.py` without a row in `docs/conformance.md`.
 
-**The published index manifests have moved past this tree** (measured 2026-11-20):
-`index/vector.parquet` lists 60 zones a year and `index/raster.parquet` ~14,580 tiles a
-year for 2018 and 2020–2025, where `catalog/` describes 54 zones and ~7,466 tiles. Only
-2017 and 2019 still agree. So a plain re-run of either generator rewrites the catalog to
-a newer data generation. Check that before regenerating, and if you only mean to change
-metadata, change the generator and apply the same change to the committed output (the
-v0.3 migration did exactly that, and verified it by regenerating 2017 and 2019).
+**`catalog/` mirrors the published catalog, and the generators cannot reproduce it**
+(adopted 2026-11-20). The current generation was produced by the pipeline in the private
+`taylor-geospatial/global-ftw-2e`: 60 vector partitions and ~14,580 raster tiles a year for
+2018 and 2020–2025, items at `vector/{year}/utmNN/utmNN.json`, and `webcells-a5r4`…`a5r11`
+assets this repo's generators know nothing about. 2017 and 2019 are still this repo's own
+output and still regenerate byte-identically. **Do not run `build_vector_items.py` or
+`build_raster_items.py` over `catalog/` expecting a no-op** — they read the index manifests,
+which now describe the current generation, and they write items to `zone=NN/`.
+
+The fields this repo owns on top of the published tree (v0.3 schema URI, root title and the
+1st-edition child link, `partition:glob` + `storage:schemes`, every asset title/description,
+the overview media type and datetimes, the licence line in a collection README) are applied
+by `tools/apply_v03_metadata.py`, which is idempotent and gated by `tests/test_v03_metadata.py`
+(`--check`). After adopting a newer published tree, re-run it and commit. It is also the
+specification of what to upstream into the pipeline repo.
 
 The two index gates (`tests/test_indexes.py`, `tests/test_raster_index_lite.py`) also need
 `pyarrow numpy duckdb shapely pyproj rasterio` — the same list `.github/workflows/ci.yml`

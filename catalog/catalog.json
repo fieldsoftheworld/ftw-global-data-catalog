@@ -1,50 +1,44 @@
 {
-  "type": "Catalog",
-  "stac_version": "1.1.0",
-  "stac_extensions": [
-    "https://schemas.portolan-sdi.org/portolan/v0.3.0/schema.json"
-  ],
-  "id": "ftw-global-data-2e",
-  "title": "Fields of the World — Global Data",
-  "description": "The single entry point for Fields of the World (FTW) global field-boundary data. The collections here are the **2nd Edition**, the current release: 1,242,648,258 predicted field polygons as per-UTM-zone GeoParquet for 2017–2025, and 67,197 two-band field/boundary-probability Cloud-Optimized GeoTIFFs at 2.5 m (25.8 TB) for the same years. The **1st Edition** — 10 m PRUE predictions for 2024 and 2025, with prediction-confidence layers, probability Zarr and Sentinel-2 composites — is published separately, under `ftw/global-data/first-edition`, and hangs off this catalog as the [Fields of the World — Global Data (1st Edition)](https://data.source.coop/ftw/global-data/first-edition/catalog.json) sub-catalog. Explore the current fields on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/), walk this catalog in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/catalog.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). 2nd Edition predictions derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/), and the pipeline that produced them is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md). One collection per year in each tree, so new years drop in incrementally. These are model predictions. A field here is a remote-sensing field unit, not a cadastral or legal parcel, and this is not a land-tenure product; see the catalog README for the limitations in full.",
-  "git:repository": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
-  "git:ref": "main",
+  "description": "The single entry point for Fields of the World (FTW) global field-boundary data. The collections in this catalog are the **2nd Edition**, the current release: per-year vector and raster collections of FTW global field-boundary predictions. These are model predictions of remote-sensing field units, not cadastral or legal parcels or a land-tenure product. The 2018, 2020, 2021, 2022, 2023, 2024 and 2025 collections describe the updated processing recipe. The other year links retain previously published collections; their presence does not indicate completion of the updated processing for those years. Use each year collection for its provenance and asset inventory. The **1st Edition** — 10 m PRUE predictions for 2024 and 2025, with prediction-confidence layers, probability Zarr and Sentinel-2 composites — is published separately, under `ftw/global-data/first-edition`, and hangs off this catalog as the [Fields of the World — Global Data (1st Edition)](https://data.source.coop/ftw/global-data/first-edition/catalog.json) sub-catalog. The two editions come from different models at different resolutions over different years, so they are alternatives rather than versions of one layer.",
   "git:provider": "github",
+  "git:ref": "main",
+  "git:repository": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
+  "id": "ftw-global-data-2e",
   "links": [
     {
-      "rel": "root",
       "href": "./catalog.json",
-      "type": "application/json",
-      "title": "Fields of the World — Global Data"
-    },
-    {
-      "rel": "self",
-      "href": "https://data.source.coop/ftw/global-data-2e/catalog.json",
+      "rel": "root",
+      "title": "Fields of the World — Global Data",
       "type": "application/json"
     },
     {
-      "rel": "describedby",
+      "href": "https://data.source.coop/ftw/global-data-2e/catalog.json",
+      "rel": "self",
+      "type": "application/json"
+    },
+    {
       "href": "./README.md",
-      "type": "text/markdown",
-      "title": "Catalog README"
+      "rel": "describedby",
+      "title": "Catalog README",
+      "type": "text/markdown"
     },
     {
-      "rel": "agents",
       "href": "./AGENTS.md",
-      "type": "text/markdown",
-      "title": "Catalog agent guide"
+      "rel": "agents",
+      "title": "Catalog agent guide",
+      "type": "text/markdown"
     },
     {
-      "rel": "child",
       "href": "./vector/catalog.json",
-      "type": "application/json",
-      "title": "FTW Global (2nd Edition) — Vector field boundaries"
+      "rel": "child",
+      "title": "FTW Global (2nd Edition) — Vector field boundaries",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./raster/catalog.json",
-      "type": "application/json",
-      "title": "FTW Global (2nd Edition) — Field & boundary probability rasters"
+      "rel": "child",
+      "title": "FTW Global (2nd Edition) — Field & boundary probability rasters",
+      "type": "application/json"
     },
     {
       "rel": "child",
@@ -53,26 +47,32 @@
       "title": "Fields of the World — Global Data (1st Edition)"
     },
     {
-      "rel": "about",
       "href": "https://source.coop/ftw/global-data-2e",
-      "type": "text/html",
-      "title": "Source Cooperative repository (file listing and downloads)"
+      "rel": "about",
+      "title": "Source Cooperative repository (file listing and downloads)",
+      "type": "text/html"
     },
     {
-      "rel": "icon",
       "href": "./ftw-logo.svg",
-      "type": "image/svg+xml",
-      "title": "Fields of the World"
+      "rel": "icon",
+      "title": "Fields of the World",
+      "type": "image/svg+xml"
     },
     {
-      "rel": "vcs",
       "href": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
+      "rel": "vcs",
       "title": "Catalog source repository (metadata and pipeline)"
     },
     {
-      "rel": "issues",
       "href": "https://github.com/fieldsoftheworld/ftw-global-data-catalog/issues",
+      "rel": "issues",
       "title": "Issue tracker"
     }
-  ]
+  ],
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.3.0/schema.json"
+  ],
+  "stac_version": "1.1.0",
+  "title": "Fields of the World — Global Data",
+  "type": "Catalog"
 }

@@ -1,0 +1,137 @@
+{
+  "assets": {
+    "data": {
+      "alternate": {
+        "s3": {
+          "href": "s3://us-west-2.opendata.source.coop/ftw/global-data-2e/vector/2021/zone=54/utm54.parquet",
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
+        }
+      },
+      "file:checksum": "1220d42999a6c8985126b7159c2a581b30bf200b5992dc86e959642e4acca920f974",
+      "file:size": 1148590990,
+      "href": "../zone=54/utm54.parquet",
+      "roles": [
+        "data"
+      ],
+      "title": "UTM zone 54 — 2021 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2021 collection: 2,542,859 predicted field parcels in UTM zone 54, WGS 84, 1.1 GiB. Columns are described in this item's `table:columns`.",
+      "type": "application/vnd.apache.parquet"
+    }
+  },
+  "bbox": [
+    137.58261654312568,
+    -40.118512852675146,
+    145.21507969366516,
+    75.65970320867062
+  ],
+  "collection": "ftw-s2-2021",
+  "geometry": {
+    "coordinates": [
+      [
+        [
+          145.21507969366516,
+          -40.118512852675146
+        ],
+        [
+          145.21507969366516,
+          75.65970320867062
+        ],
+        [
+          137.58261654312568,
+          75.65970320867062
+        ],
+        [
+          137.58261654312568,
+          -40.118512852675146
+        ],
+        [
+          145.21507969366516,
+          -40.118512852675146
+        ]
+      ]
+    ],
+    "type": "Polygon"
+  },
+  "id": "utm54",
+  "links": [
+    {
+      "href": "../../../catalog.json",
+      "rel": "root",
+      "type": "application/json"
+    },
+    {
+      "href": "../collection.json",
+      "rel": "parent",
+      "type": "application/json"
+    },
+    {
+      "href": "../collection.json",
+      "rel": "collection",
+      "type": "application/json"
+    }
+  ],
+  "properties": {
+    "datetime": "2021-01-01T00:00:00Z",
+    "description": "Predicted field boundaries falling in UTM zone 54 for 2021: 2,542,859 parcels, 96,546 km² of field area, in one cloud-native GeoParquet file. Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery. Columns: id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
+    "end_datetime": "2021-12-31T23:59:59Z",
+    "proj:code": "EPSG:4326",
+    "start_datetime": "2021-01-01T00:00:00Z",
+    "table:columns": [
+      {
+        "description": "Parcel identifier, unique per collection ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
+        "name": "id",
+        "type": "string"
+      },
+      {
+        "description": "The vecorel collection the parcel belongs to (constant per year, e.g. `ftw-s2-2025`).",
+        "name": "collection",
+        "type": "string"
+      },
+      {
+        "description": "Parcel footprint (WKB Polygon/MultiPolygon, WGS 84).",
+        "name": "geometry",
+        "type": "binary"
+      },
+      {
+        "description": "Bounding box of the parcel (xmin, ymin, xmax, ymax).",
+        "name": "bbox",
+        "type": "struct"
+      },
+      {
+        "description": "Area of the parcel in square meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics).",
+        "name": "metrics:area",
+        "type": "float"
+      },
+      {
+        "description": "Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics).",
+        "name": "metrics:perimeter",
+        "type": "float"
+      },
+      {
+        "description": "Mean model field probability inside the parcel, × 100 rounded (0–100).",
+        "name": "score",
+        "type": "uint8"
+      },
+      {
+        "description": "The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
+        "name": "determination:datetime",
+        "type": "timestamp"
+      },
+      {
+        "description": "Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
+        "name": "determination:method",
+        "type": "string"
+      }
+    ],
+    "table:row_count": 2542859,
+    "title": "UTM zone 54 — 2021 field boundaries"
+  },
+  "stac_extensions": [
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+  ],
+  "stac_version": "1.1.0",
+  "type": "Feature"
+}
