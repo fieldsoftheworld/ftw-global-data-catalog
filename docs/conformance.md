@@ -449,6 +449,26 @@ Not changed, with the reason:
   would change 486 published item URLs for a browse nicety; the raster tree is
   grouped because it has 7,466 items a year, not 54.
 
+### The 1st-edition `child` link 404s until ftw-data-catalog republishes
+
+The root's `child` link to the 1st edition points at
+`https://data.source.coop/ftw/global-data/first-edition/catalog.json`.
+`fieldsoftheworld/ftw-data-catalog` is becoming the FTW root catalog at
+`ftw/global-data` and moving the 1st edition down into `first-edition/`
+([ftw-data-catalog#11](https://github.com/fieldsoftheworld/ftw-data-catalog/pull/11)),
+so that href is the post-restructure location and returns 404 until that PR
+merges and republishes. `ftw/global-data/catalog.json`, the pre-restructure
+location, still answers 200 today.
+
+rashid reports nothing either way: the href is outside this catalog's root
+`self` base, so the validator has no file tree to resolve it against
+(core.md, "A root catalog that links a child in a different bucket therefore
+gets no check on that link"). The live mode of `tests/test_links.py` does
+check it, and reports one error until the restructure lands. CI does not see
+it — `CI_LIGHT=1` skips every href whose bytes are not in the checkout — so
+this is a finding for whoever runs the gate locally before publishing. Do not
+publish this catalog's root until the link resolves.
+
 ### Why this migration patched generated output
 
 `catalog/vector/**` and `catalog/raster/*/collection.json` are generated, and

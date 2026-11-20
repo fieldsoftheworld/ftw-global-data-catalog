@@ -9,9 +9,10 @@ Its root catalog is titled **Fields of the World — Global Data** and is the
 single entry point for FTW global field-boundary data: the collections in this
 repository are the 2nd Edition, and the 1st Edition
 ([fieldsoftheworld/ftw-data-catalog](https://github.com/fieldsoftheworld/ftw-data-catalog),
-published at `ftw/global-data`) is linked from the root as a `child`
-sub-catalog titled "Fields of the World — Global Data (1st Edition)". The root
-catalog id stays `ftw-global-data-2e` and every published URL is unchanged.
+published at `ftw/global-data/first-edition`) is linked from the root as a
+`child` sub-catalog titled "Fields of the World — Global Data (1st Edition)".
+The root catalog id stays `ftw-global-data-2e` and every URL this repository
+publishes is unchanged.
 
 This repository holds two things. `catalog/` **is** the published
 [Portolan](https://www.portolan-sdi.org/)/STAC catalog, synced 1:1 to Source
@@ -29,7 +30,7 @@ describes it.
 | Portolan browser | <https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/catalog.json> |
 | Files and downloads | <https://source.coop/ftw/global-data-2e> |
 | Catalog root | <https://data.source.coop/ftw/global-data-2e/catalog.json> |
-| 1st Edition sub-catalog | <https://data.source.coop/ftw/global-data/catalog.json> |
+| 1st Edition sub-catalog | <https://data.source.coop/ftw/global-data/first-edition/catalog.json> |
 | Project | <https://fieldsofthe.world> |
 
 ## Installation

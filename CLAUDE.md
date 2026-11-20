@@ -2,8 +2,10 @@
 
 Git-backed Portolan/STAC catalog for the Fields of the World (FTW) Global **2nd Edition** (2e) release (bucket prefix `global-data-2e`).
 The root catalog is titled "Fields of the World — Global Data" and is the single entry point for FTW global data: its own
-collections are the 2e release, and the 1st Edition (`ftw/global-data`, repo `fieldsoftheworld/ftw-data-catalog`) is a `child`
-sub-catalog on the root. The root id stays `ftw-global-data-2e`; no published URL changed.
+collections are the 2e release, and the 1st Edition (`ftw/global-data/first-edition`, repo
+`fieldsoftheworld/ftw-data-catalog`) is a `child` sub-catalog on the root. That repo is moving the 1st edition into the
+`first-edition/` sub-folder of the FTW root it publishes at `ftw/global-data`, so the child href follows it; the link
+resolves once its restructure lands. The root id stays `ftw-global-data-2e`; no URL this repo publishes changed.
 The build plan is in [docs/plan.md](docs/plan.md) — read it first.
 
 ## Models

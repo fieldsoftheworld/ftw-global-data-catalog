@@ -11,7 +11,7 @@ field/boundary probability COGs and per-UTM-zone GeoParquet polygons for
 `https://data.source.coop/ftw/global-data-2e/`. The **1st Edition** — 10 m
 PRUE predictions for 2024 and 2025, with confidence layers, probability Zarr
 and Sentinel-2 composites — is a separate published catalog at
-[`https://data.source.coop/ftw/global-data/catalog.json`](https://data.source.coop/ftw/global-data/catalog.json),
+[`https://data.source.coop/ftw/global-data/first-edition/catalog.json`](https://data.source.coop/ftw/global-data/first-edition/catalog.json),
 reached through the `child` link of that title on the root. The two editions
 come from different models at different resolutions over different years; they
 are not interchangeable, and a parcel id in one means nothing in the other.
