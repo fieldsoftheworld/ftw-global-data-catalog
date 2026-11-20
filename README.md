@@ -5,6 +5,14 @@ The catalog metadata and the processing pipeline for the **Fields of the World
 boundaries and 67,197 field/boundary-probability rasters, covering 2017
 through 2025 worldwide.
 
+Its root catalog is titled **Fields of the World — Global Data** and is the
+single entry point for FTW global field-boundary data: the collections in this
+repository are the 2nd Edition, and the 1st Edition
+([fieldsoftheworld/ftw-data-catalog](https://github.com/fieldsoftheworld/ftw-data-catalog),
+published at `ftw/global-data`) is linked from the root as a `child`
+sub-catalog titled "Fields of the World — Global Data (1st Edition)". The root
+catalog id stays `ftw-global-data-2e` and every published URL is unchanged.
+
 This repository holds two things. `catalog/` **is** the published
 [Portolan](https://www.portolan-sdi.org/)/STAC catalog, synced 1:1 to Source
 Cooperative, so a merged change to it appears in the published catalog on the
@@ -21,6 +29,7 @@ describes it.
 | Portolan browser | <https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/catalog.json> |
 | Files and downloads | <https://source.coop/ftw/global-data-2e> |
 | Catalog root | <https://data.source.coop/ftw/global-data-2e/catalog.json> |
+| 1st Edition sub-catalog | <https://data.source.coop/ftw/global-data/catalog.json> |
 | Project | <https://fieldsofthe.world> |
 
 ## Installation
@@ -29,7 +38,7 @@ The gates and the catalog tools need Python 3.11 or newer and a virtualenv:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install 'rashid>=0.1.8,<0.2.0' stac-check pyflakes duckdb
+.venv/bin/pip install 'rashid>=0.4.0,<0.5.0' stac-check pyflakes duckdb
 ```
 
 The pipeline stages have their own dependencies, installed per stage. See

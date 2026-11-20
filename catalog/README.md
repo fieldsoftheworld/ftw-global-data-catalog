@@ -1,9 +1,14 @@
 [![Taylor Geospatial](https://data.source.coop/ftw/global-data-2e/assets/readme/tg-logo.png)](https://taylorgeospatial.org)
 
-# Fields of the World — Global Data (2nd Edition)
+# Fields of the World — Global Data
 
-2nd Edition of the Fields of the World (FTW) global field-boundary predictions for 2017 to 2025: **1,242,648,258 predicted field polygons** as cloud-native GeoParquet, and **67,197 field/boundary-probability tiles** (25.8 TB) as Cloud-Optimized GeoTIFFs.
+The home for Fields of the World (FTW) global field-boundary data.
+The collections in this catalog are the **2nd Edition**, the current release, covering 2017 to 2025: **1,242,648,258 predicted field polygons** as cloud-native GeoParquet, and **67,197 field/boundary-probability tiles** (25.8 TB) as Cloud-Optimized GeoTIFFs.
 Both derive from the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/), and both are part of [Fields of the World](https://fieldsofthe.world).
+
+The **1st Edition** is still published, at its own URLs, and hangs off this catalog as the [Fields of the World — Global Data (1st Edition)](https://data.source.coop/ftw/global-data/catalog.json) sub-catalog: 10 m PRUE predictions for 2024 and 2025, with prediction-confidence layers, probability Zarr and Sentinel-2 planting/harvest composites.
+The two editions come from different models at different resolutions over different years, so they are alternatives rather than versions of one layer — compare them, don't concatenate them.
+Everything else on this page describes the 2nd Edition.
 
 ## Examples
 

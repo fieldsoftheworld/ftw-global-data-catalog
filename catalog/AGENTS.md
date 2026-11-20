@@ -1,8 +1,22 @@
-# AGENTS.md — Fields of the World — Global Data (2nd Edition)
+# AGENTS.md — Fields of the World — Global Data
 
 Guidance for AI agents and automated clients working with this Portolan/STAC
 catalog. Every claim in this file is quoted from a source or measured from the
 data.
+
+**Editions.** This catalog is the entry point for FTW global field-boundary
+data. Its own collections are the **2nd Edition** (current): 2.5 m
+field/boundary probability COGs and per-UTM-zone GeoParquet polygons for
+2017–2025, under
+`https://data.source.coop/ftw/global-data-2e/`. The **1st Edition** — 10 m
+PRUE predictions for 2024 and 2025, with confidence layers, probability Zarr
+and Sentinel-2 composites — is a separate published catalog at
+[`https://data.source.coop/ftw/global-data/catalog.json`](https://data.source.coop/ftw/global-data/catalog.json),
+reached through the `child` link of that title on the root. The two editions
+come from different models at different resolutions over different years; they
+are not interchangeable, and a parcel id in one means nothing in the other.
+Everything below this paragraph describes the 2nd Edition only — read the 1st
+Edition's own AGENTS.md before querying it.
 
 Around this file: [catalog.json](https://data.source.coop/ftw/global-data-2e/catalog.json) is the normative root and
 [README.md](https://source.coop/ftw/global-data-2e) is the human landing page. For a person rather than

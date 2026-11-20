@@ -103,6 +103,7 @@
       "href": "./utm53.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 53 — 2020 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2020 collection: 961,495 predicted field parcels in UTM zone 53, WGS 84, 442 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

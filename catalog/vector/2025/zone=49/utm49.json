@@ -103,6 +103,7 @@
       "href": "./utm49.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 49 — 2025 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2025 collection: 10,699,797 predicted field parcels in UTM zone 49, WGS 84, 3.6 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

@@ -103,6 +103,7 @@
       "href": "./utm56.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 56 — 2017 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2017 collection: 134,911 predicted field parcels in UTM zone 56, WGS 84, 151 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

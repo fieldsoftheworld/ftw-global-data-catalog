@@ -103,6 +103,7 @@
       "href": "./utm29.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 29 — 2024 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2024 collection: 2,814,472 predicted field parcels in UTM zone 29, WGS 84, 1.8 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

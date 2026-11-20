@@ -126,7 +126,7 @@ ITEMS_DIR = ROOT / "catalog" / "raster"
 # never sits in catalog/ — tools/upload_data.py publishes it from here.
 MIRROR_DIR = ROOT / "staging-data" / "raster"
 
-PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.3.0/schema.json"
 PROJ_EXT = "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
 RASTER_EXT = "https://stac-extensions.github.io/raster/v2.0.0/schema.json"
 FILE_EXT = "https://stac-extensions.github.io/file/v2.1.0/schema.json"
@@ -137,7 +137,6 @@ FTW_URL = "https://fieldsofthe.world"
 DATA_BROWSER = "https://source.coop/ftw/global-data-2e"
 
 COG_TYPE = "image/tiff; application=geotiff; profile=cloud-optimized"
-GEOTIFF_TYPE = "image/tiff; application=geotiff"
 UA = "Mozilla/5.0 (ftw-global-data-catalog build_raster_items)"
 
 PROVIDERS = [
@@ -400,15 +399,45 @@ def item_assets_template() -> dict[str, dict]:
         "data": {
             "type": COG_TYPE,
             "title": "Field & boundary probabilities (COG)",
+            "description": (
+                "One MGRS-based tile: a two-band uint8 Cloud-Optimized "
+                f"GeoTIFF at {GSD} m in the tile's UTM zone, band 1 `field` "
+                "and band 2 `boundary`, probability = value × 1/255. No "
+                "nodata is declared, so every pixel carries a probability."
+            ),
             "roles": ["data"],
             "bands": BANDS,
         },
         "thumbnail": {
             "type": "image/png",
             "title": "Field probability preview",
+            "description": ("Small PNG render of the tile's `field` band, "
+                            "for browsing."),
             "roles": ["thumbnail"],
         },
     }
+
+
+def committed_checksum(year_dir: Path, key: str, size: int) -> str | None:
+    """The digest the committed collection already carries for this asset.
+
+    The bucket-side assets are digested from a local staged copy, and the
+    staging tree is gitignored, so a checkout that re-runs ``collections``
+    has the object (it probes it) but not its bytes. Without this the re-run
+    silently drops `file:checksum` from the `mirror` asset — the same trap
+    `tiles_meta_for` closes on the vector side. The size has to match, since
+    a different size means different bytes and an unknown digest.
+    """
+    path = year_dir / "collection.json"
+    if not path.is_file():
+        return None
+    try:
+        asset = json.loads(path.read_text())["assets"][key]
+    except (KeyError, json.JSONDecodeError):
+        return None
+    if asset.get("file:size") == size and asset.get("file:checksum"):
+        return asset["file:checksum"]
+    return None
 
 
 def probe_urls(year: int, sample_tile: str) -> dict[str, str]:
@@ -463,12 +492,29 @@ def bucket_assets(year: int, year_dir: Path, probes: dict[str, int | None],
     if size is not None:
         assets["overview"] = {
             "href": "./overview.tif",
-            "type": GEOTIFF_TYPE,
+            # The COG media type, not the plain GeoTIFF one it used to carry:
+            # this file is a COG (the role says so, and its internal
+            # overviews were read back over /vsicurl), and the profile's
+            # media-type table makes that type required for a COG. It also
+            # puts the file under the byte-range and CORS rules
+            # (PORTO-CORE-043/045), which is what a client reading it by
+            # range needs the host to honour.
+            "type": COG_TYPE,
             "title": f"Global field-probability overview {year} (COG)",
+            # Measured from the published file over /vsicurl, not assumed:
+            # 3 × uint8, EPSG:3857, JPEG, nodata 0 with the alpha plane kept
+            # as the COG's internal transparency mask (PORTO-FMT-068/069).
             "description": "The whole year mosaicked and colormapped at "
                            "overview resolution, so the collection renders "
-                           "at global scale.",
+                           "at global scale. 8-bit RGB, JPEG-compressed, in "
+                           "Web Mercator (EPSG:3857), with nodata 0 and an "
+                           "internal transparency mask; the colormap is "
+                           "documented in this collection's README.",
             "roles": ["visual", "overview", "cloud-optimized"],
+            # Which items the overview stands for, so a client can match it
+            # to them (PORTO-FMT-072). The mosaic covers the whole year.
+            "start_datetime": f"{year}-01-01T00:00:00Z",
+            "end_datetime": f"{year}-12-31T23:59:59Z",
             "file:size": size,
         }
 
@@ -488,6 +534,8 @@ def bucket_assets(year: int, year_dir: Path, probes: dict[str, int | None],
             "href": "./thumbnail.webp",
             "type": "image/webp",
             "title": f"Global field-probability overview {year}",
+            "description": f"Small WebP render of the {year} overview COG, "
+                           "the card image for this collection.",
             "roles": ["thumbnail", "overview"],
             "file:size": payload_size,
             "file:checksum": multihash(local.read_bytes()),
@@ -512,6 +560,10 @@ def bucket_assets(year: int, year_dir: Path, probes: dict[str, int | None],
         local = (staging or ITEMS_DIR) / str(year) / "items.parquet"
         if local.is_file() and local.stat().st_size == size:
             mirror["file:checksum"] = multihash(local.read_bytes())
+        else:
+            digest = committed_checksum(year_dir, "mirror", size)
+            if digest:
+                mirror["file:checksum"] = digest
         assets["mirror"] = mirror
 
     return assets, report
@@ -559,12 +611,19 @@ def build_collection(year: int, stats: dict, extra: dict[str, dict],
                      report: dict, children: list[dict] | None = None) -> dict:
     tb = stats["bytes"] / 1e12
     assets: dict[str, dict] = {}
+    coverage_description = (
+        f"One square per published {year} tile, shaded by the tile's field "
+        "pixel fraction (`ftw:field_frac`), so the map shows which MGRS "
+        "tiles were processed and how much field each holds. Drawn from "
+        "`index/raster.parquet`, not from the COGs."
+    )
     if "thumbnail" in extra:
         assets["thumbnail"] = extra["thumbnail"]
         assets["coverage"] = {
             "href": "./thumbnail.png",
             "type": "image/png",
             "title": f"Tile coverage shaded by field fraction ({year})",
+            "description": coverage_description,
             "roles": ["overview"],
         }
     else:
@@ -572,6 +631,7 @@ def build_collection(year: int, stats: dict, extra: dict[str, dict],
             "href": "./thumbnail.png",
             "type": "image/png",
             "title": f"Tile coverage shaded by field fraction ({year})",
+            "description": coverage_description,
             "roles": ["thumbnail"],
         }
     for key in ("overview", "mirror"):
@@ -626,7 +686,7 @@ def build_collection(year: int, stats: dict, extra: dict[str, dict],
         "links": [
             {"rel": "root", "href": "../../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (2nd Edition)"},
+             "title": "Fields of the World — Global Data"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json"},
             {"rel": "license",
@@ -668,7 +728,7 @@ def build_raster_catalog(stats: dict[int, dict]) -> dict:
         "links": [
             {"rel": "root", "href": "../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (2nd Edition)"},
+             "title": "Fields of the World — Global Data"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json"},
             {"rel": "describedby", "href": "./README.md",
@@ -724,6 +784,12 @@ def build_item(row: dict, header: dict, with_thumbnail: bool = True) -> dict:
         "href": f"./{tile}.tif",
         "type": COG_TYPE,
         "title": f"{tile} {year} — field & boundary probabilities (COG)",
+        "description": (
+            f"Tile {tile} for {year}: a two-band uint8 COG at {GSD} m in "
+            f"EPSG:{header['epsg']}, band 1 `field` and band 2 `boundary`, "
+            "probability = value × 1/255. No nodata is declared, so every "
+            "pixel carries a probability."
+        ),
         "roles": ["data"],
         "bands": BANDS,
         "file:size": row["size_bytes"],
@@ -740,6 +806,8 @@ def build_item(row: dict, header: dict, with_thumbnail: bool = True) -> dict:
             "href": f"./{tile}.thumb.png",
             "type": "image/png",
             "title": f"{tile} {year} — field probability preview",
+            "description": ("Small PNG render of this tile's `field` band, "
+                            "for browsing."),
             "roles": ["thumbnail"],
         }
     return {
@@ -758,7 +826,7 @@ def build_item(row: dict, header: dict, with_thumbnail: bool = True) -> dict:
             # object, and the collection sits three above.
             {"rel": "root", "href": "../../../../../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (2nd Edition)"},
+             "title": "Fields of the World — Global Data"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json",
              "title": f"Grid zone {gzd_of(tile)} — {year}"},
@@ -796,7 +864,7 @@ def build_zone_catalog(year: int, zone: str, gzds: dict[str, list[str]],
         "links": [
             {"rel": "root", "href": "../../../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (2nd Edition)"},
+             "title": "Fields of the World — Global Data"},
             {"rel": "parent", "href": "../collection.json",
              "type": "application/json",
              "title": f"FTW Global — Field & Boundary Probabilities {year} "
@@ -832,7 +900,7 @@ def build_gzd_catalog(year: int, zone: str, gzd: str,
         "links": [
             {"rel": "root", "href": "../../../../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (2nd Edition)"},
+             "title": "Fields of the World — Global Data"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json",
              "title": f"UTM zone {int(zone)} — {year}"},

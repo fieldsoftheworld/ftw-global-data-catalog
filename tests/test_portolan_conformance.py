@@ -34,23 +34,25 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 from publish import load_config  # noqa: E402
 
-ACCEPTED: set[str] = {
-    # Raster browse overviews are pre-rendered RGB COGs; no client-side style
-    # document applies. docs/conformance.md has the row; portolan-sdi/rashid#202.
-    "PTL-VIZ-002",
-}
+# Empty, and that is the goal state. PTL-VIZ-002 was the one entry and it is
+# gone: under Portolan v0.3.0 the per-year `overview.tif` declares the COG
+# media type it always should have, and rashid 0.4.0 no longer reads a
+# `visual` COG as a derivative that needs a MapLibre style. See "the raster
+# browse overview has no style document (closed)" in docs/conformance.md.
+ACCEPTED: set[str] = set()
 
 config = load_config()
 target = ROOT / config["publish_dir"]
 
-# 0.1.8 is the first rashid that accepts a Portolan v0.2.0 root `self` link
-# (v0.1.1 forbids that link and v0.2.0 recommends it, PORTO-CORE-081). This
-# catalog declares v0.2.0, so an older rashid reports errors on a correct
-# catalog. The upper bound stops an unreviewed 0.2 rule set from changing what
-# this gate means.
-MIN_VERSION = (0, 1, 8)
-MAX_VERSION = (0, 2, 0)
-SPEC = "rashid>=0.1.8,<0.2.0"
+# This catalog declares Portolan v0.3.0, and 0.4.0 is the first rashid that
+# bundles the v0.3.0 profile. An older one applies the v0.2 rule set, which
+# misses the rules this catalog was migrated to meet (the one-file data asset,
+# the listable `partition:glob`) and reports a v0.3.0 object as unknown. The
+# upper bound stops an unreviewed 0.5 rule set from changing what this gate
+# means: raise both bounds together, and read the new rules first.
+MIN_VERSION = (0, 4, 0)
+MAX_VERSION = (0, 5, 0)
+SPEC = "rashid>=0.4.0,<0.5.0"
 INSTALL = f"python -m pip install '{SPEC}'"
 
 

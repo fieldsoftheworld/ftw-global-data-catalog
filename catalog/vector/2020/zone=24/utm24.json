@@ -103,6 +103,7 @@
       "href": "./utm24.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 24 — 2020 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2020 collection: 805,422 predicted field parcels in UTM zone 24, WGS 84, 665 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

@@ -103,6 +103,7 @@
       "href": "./utm28.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 28 — 2023 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2023 collection: 202,817 predicted field parcels in UTM zone 28, WGS 84, 124 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

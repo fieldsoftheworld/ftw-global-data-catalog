@@ -103,6 +103,7 @@
       "href": "./utm49.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 49 — 2023 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2023 collection: 9,327,495 predicted field parcels in UTM zone 49, WGS 84, 3.3 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

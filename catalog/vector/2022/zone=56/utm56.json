@@ -103,6 +103,7 @@
       "href": "./utm56.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 56 — 2022 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2022 collection: 159,510 predicted field parcels in UTM zone 56, WGS 84, 171 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

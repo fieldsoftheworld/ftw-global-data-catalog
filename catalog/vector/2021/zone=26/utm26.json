@@ -103,6 +103,7 @@
       "href": "./utm26.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 26 — 2021 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2021 collection: 48,518 predicted field parcels in UTM zone 26, WGS 84, 28 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

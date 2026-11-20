@@ -103,6 +103,7 @@
       "href": "./utm25.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 25 — 2019 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2019 collection: 166,508 predicted field parcels in UTM zone 25, WGS 84, 131 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

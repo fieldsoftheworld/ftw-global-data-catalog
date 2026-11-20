@@ -103,6 +103,7 @@
       "href": "./utm46.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 46 — 2019 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2019 collection: 847,522 predicted field parcels in UTM zone 46, WGS 84, 365 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

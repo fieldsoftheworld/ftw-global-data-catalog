@@ -103,6 +103,7 @@
       "href": "./utm25.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 25 — 2022 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2022 collection: 186,560 predicted field parcels in UTM zone 25, WGS 84, 137 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

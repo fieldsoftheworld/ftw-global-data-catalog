@@ -103,6 +103,7 @@
       "href": "./utm49.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 49 — 2017 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2017 collection: 7,688,891 predicted field parcels in UTM zone 49, WGS 84, 2.6 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

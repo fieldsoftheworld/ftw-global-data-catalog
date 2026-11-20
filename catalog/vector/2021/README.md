@@ -51,6 +51,6 @@ con.sql(f"""
 """).show()
 ```
 
-Read the whole year at once by globbing the partitions over `s3://` with `hive_partitioning=1`; an HTTP URL cannot expand a wildcard. The collection's `data` asset carries both forms.
+Read the whole year at once by globbing the partitions over `s3://` with `hive_partitioning=1`; an HTTP URL cannot expand a wildcard. The collection's `partition:glob` carries that glob, and its `storage:schemes` names the endpoint and the path-style setting the dotted bucket name needs.
 
 Coverage is not global. Only MGRS tiles with at least 1% cropland were processed, so a region below that threshold has no parcels here and an absence is not a prediction of absence. Inside a processed tile, parcels at least 70% io-lulc 2024 water (inland water, aquaculture ponds, salt pans) and parcels with less than half their area on OpenStreetMap land (sea) were removed; no other land-cover or terrain rule applies, so scrub and built-up ground can still carry predicted parcels. Filter on `score` (the model's field probability × 100) to trade precision against recall.

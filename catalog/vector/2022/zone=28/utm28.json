@@ -103,6 +103,7 @@
       "href": "./utm28.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 28 — 2022 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2022 collection: 197,678 predicted field parcels in UTM zone 28, WGS 84, 111 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

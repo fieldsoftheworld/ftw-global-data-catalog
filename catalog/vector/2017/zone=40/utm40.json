@@ -103,6 +103,7 @@
       "href": "./utm40.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 40 — 2017 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2017 collection: 736,681 predicted field parcels in UTM zone 40, WGS 84, 678 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

@@ -103,6 +103,7 @@
       "href": "./utm36.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 36 — 2017 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2017 collection: 3,427,148 predicted field parcels in UTM zone 36, WGS 84, 2.9 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

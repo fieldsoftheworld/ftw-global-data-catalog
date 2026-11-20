@@ -103,6 +103,7 @@
       "href": "./utm16.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 16 — 2024 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2024 collection: 2,168,854 predicted field parcels in UTM zone 16, WGS 84, 1.6 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

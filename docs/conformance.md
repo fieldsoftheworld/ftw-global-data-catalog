@@ -14,17 +14,19 @@ widened allow-list is a false claim about what this catalog conforms to.
 
 ## The rashid version floor
 
-The gate needs rashid `>=0.1.8,<0.2.0`. It reads `rashid --version` and fails
+The gate needs rashid `>=0.4.0,<0.5.0`. It reads `rashid --version` and fails
 outside that range. It also fails when rashid is absent, and prints the install
 command. A skip would report a green run for a catalog that no validator read.
 
-The floor is 0.1.8 because it is the first rashid that accepts a Portolan
-v0.2.0 root `self` link (v0.1.1 forbids that link and v0.2.0 recommends it,
-PORTO-CORE-081). This catalog declares v0.2.0, so an older rashid reports
-errors on a correct catalog. The same range is in the CI install step.
+The floor is 0.4.0 because it is the first rashid that bundles the Portolan
+**v0.3.0** profile this catalog declares. An older one applies the v0.2 rule
+set, so it never runs the rules the catalog was migrated to meet — the
+one-file data asset (PORTO-FMT-065) and the listable `partition:glob`
+(PORTO-FMT-064) — and reports a v0.3.0 schema URI as a version it does not
+know. The same range is in the CI install step.
 
-The upper bound stops an unreviewed 0.2 rule set from changing what this gate
-means. Raise both bounds together when you move to 0.2, and read the new rules
+The upper bound stops an unreviewed 0.5 rule set from changing what this gate
+means. Raise both bounds together when you move to 0.5, and read the new rules
 first.
 
 This file also records workarounds for the other validator CI runs. Those are
@@ -36,11 +38,11 @@ something.
 
 | Rule | Where | Why accepted | In `ACCEPTED`? | Tracking |
 |---|---|---|---|---|
-| PTL-VIZ-002 | `raster/{2017..2025}/collection.json` | The visualization derivative is a pre-rendered RGB JPEG COG (roles `visual`,`overview`,`cloud-optimized`); its styling is baked into the pixels at build time, so no client-side style document exists for a `style` asset to name. The colormap is documented in each README and in `pipeline/make_overview.py`. | yes (9× error) | [rashid#202](https://github.com/portolan-sdi/rashid/issues/202) |
 | PTL-DAT-009 | the 67,197 published 2e score COGs, `raster/{2017..2025}/.../{tile}.tif` | They were written without embedded band statistics. 26 TB cannot be rewritten in place without destroying the COG layout, and the writers are fixed, so the next generation complies. See the section below. | **no** — a data rule, never reached by the gate (see below) | — |
 
-The structural rows (and only those) match `ACCEPTED` in
-`tests/test_portolan_conformance.py` exactly.
+`ACCEPTED` in `tests/test_portolan_conformance.py` is **empty**, and the one
+structural row that used to be in it (PTL-VIZ-002) is closed rather than
+waived — see the section below. No structural rule is waived in this catalog.
 
 <!--
 When you accept one, add a row and a section explaining it.
@@ -54,7 +56,7 @@ waive nothing while reading as if the gate had seen the deviation and let it
 pass. The row is the whole record. Say so in the row, as PTL-DAT-009 does.
 -->
 
-### PTL-VIZ-002: the raster browse overview has no style document
+### PTL-VIZ-002: the raster browse overview has no style document (closed)
 
 Each raster year collection carries an `overview.tif` with roles `visual`,
 `overview`, `cloud-optimized`. PTL-VIZ-002 wants a visualization asset to name
@@ -63,11 +65,34 @@ RGB JPEG COG, so the colormap is applied at build time and baked into the
 pixels rather than evaluated by a client. A `style` asset pointing at a
 MapLibre document would be a false claim about how the image is drawn.
 
+**It no longer fires, and the waiver is gone.** The asset used to declare
+`image/tiff; application=geotiff`, the plain GeoTIFF media type, while the
+profile's media-type table requires the COG type for a COG — which this file
+is, as its `cloud-optimized` role claims and as its internal overviews
+confirm when read back over `/vsicurl`. The v0.3 migration corrected the type
+to `image/tiff; application=geotiff; profile=cloud-optimized`, and rashid
+0.4.0 then stops reading the asset as a derivative that needs a MapLibre
+style: a COG's styling is the classified-vs-continuous raster question, not
+the PMTiles one. Measured both ways — flipping that one media type back on
+`raster/2017/collection.json` brings the finding straight back, 1×. So
+`ACCEPTED` is empty, and this section stays as the record of why the rule
+used to fire.
+
 The colormap is documented instead — in each year's README.md and in
 `pipeline/make_overview.py`, which is the code that applies it. The rule as
 written does not distinguish a client-styled asset from a baked one; filed as
 [rashid#202](https://github.com/portolan-sdi/rashid/issues/202). Nine
 findings, one per year.
+
+Portolan v0.3.0 does not close this. Its Visualization Styles section still
+says "Styling for continuous and multiband rasters is still under discussion"
+and points at `specs/incubating/raster-styling.md`, and the one raster style
+form the version does define is the classified case — a COG colour table with
+`classification:classes`, which does not apply here: these are continuous
+probability surfaces, and v0.3 says a continuous raster SHOULD NOT carry
+`classification:classes` (PORTO-FMT-059). So the waiver stands until the
+incubating raster-styling document lands, and `classification:classes` is
+deliberately absent from both the probability COGs and the overview.
 
 ### PTL-DAT-009: the published 2e score COGs carry no embedded band statistics
 
@@ -186,8 +211,10 @@ items had none. It is closed by publishing the connectivity, not by waiving
 the rule — the items are grouped under browse subcatalogs (user ruling
 2026-10-02; docs/plan.md Phase 4 has the layout). Verified: `rashid check
 catalog --no-data` over the full nine-year tree reports **no PTL-COL-005 at
-all**, and the only error-severity rule left is PTL-VIZ-002 (9×, the waiver
-above), so the gate passes with `ACCEPTED` exactly `{"PTL-VIZ-002"}`. The
+all**. That run was made under rashid 0.1.8, when PTL-VIZ-002 was the one
+error-severity rule left and the only entry in `ACCEPTED`; both are gone
+under v0.3.0 (see the section above), so the gate now passes with `ACCEPTED`
+empty. The
 measurements that chose that shape are kept below, because they also bound
 what may and may not be changed about it later.
 
@@ -213,8 +240,8 @@ What that costs, and how each gate carries it:
   published catalog, so `tests/test_portolan_conformance.py` **refuses to
   run on a checkout without the generated tree**: under `CI_LIGHT=1` it is
   a documented skip, and locally it fails with the regenerate command.
-  `ACCEPTED` stays exactly `{"PTL-VIZ-002"}` — no finding is waived,
-  because no run that could produce those findings is accepted as valid.
+  `ACCEPTED` stays empty — no finding is waived, because no run that could
+  produce those findings is accepted as valid.
 - **The real conformance gate is pre-publish**: `pipeline/rashid_check.sbatch`
   runs the full nine-year tree (2 h 20 m measured, login nodes CPU-kill it)
   after regeneration, before `tools/publish.py --confirm`.
@@ -368,14 +395,86 @@ because that gate asserts four named rules. This gate asserts no stac-check
 rule. It needs the opposite property. A pin holds the exemption open after the
 upstream fix ships.
 
-### portolan check --live HEADs partition-glob asset hrefs literally
+### portolan check --live HEADed partition-glob asset hrefs literally (closed)
 
-The year collections carry a `data` asset whose href is the partition glob
-(`./zone=*/utm*.parquet`) beside `partition:glob`, as the partition
-extension defines. `portolan check --live` HEAD-requests that href
-literally, and a `*` URL returns no usable Content-Length, so PTL-LIV-002
-reports one error per collection. The catalog is correct — rashid conforms,
-and every partition member is HEAD-verified individually through its item's
-own data asset (tests/test_links.py). Tracked upstream:
-https://github.com/portolan-sdi/portolan-cli/issues/914;
-remove this section when the checker learns to expand or skip glob hrefs.
+The year collections used to carry a `data` asset whose href was the partition
+glob, beside `partition:glob`. `portolan check --live` HEAD-requested that
+href literally, and a `*` URL returns no usable Content-Length, so PTL-LIV-002
+reported one error per collection
+([portolan-cli#914](https://github.com/portolan-sdi/portolan-cli/issues/914)).
+
+Portolan v0.3.0 removed the construct: a data asset links to exactly one file
+and its href MUST NOT contain `*` or `[` (PORTO-FMT-065), so the glob now
+lives only in `partition:glob`, where it belongs. The glob asset is gone from
+every year collection, and with it this finding. Nothing in the catalog
+advertises a wildcard href any more, and every partition member is still
+HEAD-verified individually through its item's own data asset
+(`tests/test_links.py`).
+
+## The Portolan v0.3.0 migration (2026-11-20)
+
+What changed in the catalog, with the requirement each change answers:
+
+| Change | Requirement |
+|---|---|
+| Schema URI `v0.2.0` → `v0.3.0` on the root, both tree catalogs and all 18 collections | PORTO-CORE-006, PORTO-CORE-009 |
+| The vector year collections' glob `data` asset removed; the glob lives in `partition:glob` alone, and the collection description names it | PORTO-FMT-065 |
+| `partition:glob` rewritten from the relative `./zone=*/utm*.parquet` to the absolute `s3://us-west-2.opendata.source.coop/...` URL | PORTO-FMT-064, PORTO-FMT-075 |
+| `storage:schemes` added to the vector collections (storage extension v2.0.0, `type: aws-s3`, path-style endpoint because the bucket name has dots) | PORTO-FMT-066 |
+| `description` added to every asset that lacked one: 486 item data assets, and the collections' `pmtiles`, `thumbnail`, `coverage` and four `styles/*` assets | PORTO-CORE-088 |
+| The raster `overview` asset re-typed from `image/tiff; application=geotiff` to the COG media type, and given `start_datetime`/`end_datetime` | the media-type table in core.md; PORTO-FMT-072 |
+| `item_assets` definitions and the generated raster item assets given descriptions | PORTO-CORE-088 |
+
+Not changed, with the reason:
+
+- **No `classification:classes`.** The probability COGs and the overview are
+  continuous surfaces, and PORTO-FMT-059 says a continuous raster SHOULD NOT
+  carry classes. See the PTL-VIZ-002 section.
+- **No `nodata` on the probability COGs.** PORTO-FMT-073 asks satellite and
+  aerial *imagery* to declare nodata. These are model output where 0 is a real
+  value — 0% field probability — so declaring nodata 0 would tell clients to
+  drop real pixels. `pipeline/make_overview.py` records the same reasoning for
+  the mosaic, which does declare nodata 0 because its black border is genuinely
+  absent data.
+- **The whole-year https glob is not advertised as an asset.** It never worked
+  as one (HTTP cannot list, so the wildcard never expanded), and v0.3 forbids
+  it. The per-partition https URL and the s3 glob are both in the collection
+  description, the README and AGENTS.md.
+- **`file:checksum` on the per-year `overview.tif`** stays absent, under the
+  existing "no `file:checksum` on the raster COG assets" policy above: it is a
+  multi-GB mosaic, nine of them, ~19.7 GB to read. PTL-AST-003 reports it as a
+  warning, so the gate stays honest without an `ACCEPTED` entry.
+- **PTL-CAT-001** (warning, 9×) still fires on the vector year collections:
+  each holds 54 `item` links with no subcatalog grouping them. Grouping them
+  would change 486 published item URLs for a browse nicety; the raster tree is
+  grouped because it has 7,466 items a year, not 54.
+
+### Why this migration patched generated output
+
+`catalog/vector/**` and `catalog/raster/*/collection.json` are generated, and
+the rule in this repository is to edit the generator and re-run it. This
+migration edited the generators **and** applied the same change to the
+committed output, because re-running them would have changed much more than
+the metadata:
+
+- `index/vector.parquet` now lists **60** zones a year, and
+  `index/raster.parquet` ~**14,580** tiles a year, for 2018 and 2020–2025. The
+  committed tree describes 54 zones and ~7,466 tiles. Only 2017 and 2019 still
+  match. The published bucket copy of `vector/2022/collection.json` matches the
+  newer index, not this tree, so the bucket is ahead of `main` for those years.
+- `collections` derives the 54 `child` links per year from the gitignored item
+  tree, so a checkout without that tree would emit year collections with no
+  children at all.
+
+So the equivalence was proved instead of assumed: for 2017 and 2019, the two
+years whose index rows still match, the generators were run into a scratch
+tree and their `collection.json`, `README.md` and `AGENTS.md` came out
+**byte-identical** to the patched committed files. Reconciling the newer index
+with this tree is a separate job, and it is a data change, not a metadata one.
+
+Two generator traps were closed on the way, both of the "a re-run silently
+drops metadata" kind that `tiles_meta_for` already guarded against:
+`build_vector_items.py` now reads the 486 item `file:checksum` values back out
+of the committed items when no `--checksums` sidecar is given, and
+`build_raster_items.py` reads the `mirror` digest back out of the committed
+collection when the staged `items.parquet` is absent.

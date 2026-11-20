@@ -103,6 +103,7 @@
       "href": "./utm43.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 43 — 2018 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2018 collection: 1,268,342 predicted field parcels in UTM zone 43, WGS 84, 750 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

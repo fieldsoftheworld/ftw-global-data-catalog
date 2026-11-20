@@ -73,12 +73,12 @@ tools/                      # template naming (not scripts/catalog/)
 pipeline/                   # the rails tiles pipeline (alpha scripts/tiles/, adapted): stage_global.py,
                             # aggregate_cells.sbatch, add_coverage.py, tile_cells.sbatch, tile_fields.sbatch, tile_weights.py
 tests/                      # template style: run_all.py entry; port alpha's test_links, test_publish,
-                            # test_stac_valid (stac-check), test_portolan_conformance (rashid ≥0.1.8, --no-data, allow-list)
+                            # test_stac_valid (stac-check), test_portolan_conformance (rashid ≥0.4.0, --no-data, allow-list)
 .github/workflows/ci.yml    # CI_LIGHT=1 (template pattern: asset hrefs with data suffixes exempt in CI)
 CLAUDE.md, README.md
 ```
 
-Portolan v0.2.0 schema URI on catalogs+collections; `file:size` + multihash `1220…` `file:checksum`
+Portolan v0.3.0 schema URI on catalogs+collections (v0.2.0 until the 2026-11-20 migration); `file:size` + multihash `1220…` `file:checksum`
 on every asset; every catalog/collection dir carries README.md (`rel: describedby`), AGENTS.md
 (`rel: agents`), thumbnail.png; root carries `vcs`/`issues` links (absolute GitHub URLs)
 + alpha's `git:*` fields; relative structural links, absolute `self` on published root.
@@ -222,7 +222,7 @@ Applied from the Portolan best-practices specs
   between them. Every level cross-links its parent, its children and its sibling file.
 - **llms.txt dropped** (2026-10-01, user's call). It was a third surface duplicating the other two
   and drifting from the hive layout; the `rel: llms` links went with it at the root and in the
-  vector tree. rashid 0.1.8 stays green without them. The raster tree's llms.txt files were
+  vector tree. rashid stays green without them (checked on 0.1.8, still true on 0.4.0). The raster tree's llms.txt files were
   removed too (none exist in the repo any more). The llms.txt objects
   already in the bucket are untouched: publishing never deletes.
 - **Lead with what a reader can do.** Each README opens with measured numbers, then a runnable

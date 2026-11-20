@@ -103,6 +103,7 @@
       "href": "./utm29.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 29 — 2025 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2025 collection: 2,748,162 predicted field parcels in UTM zone 29, WGS 84, 1.7 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

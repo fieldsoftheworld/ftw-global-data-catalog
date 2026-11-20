@@ -1,6 +1,9 @@
 # ftw-global-data-catalog — developer guide
 
 Git-backed Portolan/STAC catalog for the Fields of the World (FTW) Global **2nd Edition** (2e) release (bucket prefix `global-data-2e`).
+The root catalog is titled "Fields of the World — Global Data" and is the single entry point for FTW global data: its own
+collections are the 2e release, and the 1st Edition (`ftw/global-data`, repo `fieldsoftheworld/ftw-data-catalog`) is a `child`
+sub-catalog on the root. The root id stays `ftw-global-data-2e`; no published URL changed.
 The build plan is in [docs/plan.md](docs/plan.md) — read it first.
 
 ## Models
@@ -96,11 +99,21 @@ python3 tools/upload_data.py [--confirm]    # staged data files
   without `CI_LIGHT` where the bytes are reachable.
 
 ## Conformance
-Portolan **v0.2.0** (schema URI on every catalog/collection; absolute `self` on the
-published root; `file:size` + multihash `1220…` `file:checksum` on every asset). Validated
-by `rashid>=0.1.8,<0.2.0` — installed in `.venv/` (with stac-check + pyflakes). Never
-widen `ACCEPTED` in `tests/test_portolan_conformance.py` without a row in
-`docs/conformance.md`.
+Portolan **v0.3.0** (schema URI on every catalog/collection; absolute `self` on the
+published root; `file:size` + multihash `1220…` `file:checksum` on every asset; a data
+asset links to exactly one file, so the whole-year glob lives only in `partition:glob`,
+as an absolute `s3://` URL with a `storage:schemes` entry beside it; every asset carries a
+`title` and a `description`). Validated by `rashid>=0.4.0,<0.5.0` — installed in `.venv/`
+(with stac-check + pyflakes). Never widen `ACCEPTED` in
+`tests/test_portolan_conformance.py` without a row in `docs/conformance.md`.
+
+**The published index manifests have moved past this tree** (measured 2026-11-20):
+`index/vector.parquet` lists 60 zones a year and `index/raster.parquet` ~14,580 tiles a
+year for 2018 and 2020–2025, where `catalog/` describes 54 zones and ~7,466 tiles. Only
+2017 and 2019 still agree. So a plain re-run of either generator rewrites the catalog to
+a newer data generation. Check that before regenerating, and if you only mean to change
+metadata, change the generator and apply the same change to the committed output (the
+v0.3 migration did exactly that, and verified it by regenerating 2017 and 2019).
 
 The two index gates (`tests/test_indexes.py`, `tests/test_raster_index_lite.py`) also need
 `pyarrow numpy duckdb shapely pyproj rasterio` — the same list `.github/workflows/ci.yml`

@@ -7,10 +7,11 @@ Emits, under ``catalog/vector/``:
   collections; ``fields-yearly`` is added by the Phase 3 tiles work).
 - ``{year}/collection.json`` — one collection per year, id from the parquet's
   own embedded ``collection`` key (``ftw-s2-{year}``).
-- ``{year}/utm{NN}/utm{NN}.json`` — one item per UTM-zone parquet, in its own
-  subdirectory (PORTO-CORE-015), with ``table:columns`` for all 20 columns,
-  ``file:size``/``file:checksum`` on the data asset, and an ``alternate`` s3
-  href (PORTO-CORE-024).
+- ``{year}/zone={NN}/utm{NN}.json`` — one item per UTM-zone parquet, in its
+  own hive-keyed subdirectory (PORTO-CORE-015), with ``table:columns`` for
+  every column, ``file:size``/``file:checksum`` on the data asset, and an
+  ``alternate`` s3 href (PORTO-CORE-024) whose bucket is described by
+  ``storage:schemes`` (PORTO-FMT-066).
 - README.md / AGENTS.md for the subtree and each collection, with
   measured numbers (counts and sizes come from the index, not prose memory).
 
@@ -23,8 +24,9 @@ generated JSON.
         --checksums staging-data/checksums/vector_checksums.json
 
 Checksums come from ``tools/hash_remote.py`` (the bytes live only in the
-bucket). Without ``--checksums`` the data assets carry ``file:size`` only,
-which fails conformance — fine for a dry look, not for committing.
+bucket). Without ``--checksums`` the digests are read back out of the
+committed items, so a re-run reproduces them; pass the sidecar whenever the
+bytes have changed, because only it knows the new digests.
 
 After generating, build each year's stac-geoparquet mirror:
 
@@ -56,13 +58,52 @@ INDEX_URL = f"{PUBLIC_BASE}/index/vector.parquet"
 INDEX_SOURCE = (str(Path(os.environ["FTW_INDEX_DIR"]) / "vector.parquet")
                 if os.environ.get("FTW_INDEX_DIR") else INDEX_URL)
 
-PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
+PORTOLAN_EXT = "https://schemas.portolan-sdi.org/portolan/v0.3.0/schema.json"
 WEBMAP_EXT = "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json"
 PARTITION_EXT = "https://schemas.portolan-sdi.org/incubating/partition/v1.0.0/schema.json"
 TABLE_EXT = "https://stac-extensions.github.io/table/v1.2.0/schema.json"
 PROJ_EXT = "https://stac-extensions.github.io/projection/v2.0.0/schema.json"
 FILE_EXT = "https://stac-extensions.github.io/file/v2.1.0/schema.json"
 ALT_EXT = "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
+STORAGE_EXT = "https://stac-extensions.github.io/storage/v2.0.0/schema.json"
+
+# The bucket behind every `s3://` href and behind `partition:glob`. Portolan
+# v0.3 asks publishers to describe it with the storage extension rather than
+# leave a client to guess the endpoint (PORTO-FMT-066).
+#
+# The bytes do sit in Amazon S3 in us-west-2 —
+# `https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/...`
+# answers 200 — but the type here is `custom-s3`, not `aws-s3`, and that is
+# deliberate. The bucket name contains dots, so the virtual-host endpoint is
+# the one thing a client must NOT use: it fails TLS verification. The
+# extension's `aws-s3` profile pins `platform` to exactly
+# `https://{bucket}.s3.{region}.amazonaws.com` (its schema rejects anything
+# else, measured as PTL-EXT-001), which is that broken endpoint. The
+# `custom-s3` profile takes an endpoint URL template instead, and its own
+# mapping rules say a template with no `{bucket}` placeholder means
+# path-style addressing (`AWS_VIRTUAL_HOSTING=FALSE`). So `custom-s3` is the
+# profile that can state the access path that works.
+S3_BUCKET = "us-west-2.opendata.source.coop"
+S3_SCHEME_KEY = "source-coop-s3"
+STORAGE_SCHEMES = {
+    S3_SCHEME_KEY: {
+        "type": "custom-s3",
+        "platform": "https://s3.us-west-2.amazonaws.com",
+        "bucket": S3_BUCKET,
+        "region": "us-west-2",
+        "requester_pays": False,
+        "title": "Source Cooperative open-data bucket (S3, us-west-2)",
+        "description": (
+            "Anonymous read, no credentials needed (`--no-sign-request`). "
+            "The bucket name contains dots, so clients must address it "
+            "path-style, which is what this endpoint URL without a "
+            "`{bucket}` placeholder asks for: `s3_url_style='path'` in "
+            "DuckDB, `AWS_VIRTUAL_HOSTING=FALSE` in GDAL, `--endpoint-url "
+            "https://s3.us-west-2.amazonaws.com` for the AWS CLI. The "
+            "virtual-host form fails TLS verification."
+        ),
+    },
+}
 
 FIBOA_SPEC = "https://fiboa.org/specification/v0.3.0/schema.yaml"
 VECOREL_SPEC = "https://vecorel.org/specification/v0.1.0/schema.yaml"
@@ -369,6 +410,17 @@ def zone_stem(zone: int) -> str:
     return f"utm{zone:02d}"
 
 
+def human_bytes(size: int) -> str:
+    """A size in MiB or GiB, whichever reads sensibly.
+
+    The zone parquets run from a few MiB (zone 01, mostly ocean) to tens of
+    GiB (zone 31), so one fixed unit prints either `0.0 GiB` or a five-digit
+    MiB number.
+    """
+    mib = size / 2**20
+    return f"{mib:,.0f} MiB" if mib < 1024 else f"{mib / 1024:,.1f} GiB"
+
+
 def build_item(row: dict, meta: dict, checksums: dict) -> dict:
     year, zone = row["year"], row["zone"]
     stem = zone_stem(zone)
@@ -377,8 +429,19 @@ def build_item(row: dict, meta: dict, checksums: dict) -> dict:
         "href": f"./{stem}.parquet",
         "type": "application/vnd.apache.parquet",
         "title": f"{title} (GeoParquet)",
+        "description": (
+            f"One zone partition of the {year} collection: "
+            f"{row['n_parcels']:,} predicted field parcels in UTM zone "
+            f"{zone}, WGS 84, {human_bytes(row['size_bytes'])}. "
+            "Columns are described in this item's `table:columns`."
+        ),
         "roles": ["data"],
         "file:size": row["size_bytes"],
+        # The `s3` alternate carries no `storage:refs`, and the item declares
+        # no `storage:schemes`: the scheme is declared once, on the
+        # collection, where `partition:glob` needs it (PORTO-FMT-066).
+        # Repeating the block in every item would add it 486 times here and
+        # 67,197 times in the raster tree to say the same thing.
         "alternate": {
             "s3": {
                 "href": row["s3_href"],
@@ -428,6 +491,45 @@ def build_item(row: dict, meta: dict, checksums: dict) -> dict:
     }
 
 
+def committed_item_checksums(out: Path, index: list[dict]) -> dict:
+    """url -> size/checksum, read back from the committed zone items.
+
+    The same fallback `tiles_meta_for` gives the collection assets, for the
+    486 per-zone data assets. `tools/hash_remote.py` wrote those digests from
+    the published bytes, and its sidecar lives under the gitignored staging
+    tree, so a checkout has the digests only inside the items it already
+    carries. Without this, a re-run with no `--checksums` silently dropped
+    `file:checksum` from every item — the generator is supposed to reproduce
+    the committed tree, not strip it.
+
+    An entry whose size disagrees with the index is left out: the index then
+    describes a *different* file at that key, and its digest is unknown here.
+    An explicit `--checksums` sidecar is still checked strictly in
+    `build_item`, because passing one is a claim that it matches.
+    """
+    by_url = {row["href"]: row["size_bytes"] for row in index}
+    found: dict[str, dict] = {}
+    stale = 0
+    for item_path in sorted(out.glob("*/zone=*/utm*.json")):
+        try:
+            asset = json.loads(item_path.read_text())["assets"]["data"]
+        except (KeyError, json.JSONDecodeError):
+            continue
+        if not asset.get("file:checksum"):
+            continue
+        rel = item_path.relative_to(out).with_suffix(".parquet")
+        url = f"{PUBLIC_BASE}/vector/{rel.as_posix()}"
+        if by_url.get(url) != asset.get("file:size"):
+            stale += 1
+            continue
+        found[url] = {"size": asset["file:size"],
+                      "checksum": asset["file:checksum"]}
+    if stale:
+        print(f"note: {stale} committed item checksum(s) describe a file the "
+              "index no longer lists at that key; not reused")
+    return found
+
+
 # (tiles_meta key prefix, collection asset key) for the assets whose bytes live only in the bucket.
 # `cellsmulti` is vector/{year}/cells-{year}.pmtiles, the multi-resolution cell archive the web
 # viewer reads. The asset is written for the years that have an entry in tiles_meta.json.
@@ -473,7 +575,7 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
     links = [
         {"rel": "root", "href": "../../catalog.json",
          "type": "application/json",
-         "title": "Fields of the World — Global Data (2nd Edition)"},
+         "title": "Fields of the World — Global Data"},
         {"rel": "parent", "href": "../catalog.json",
          "type": "application/json"},
         {"rel": "license",
@@ -507,39 +609,27 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             "title": f"UTM zone {row['zone']}",
         })
     specs = style_specs()
-    # Absolute, because a glob is the one href a reader pastes straight into
-    # DuckDB. Relative `./zone=*/utm*.parquet` told them the shape of the
-    # layout and nothing about where it is.
-    https_glob = f"{PUBLIC_BASE}/vector/{year}/zone=*/utm*.parquet"
-    s3_glob = (f"s3://us-west-2.opendata.source.coop/ftw/global-data-2e/"
+    # The glob lives in `partition:glob` and nowhere else. Portolan v0.3 gives
+    # a data asset exactly one file (PORTO-FMT-065) and requires the glob to
+    # be an absolute URL a client can *list* (PORTO-FMT-064/075), which rules
+    # out both the relative path this field used to carry and the https glob
+    # that used to sit in a `data` asset beside it: HTTP has no list call, so
+    # the wildcard was never expandable from that href. The one href a reader
+    # pastes into DuckDB is the s3 form below, and the description names it.
+    s3_glob = (f"s3://{S3_BUCKET}/ftw/global-data-2e/"
                f"vector/{year}/zone=*/utm*.parquet")
-    assets: dict[str, dict] = {
-        "data": {
-            "href": https_glob,
-            "type": "application/vnd.apache.parquet",
-            "title": f"All {year} field boundaries "
-                     "(GeoParquet glob, hive-partitioned by zone)",
-            "description": "One glob over every zone partition. Read it with "
-                           "`hive_partitioning=1` to get `zone` as a column. "
-                           "Expanding the wildcard needs the `s3` alternate "
-                           "below, because an HTTP URL cannot be globbed; "
-                           "per-file sizes and checksums live on the items.",
-            "roles": ["data"],
-            "alternate": {
-                "s3": {
-                    "href": s3_glob,
-                    "title": "S3 glob (us-west-2, anonymous read) — the form "
-                             "DuckDB can expand",
-                }
-            },
-        },
-    }
+    assets: dict[str, dict] = {}
     if has_tiles:
       assets["pmtiles"] = {
             "href": f"./fields-{year}.pmtiles",
             "type": "application/vnd.pmtiles",
             "title": f"Fields {year} — A5 r7 cells z0–8 → field polygons "
                      "z9–13 (PMTiles)",
+            "description": "The year as vector tiles for web maps: A5 r7 "
+                           "cell aggregates from z0 to z8, handing over to "
+                           "the field polygons themselves from z9 to z13. "
+                           "Layers `cells` and `fields`; draw it with one of "
+                           "the `style` assets.",
             "roles": ["visual"],
       }
       assets["cells"] = {
@@ -571,16 +661,25 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             "type": "application/vnd.mapbox.style+json",
             "title": f"{spec['title']} ({year})"
                      + (" — default" if "default" in roles else ""),
+            "description": ("MapLibre GL style (spec v8) over this year's "
+                            "PMTiles. "
+                            + spec["description"].format(year=year)),
             "roles": roles,
         }
     if has_tiles or (ROOT / "catalog" / "vector" / str(year)
                      / "thumbnail.png").is_file():
         style_name = THUMBNAIL_STYLE.get(year, "coverage")
+        style_label = specs[style_name]["title"].split(" (")[0].lower()
         assets["thumbnail"] = {
             "href": "./thumbnail.png", "type": "image/png",
             "title": f"Fields {year} rendered with the "
-                     f"{specs[style_name]['title'].split(' (')[0].lower()} "
+                     f"{style_label} "
                      f"style",
+            "description": (
+                f"Global preview of the {year} fields, rendered from this "
+                f"collection's PMTiles with the {style_label} style "
+                "(`styles/" + style_name + "`)."
+            ),
             "roles": ["thumbnail"],
         }
     assets["mirror"] = {
@@ -603,7 +702,7 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
         "type": "Collection",
         "stac_version": "1.1.0",
         "stac_extensions": [PORTOLAN_EXT, PROJ_EXT, TABLE_EXT, FILE_EXT,
-                            WEBMAP_EXT, PARTITION_EXT],
+                            WEBMAP_EXT, PARTITION_EXT, STORAGE_EXT],
         "id": meta["collection"],
         "title": f"FTW Global — Field Boundaries {year} (GeoParquet)",
         "description": (
@@ -623,6 +722,16 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             f"[pipeline/README.md]({REPO_URL}/blob/main/pipeline/README.md)."
             f"\n\nThe schema follows {_FIBOA} and {_VECOREL}: "
             f"columns {_COLS_SHORT} — see `table:columns` for definitions."
+            f"\n\n**Reading all {len(rows)} partitions at once.** The glob is "
+            f"`{s3_glob}` (`partition:glob`), anonymous read; pass "
+            "`hive_partitioning=1` to get `zone` as a column. Expanding a "
+            "wildcard needs a bucket listing, which plain HTTPS does not "
+            "offer, so the `s3://` form is the one to paste into DuckDB, "
+            "GDAL or fsspec — see `storage:schemes` for the endpoint and the "
+            "path-style note. One partition at a time is a plain HTTPS read "
+            f"of `{PUBLIC_BASE}/vector/{year}/zone=NN/utmNN.parquet`, and "
+            "each partition is an item of this collection with its own size "
+            "and checksum."
         ),
         "license": "CC-BY-4.0",
         "keywords": ["agriculture", "field boundaries", "Fields of the World",
@@ -637,8 +746,9 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
         "table:columns": TABLE_COLUMNS,
         "partition:scheme": "hive",
         "partition:keys": [{"name": "zone", "type": "string"}],
-        "partition:glob": "./zone=*/utm*.parquet",
+        "partition:glob": s3_glob,
         "partition:file_count": len(rows),
+        "storage:schemes": STORAGE_SCHEMES,
         "portolan:styles": ([f"styles/{n}" for n in specs]
                             if has_tiles else []),
         "links": links,
@@ -671,7 +781,7 @@ def build_vector_catalog(per_year: dict[int, dict], out: Path) -> dict:
         "links": [
             {"rel": "root", "href": "../catalog.json",
              "type": "application/json",
-             "title": "Fields of the World — Global Data (2nd Edition)"},
+             "title": "Fields of the World — Global Data"},
             {"rel": "parent", "href": "../catalog.json",
              "type": "application/json"},
             {"rel": "vcs", "href": REPO_URL, "type": "text/html",
@@ -759,7 +869,9 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         *_query_block(year), "",
         "Read the whole year at once by globbing the partitions over `s3://` "
         "with `hive_partitioning=1`; an HTTP URL cannot expand a wildcard. "
-        "The collection's `data` asset carries both forms.", "",
+        "The collection's `partition:glob` carries that glob, and its "
+        "`storage:schemes` names the endpoint and the path-style setting the "
+        "dotted bucket name needs.", "",
         "Coverage is not global. Only MGRS tiles with at least 1% cropland "
         "were processed, so a region below that threshold has no parcels "
         "here and an absence is not a prediction of absence. "
@@ -916,16 +1028,18 @@ def main() -> int:
     )
     args = parser.parse_args()
 
-    checksums = {}
-    if args.checksums:
-        checksums = json.loads(args.checksums.read_text())
-
     con = connect()
     index = read_index(con)
     per_year: dict[int, list[dict]] = {}
     for row in index:
         per_year.setdefault(row["year"], []).append(row)
     print(f"index years: {sorted(per_year)}")
+
+    # The committed items first, then the sidecar over the top: a sidecar is
+    # written from the bytes that are about to be published, so it wins.
+    checksums = committed_item_checksums(args.out, index)
+    if args.checksums:
+        checksums |= json.loads(args.checksums.read_text())
 
     missing = [r["href"] for r in index if r["href"] not in checksums]
     if args.checksums and missing:

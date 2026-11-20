@@ -103,6 +103,7 @@
       "href": "./utm10.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 10 — 2021 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2021 collection: 313,683 predicted field parcels in UTM zone 10, WGS 84, 277 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

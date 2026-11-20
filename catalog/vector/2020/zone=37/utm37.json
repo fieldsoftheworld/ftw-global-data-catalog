@@ -103,6 +103,7 @@
       "href": "./utm37.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 37 — 2020 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2020 collection: 2,827,471 predicted field parcels in UTM zone 37, WGS 84, 2.4 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

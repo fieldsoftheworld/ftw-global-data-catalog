@@ -103,6 +103,7 @@
       "href": "./utm58.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 58 — 2021 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2021 collection: 57,982 predicted field parcels in UTM zone 58, WGS 84, 48 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

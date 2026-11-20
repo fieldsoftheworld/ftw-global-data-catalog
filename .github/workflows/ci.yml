@@ -18,16 +18,17 @@ jobs:
         with:
           python-version: "3.12"
 
-      # rashid takes a floor, not a pin, so CI picks up each 0.1.x release
+      # rashid takes a floor, not a pin, so CI picks up each 0.4.x release
       # while refusing one older than the rules the gate asserts. The floor
-      # is 0.1.8, the first release that accepts a v0.2.0 root self link;
-      # tests/test_portolan_conformance.py checks the same range at run time.
+      # is 0.4.0, the first release that bundles the Portolan v0.3.0 profile
+      # this catalog declares; tests/test_portolan_conformance.py checks the
+      # same range at run time.
       #
       # stac-check stays unpinned on purpose. The stac-check exemption in
       # docs/conformance.md expires when the upstream crash stops. That only
       # happens if CI takes each new release.
       - name: Install the validators
-        run: python -m pip install 'rashid>=0.1.8,<0.2.0' stac-check pyarrow numpy duckdb shapely pyproj rasterio
+        run: python -m pip install 'rashid>=0.4.0,<0.5.0' stac-check pyarrow numpy duckdb shapely pyproj rasterio
 
       - name: Lint the tooling
         run: |

@@ -103,6 +103,7 @@
       "href": "./utm11.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 11 — 2017 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2017 collection: 400,995 predicted field parcels in UTM zone 11, WGS 84, 436 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

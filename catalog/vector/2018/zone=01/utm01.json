@@ -103,6 +103,7 @@
       "href": "./utm01.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 1 — 2018 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2018 collection: 7,419 predicted field parcels in UTM zone 1, WGS 84, 4 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],
