@@ -111,7 +111,7 @@
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2021/zone=11/utm11.parquet",
-          "title": "S3 URI (us-west-2, anonymous read)"
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
         }
       },
       "file:checksum": "122075c773c8cdda3bd78e86cd563cc74442d56e6870d40258222b59c682ff887749"

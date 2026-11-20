@@ -3,12 +3,12 @@
 Guidance for AI agents. Every claim here is quoted from the dataset's embedded metadata or measured from the data.
 
 - 146,741,715 parcels in 54 per-UTM-zone GeoParquet files at `https://data.source.coop/ftw/global-data-2e/vector/2025/zone=NN/utm{NN}.parquet` (anonymous read, hive-partitioned by `zone`).
-- Whole-year queries glob the partitions over s3 with anonymous access and `hive_partitioning=1` (http URLs cannot glob):
+- Whole-year queries glob the partitions over the Source Cooperative data proxy (endpoint `data.source.coop`, anonymous, no region) with `hive_partitioning=1`; http URLs cannot glob:
   ```python
   import duckdb
   con = duckdb.connect()
-  con.execute("INSTALL httpfs; LOAD httpfs; CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2', URL_STYLE 'path');")
-  con.sql("SELECT zone, count(*) FROM read_parquet('s3://us-west-2.opendata.source.coop/ftw/global-data-2e/vector/2025/zone=*/utm*.parquet', hive_partitioning=1) GROUP BY zone ORDER BY zone").show()
+  con.execute("INSTALL httpfs; LOAD httpfs; CREATE SECRET (TYPE s3, PROVIDER config, ENDPOINT 'data.source.coop', URL_STYLE 'path');")
+  con.sql("SELECT zone, count(*) FROM read_parquet('s3://ftw/global-data-2e/vector/2025/zone=*/utm*.parquet', hive_partitioning=1) GROUP BY zone ORDER BY zone").show()
   ```
 - Schema: 9 columns (id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method); definitions live in `table:columns` on the collection and every item.
 - Parcel ids are unique across the year (measured: no duplicate ids). A field that straddles a UTM zone line can appear once in each zone file; the post-processing QA counted about 2,000 to 2,300 such overlapping pairs per year.

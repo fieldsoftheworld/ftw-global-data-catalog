@@ -67,40 +67,61 @@ FILE_EXT = "https://stac-extensions.github.io/file/v2.1.0/schema.json"
 ALT_EXT = "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json"
 STORAGE_EXT = "https://stac-extensions.github.io/storage/v2.0.0/schema.json"
 
-# The bucket behind every `s3://` href and behind `partition:glob`. Portolan
-# v0.3 asks publishers to describe it with the storage extension rather than
-# leave a client to guess the endpoint (PORTO-FMT-066).
+# The S3 endpoint behind every `s3://` href and behind `partition:glob`.
+# Portolan v0.3 asks publishers to describe it with the storage extension
+# rather than leave a client to guess it (PORTO-FMT-066).
 #
-# The bytes do sit in Amazon S3 in us-west-2 —
-# `https://s3.us-west-2.amazonaws.com/us-west-2.opendata.source.coop/...`
-# answers 200 — but the type here is `custom-s3`, not `aws-s3`, and that is
-# deliberate. The bucket name contains dots, so the virtual-host endpoint is
-# the one thing a client must NOT use: it fails TLS verification. The
-# extension's `aws-s3` profile pins `platform` to exactly
-# `https://{bucket}.s3.{region}.amazonaws.com` (its schema rejects anything
-# else, measured as PTL-EXT-001), which is that broken endpoint. The
-# `custom-s3` profile takes an endpoint URL template instead, and its own
-# mapping rules say a template with no `{bucket}` placeholder means
-# path-style addressing (`AWS_VIRTUAL_HOSTING=FALSE`). So `custom-s3` is the
-# profile that can state the access path that works.
-S3_BUCKET = "us-west-2.opendata.source.coop"
+# This is the Source Cooperative data proxy (https://docs.source.coop/
+# data-proxy), not the underlying bucket: endpoint `data.source.coop`,
+# bucket `ftw`, keys that match the public HTTPS URLs one for one, so
+# `s3://ftw/global-data-2e/vector/2019/zone=01/utm01.parquet` and
+# `https://data.source.coop/ftw/global-data-2e/vector/2019/zone=01/utm01.parquet`
+# name the same object. Verified anonymously on 2026-11-20: a ListObjectsV2
+# over the proxy answers 200, and DuckDB 2.0.0 expands the 2019 glob to its
+# 54 partitions and reads their footers with no credentials.
+#
+# It replaces the raw `s3://us-west-2.opendata.source.coop/ftw/...` form the
+# glob used to carry. That form still works for a bulk pull, and the items'
+# own `alternate` hrefs were already on the proxy, so the catalog was naming
+# two different buckets for one set of bytes. The proxy is the one that
+# matches the published URLs.
+#
+# The type is `custom-s3` rather than `aws-s3` because the endpoint is not an
+# AWS one. (The extension's `aws-s3` profile also pins `platform` to exactly
+# `https://{bucket}.s3.{region}.amazonaws.com` and its schema rejects
+# anything else — measured, as PTL-EXT-001 — so it could not state this
+# endpoint even if the bytes' home bucket were named.) The `custom-s3`
+# profile takes an endpoint URL template, and its own mapping rules read a
+# template with no `{bucket}` placeholder as path-style addressing
+# (`AWS_VIRTUAL_HOSTING=FALSE`), which is what the proxy needs.
+S3_BUCKET = "ftw"
+S3_ENDPOINT = "https://data.source.coop"
 S3_SCHEME_KEY = "source-coop-s3"
+#: The DuckDB preamble that makes the glob readable. Quoted verbatim in the
+#: collection descriptions and in each year's AGENTS.md, so they cannot drift.
+DUCKDB_SECRET = ("CREATE SECRET (TYPE s3, PROVIDER config, "
+                 "ENDPOINT 'data.source.coop', URL_STYLE 'path');")
 STORAGE_SCHEMES = {
     S3_SCHEME_KEY: {
         "type": "custom-s3",
-        "platform": "https://s3.us-west-2.amazonaws.com",
+        "platform": S3_ENDPOINT,
         "bucket": S3_BUCKET,
         "region": "us-west-2",
         "requester_pays": False,
-        "title": "Source Cooperative open-data bucket (S3, us-west-2)",
+        "title": "Source Cooperative data proxy (S3-compatible, anonymous)",
         "description": (
-            "Anonymous read, no credentials needed (`--no-sign-request`). "
-            "The bucket name contains dots, so clients must address it "
-            "path-style, which is what this endpoint URL without a "
-            "`{bucket}` placeholder asks for: `s3_url_style='path'` in "
-            "DuckDB, `AWS_VIRTUAL_HOSTING=FALSE` in GDAL, `--endpoint-url "
-            "https://s3.us-west-2.amazonaws.com` for the AWS CLI. The "
-            "virtual-host form fails TLS verification."
+            "Anonymous read and anonymous listing, no credentials and no "
+            "region needed; the keys match the public HTTPS URLs one for "
+            "one. Clients must override the endpoint and address it "
+            "path-style, which is what this platform URL without a "
+            "`{bucket}` placeholder asks for: in DuckDB "
+            f"`{DUCKDB_SECRET}`, in GDAL `AWS_S3_ENDPOINT=data.source.coop` "
+            "with `AWS_VIRTUAL_HOSTING=FALSE` and `AWS_NO_SIGN_REQUEST=YES`, "
+            "and for the AWS CLI `--endpoint-url https://data.source.coop "
+            "--no-sign-request`. The proxy is in beta; a bulk pull may be "
+            "faster straight from the underlying bucket, "
+            "`s3://us-west-2.opendata.source.coop/ftw/global-data-2e/`, "
+            "which holds the same objects under the same keys."
         ),
     },
 }
@@ -451,7 +472,8 @@ def build_item(row: dict, meta: dict, checksums: dict) -> dict:
         "alternate": {
             "s3": {
                 "href": row["s3_href"],
-                "title": "S3 URI (us-west-2, anonymous read)",
+                "title": "S3 URI via the Source Cooperative data proxy "
+                         "(endpoint data.source.coop, anonymous read)",
             }
         },
     }
@@ -622,7 +644,7 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
     # that used to sit in a `data` asset beside it: HTTP has no list call, so
     # the wildcard was never expandable from that href. The one href a reader
     # pastes into DuckDB is the s3 form below, and the description names it.
-    s3_glob = (f"s3://{S3_BUCKET}/ftw/global-data-2e/"
+    s3_glob = (f"s3://{S3_BUCKET}/global-data-2e/"
                f"vector/{year}/zone=*/utm*.parquet")
     assets: dict[str, dict] = {}
     if has_tiles:
@@ -729,15 +751,20 @@ def build_collection(year: int, rows: list[dict], meta: dict) -> dict:
             f"\n\nThe schema follows {_FIBOA} and {_VECOREL}: "
             f"columns {_COLS_SHORT} — see `table:columns` for definitions."
             f"\n\n**Reading all {len(rows)} partitions at once.** The glob is "
-            f"`{s3_glob}` (`partition:glob`), anonymous read; pass "
-            "`hive_partitioning=1` to get `zone` as a column. Expanding a "
-            "wildcard needs a bucket listing, which plain HTTPS does not "
-            "offer, so the `s3://` form is the one to paste into DuckDB, "
-            "GDAL or fsspec — see `storage:schemes` for the endpoint and the "
-            "path-style note. One partition at a time is a plain HTTPS read "
-            f"of `{PUBLIC_BASE}/vector/{year}/zone=NN/utmNN.parquet`, and "
-            "each partition is an item of this collection with its own size "
-            "and checksum."
+            f"`{s3_glob}` (`partition:glob`), served anonymously by the "
+            "[Source Cooperative data proxy](https://docs.source.coop/"
+            "data-proxy) at endpoint `data.source.coop` — same keys as the "
+            "HTTPS URLs, no credentials and no region. Expanding a wildcard "
+            "needs a listing, which plain HTTPS does not offer, so the "
+            "`s3://` form is the one to paste into DuckDB, GDAL or fsspec; "
+            "`storage:schemes` carries the endpoint and the path-style "
+            f"setting. In DuckDB: `{DUCKDB_SECRET}` then "
+            f"`SELECT zone, count(*) FROM read_parquet('{s3_glob}', "
+            "hive_partitioning=1) GROUP BY zone;` — `hive_partitioning=1` is "
+            "what makes `zone` a column. One partition at a time is a plain "
+            f"HTTPS read of `{PUBLIC_BASE}/vector/{year}/zone=NN/"
+            "utmNN.parquet`, and each partition is an item of this "
+            "collection with its own size and checksum."
         ),
         "license": "CC-BY-4.0",
         "keywords": ["agriculture", "field boundaries", "Fields of the World",
@@ -876,8 +903,8 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
         "Read the whole year at once by globbing the partitions over `s3://` "
         "with `hive_partitioning=1`; an HTTP URL cannot expand a wildcard. "
         "The collection's `partition:glob` carries that glob, and its "
-        "`storage:schemes` names the endpoint and the path-style setting the "
-        "dotted bucket name needs.", "",
+        "`storage:schemes` names the proxy endpoint and the path-style "
+        "setting it needs.", "",
         "Coverage is not global. Only MGRS tiles with at least 1% cropland "
         "were processed, so a region below that threshold has no parcels "
         "here and an absence is not a prediction of absence. "
@@ -892,7 +919,7 @@ def year_readme(year: int, rows: list[dict], meta: dict) -> str:
 
 def year_agents(year: int, rows: list[dict], meta: dict) -> str:
     n = sum(r["n_parcels"] for r in rows)
-    glob = (f"s3://us-west-2.opendata.source.coop/ftw/global-data-2e/"
+    glob = (f"s3://{S3_BUCKET}/global-data-2e/"
             f"vector/{year}/zone=*/utm*.parquet")
     lines = [
         f"# AGENTS.md — FTW field boundaries {year}", "",
@@ -901,14 +928,13 @@ def year_agents(year: int, rows: list[dict], meta: dict) -> str:
         f"- {n:,} parcels in {len(rows)} per-UTM-zone GeoParquet files at "
         f"`{PUBLIC_BASE}/vector/{year}/zone=NN/utm{{NN}}.parquet` "
         "(anonymous read, hive-partitioned by `zone`).",
-        "- Whole-year queries glob the partitions over s3 with "
-        "anonymous access and `hive_partitioning=1` (http URLs cannot "
-        "glob):",
+        "- Whole-year queries glob the partitions over the Source "
+        "Cooperative data proxy (endpoint `data.source.coop`, anonymous, "
+        "no region) with `hive_partitioning=1`; http URLs cannot glob:",
         "  ```python",
         "  import duckdb",
         "  con = duckdb.connect()",
-        '  con.execute("INSTALL httpfs; LOAD httpfs; '
-        "CREATE SECRET (TYPE s3, PROVIDER config, REGION 'us-west-2', URL_STYLE 'path');\")",
+        f'  con.execute("INSTALL httpfs; LOAD httpfs; {DUCKDB_SECRET}")',
         f"  con.sql(\"SELECT zone, count(*) FROM read_parquet('{glob}', "
         "hive_partitioning=1) GROUP BY zone ORDER BY zone\").show()",
         "  ```",
@@ -980,9 +1006,10 @@ def vector_agents(per_year: dict[int, list[dict]]) -> str:
         "- Data layout: `vector/{year}/zone=NN/utm{NN}.parquet` — hive-"
         "partitioned by zone, each parquet colocated with its item "
         "metadata. A whole-year read globs "
-        "`s3://us-west-2.opendata.source.coop/ftw/global-data-2e/"
-        "vector/{year}/zone=*/utm*.parquet` with `hive_partitioning=1`; "
-        "the https form cannot expand a wildcard.",
+        "`s3://ftw/global-data-2e/vector/{year}/zone=*/utm*.parquet` "
+        "with `hive_partitioning=1`, over the Source Cooperative data "
+        "proxy (endpoint `data.source.coop`, anonymous, path-style); the "
+        "https form cannot expand a wildcard.",
         "- Coverage is cropland-gated: only MGRS tiles with at least 1% "
         "cropland were processed, so an empty region is unprocessed rather "
         "than predicted empty. Inside a processed tile nothing is filtered "
