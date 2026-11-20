@@ -411,14 +411,20 @@ def zone_stem(zone: int) -> str:
 
 
 def human_bytes(size: int) -> str:
-    """A size in MiB or GiB, whichever reads sensibly.
+    """A size in KiB, MiB or GiB, whichever reads sensibly.
 
-    The zone parquets run from a few MiB (zone 01, mostly ocean) to tens of
-    GiB (zone 31), so one fixed unit prints either `0.0 GiB` or a five-digit
-    MiB number.
+    The zone parquets span four orders of magnitude — 288 KiB for zone 57 in
+    2017, 9.4 GiB for zone 48 in 2021 — so one fixed unit prints either
+    `0 MiB` or a five-digit MiB number. Over the 486 committed items this
+    gives KiB for 12, MiB for 225 and GiB for 249.
     """
-    mib = size / 2**20
-    return f"{mib:,.0f} MiB" if mib < 1024 else f"{mib / 1024:,.1f} GiB"
+    kib = size / 2**10
+    if kib < 1024:
+        return f"{kib:,.0f} KiB"
+    mib = kib / 1024
+    if mib < 1024:
+        return f"{mib:,.1f} MiB" if mib < 10 else f"{mib:,.0f} MiB"
+    return f"{mib / 1024:,.1f} GiB"
 
 
 def build_item(row: dict, meta: dict, checksums: dict) -> dict:

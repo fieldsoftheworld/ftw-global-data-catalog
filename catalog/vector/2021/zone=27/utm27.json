@@ -103,7 +103,7 @@
       "href": "./utm27.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 27 — 2021 field boundaries (GeoParquet)",
-      "description": "One zone partition of the 2021 collection: 3,676 predicted field parcels in UTM zone 27, WGS 84, 3 MiB. Columns are described in this item's `table:columns`.",
+      "description": "One zone partition of the 2021 collection: 3,676 predicted field parcels in UTM zone 27, WGS 84, 3.3 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],

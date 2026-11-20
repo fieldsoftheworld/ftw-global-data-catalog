@@ -103,7 +103,7 @@
       "href": "./utm01.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 1 — 2022 field boundaries (GeoParquet)",
-      "description": "One zone partition of the 2022 collection: 10,519 predicted field parcels in UTM zone 1, WGS 84, 5 MiB. Columns are described in this item's `table:columns`.",
+      "description": "One zone partition of the 2022 collection: 10,519 predicted field parcels in UTM zone 1, WGS 84, 5.1 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],
