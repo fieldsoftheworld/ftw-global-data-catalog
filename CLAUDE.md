@@ -1,6 +1,11 @@
 # ftw-global-data-catalog — developer guide
 
 Git-backed Portolan/STAC catalog for the Fields of the World (FTW) Global **2nd Edition** (2e) release (bucket prefix `global-data-2e`).
+The root catalog is titled "Fields of the World — Global Data" and is the single entry point for FTW global data: its own
+collections are the 2e release, and the 1st Edition (`ftw/global-data/first-edition`, repo
+`fieldsoftheworld/ftw-data-catalog`) is a `child` sub-catalog on the root. That repo is moving the 1st edition into the
+`first-edition/` sub-folder of the FTW root it publishes at `ftw/global-data`, so the child href follows it; the link
+resolves once its restructure lands. The root id stays `ftw-global-data-2e`; no URL this repo publishes changed.
 The build plan is in [docs/plan.md](docs/plan.md) — read it first.
 
 ## Models
@@ -96,11 +101,29 @@ python3 tools/upload_data.py [--confirm]    # staged data files
   without `CI_LIGHT` where the bytes are reachable.
 
 ## Conformance
-Portolan **v0.2.0** (schema URI on every catalog/collection; absolute `self` on the
-published root; `file:size` + multihash `1220…` `file:checksum` on every asset). Validated
-by `rashid>=0.1.8,<0.2.0` — installed in `.venv/` (with stac-check + pyflakes). Never
-widen `ACCEPTED` in `tests/test_portolan_conformance.py` without a row in
-`docs/conformance.md`.
+Portolan **v0.3.0** (schema URI on every catalog/collection; absolute `self` on the
+published root; `file:size` + multihash `1220…` `file:checksum` on every asset; a data
+asset links to exactly one file, so the whole-year glob lives only in `partition:glob`,
+as an absolute `s3://` URL with a `storage:schemes` entry beside it; every asset carries a
+`title` and a `description`). Validated by `rashid>=0.4.0,<0.5.0` — installed in `.venv/`
+(with stac-check + pyflakes). Never widen `ACCEPTED` in
+`tests/test_portolan_conformance.py` without a row in `docs/conformance.md`.
+
+**`catalog/` mirrors the published catalog, and the generators cannot reproduce it**
+(adopted 2026-11-20). The current generation was produced by the pipeline in the private
+`taylor-geospatial/global-ftw-2e`: 60 vector partitions and ~14,580 raster tiles a year for
+2018 and 2020–2025, items at `vector/{year}/utmNN/utmNN.json`, and `webcells-a5r4`…`a5r11`
+assets this repo's generators know nothing about. 2017 and 2019 are still this repo's own
+output and still regenerate byte-identically. **Do not run `build_vector_items.py` or
+`build_raster_items.py` over `catalog/` expecting a no-op** — they read the index manifests,
+which now describe the current generation, and they write items to `zone=NN/`.
+
+The fields this repo owns on top of the published tree (v0.3 schema URI, root title and the
+1st-edition child link, `partition:glob` + `storage:schemes`, every asset title/description,
+the overview media type and datetimes, the licence line in a collection README) are applied
+by `tools/apply_v03_metadata.py`, which is idempotent and gated by `tests/test_v03_metadata.py`
+(`--check`). After adopting a newer published tree, re-run it and commit. It is also the
+specification of what to upstream into the pipeline repo.
 
 The two index gates (`tests/test_indexes.py`, `tests/test_raster_index_lite.py`) also need
 `pyarrow numpy duckdb shapely pyproj rasterio` — the same list `.github/workflows/ci.yml`

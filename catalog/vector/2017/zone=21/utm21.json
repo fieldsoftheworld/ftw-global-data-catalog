@@ -103,6 +103,7 @@
       "href": "./utm21.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 21 — 2017 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2017 collection: 2,284,720 predicted field parcels in UTM zone 21, WGS 84, 3.0 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],
@@ -110,7 +111,7 @@
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2017/zone=21/utm21.parquet",
-          "title": "S3 URI (us-west-2, anonymous read)"
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
         }
       },
       "file:checksum": "12206de465cf5b96f8ae1ef64cae2821aa0f7d5e306992148d7e61d4f119aff04690"

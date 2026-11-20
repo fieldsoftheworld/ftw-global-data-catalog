@@ -1,9 +1,21 @@
 # ftw-global-data-catalog
 
 The catalog metadata and the processing pipeline for the **Fields of the World
-(FTW) Global Data 2nd Edition**: 1,242,648,258 predicted agricultural field
-boundaries and 67,197 field/boundary-probability rasters, covering 2017
-through 2025 worldwide.
+(FTW) Global Data 2nd Edition**: 1,773,302,757 predicted agricultural field
+boundaries and 117,023 field/boundary-probability rasters, covering 2017
+through 2025 worldwide. Those totals are the sum over the catalog as
+published today: seven years (2018, 2020-2025) come from the re-processing
+run described in each year collection, and 2017 and 2019 are the earlier
+run.
+
+Its root catalog is titled **Fields of the World — Global Data** and is the
+single entry point for FTW global field-boundary data: the collections in this
+repository are the 2nd Edition, and the 1st Edition
+([fieldsoftheworld/ftw-data-catalog](https://github.com/fieldsoftheworld/ftw-data-catalog),
+published at `ftw/global-data/first-edition`) is linked from the root as a
+`child` sub-catalog titled "Fields of the World — Global Data (1st Edition)".
+The root catalog id stays `ftw-global-data-2e` and every URL this repository
+publishes is unchanged.
 
 This repository holds two things. `catalog/` **is** the published
 [Portolan](https://www.portolan-sdi.org/)/STAC catalog, synced 1:1 to Source
@@ -21,6 +33,7 @@ describes it.
 | Portolan browser | <https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/catalog.json> |
 | Files and downloads | <https://source.coop/ftw/global-data-2e> |
 | Catalog root | <https://data.source.coop/ftw/global-data-2e/catalog.json> |
+| 1st Edition sub-catalog | <https://data.source.coop/ftw/global-data/first-edition/catalog.json> |
 | Project | <https://fieldsofthe.world> |
 
 ## Installation
@@ -29,7 +42,7 @@ The gates and the catalog tools need Python 3.11 or newer and a virtualenv:
 
 ```bash
 python3 -m venv .venv
-.venv/bin/pip install 'rashid>=0.1.8,<0.2.0' stac-check pyflakes duckdb
+.venv/bin/pip install 'rashid>=0.4.0,<0.5.0' stac-check pyflakes duckdb
 ```
 
 The pipeline stages have their own dependencies, installed per stage. See
@@ -58,12 +71,19 @@ Data files are staged under `staging-data/`, which is gitignored, and uploaded
 separately with `python3 tools/upload_data.py`. Publishing never deletes, so
 removing a file from `catalog/` does not remove the object from the bucket.
 
-Regenerate the catalog rather than hand-editing it. `tools/build_vector_items.py`
-generates the vector tree and `tools/build_raster_items.py` the raster tree,
-both from the published index manifests, so counts and sizes are measured
-rather than retyped. `tools/render_thumbnails.py` renders each collection's
-thumbnail from its own published style. Edit a generator and re-run it; never
-edit its output.
+Regenerate the catalog rather than hand-editing it — but check which
+generator owns the part you are changing. `catalog/` mirrors the published
+catalog as of 2026-11-20, and the current generation of seven of the nine
+years was produced by a pipeline that is not in this repository, so
+`tools/build_vector_items.py` and `tools/build_raster_items.py` describe the
+previous generation and must not be run over `catalog/` expecting a no-op.
+The metadata this repository owns on top of the published tree is applied by
+`tools/apply_v03_metadata.py`, which is idempotent; `tests/test_v03_metadata.py`
+re-runs it in `--check` mode and fails if the tree has drifted from it.
+`docs/conformance.md` has the detail, including what the generators still
+reproduce exactly (2017 and 2019) and what is waiting on the upstream
+pipeline. `tools/render_thumbnails.py` renders each collection's thumbnail
+from its own published style.
 
 ## Layout
 

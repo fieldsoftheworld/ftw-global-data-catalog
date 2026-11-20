@@ -1,56 +1,15 @@
-# FTW Global — Field Boundaries 2025 (GeoParquet)
+# FTW field boundaries 2025
 
-Predicted agricultural field boundaries for 2025: **146,741,715 parcels** in 54 per-UTM-zone GeoParquet files (91.0 GiB). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.
+225,542,717 parcels in 60 UTM-zone files.
 
-**[Open 2025 on the interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2025)** to see the fields over imagery, or **[open it in the Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2025/collection.json)** to walk the metadata and preview each asset. The files themselves are listed on [Source Cooperative](https://source.coop/ftw/global-data-2e).
+The extraction recipe uses mean field probability 0.10, fills enclosed holes strictly smaller than 100 m² and requires at least 900 m². Independent crop filtering evaluates parcels from 900 to 5,000,000 m² and removes those with less than 5% overlap with the native 2017/2020/2024 Impact Observatory crop union; unknown or incomplete observations and parcels outside those size bounds are retained by this filter. The embedded processing description below also records downstream vector cleanup, including its separate 20 m² hole rule. These stages have different purposes and thresholds.
 
-Agents: [AGENTS.md](https://data.source.coop/ftw/global-data-2e/vector/2025/AGENTS.md) beside this file is the agent guide.
+Embedded vector provenance, unchanged:
 
-Data license: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)
+Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2025 Q1-Q4, 4 quarters x B04/B03/B02/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.5+R10+F10+G2+H100lt+A900+q1), 5 m coverage simplification, parcels > 5 km2 removed, parcels at least 70% Impact Observatory io-lulc 2024 water (inland water, aquaculture ponds, salt pans) removed, parcels with less than 50% of their area on OpenStreetMap land polygons (sea) removed, parcels and parts under 900 m2 removed, interior holes under 20 m2 filled. Attributes are for filtering.
 
-## How it was made
+[Collection](https://data.source.coop/ftw/global-data-2e/vector/2025/collection.json) lists the individual files, checksums, PMTiles, styles and corrected STAC GeoParquet mirror.
 
-Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2025 Q1-Q4, 4 quarters x B04/B03/B02/B08 in the model's input order), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1), 5 m coverage simplification, holes under 20 m2 filled. Removed: parcels > 5 km2 (after the seam union), parcels at least 70% Impact Observatory io-lulc 2024 water (inland water, aquaculture ponds, salt pans), parcels with less than half their area on OpenStreetMap land polygons (sea). Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/). [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md) documents every stage, from mosaic download to this file.
+The nine A5 assets include the established resolution-7 aggregate and separate web aggregates at resolutions 4-11; they retain their original metrics.
 
-## Files
-
-One file per UTM zone at `vector/2025/zone=NN/utm{NN}.parquet`, hive-partitioned by `zone`. The largest is [utm48](https://data.source.coop/ftw/global-data-2e/vector/2025/zone=48/utm48.parquet), with 24,849,952 parcels. Zone numbers with no land coverage are absent.
-
-## Columns
-
-The schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) (also machine-readable in each item's `table:columns`):
-
-| Column | Description |
-|---|---|
-| `id` | Parcel identifier, unique per collection ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)). |
-| `collection` | The vecorel collection the parcel belongs to (constant per year, e.g. `ftw-s2-2025`). |
-| `geometry` | Parcel footprint (WKB Polygon/MultiPolygon, WGS 84). |
-| `bbox` | Bounding box of the parcel (xmin, ymin, xmax, ymax). |
-| `metrics:area` | Area of the parcel in square meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics). |
-| `metrics:perimeter` | Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics). |
-| `score` | Mean model field probability inside the parcel, × 100 rounded (0–100). |
-| `determination:datetime` | The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)). |
-| `determination:method` | Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)). |
-
-## Browse it
-
-One [PMTiles archive](https://data.source.coop/ftw/global-data-2e/vector/2025/fields-2025.pmtiles) renders the whole year with a zoom handover: A5 r7 cell aggregates (`cells` layer, z0–8: `count`, `area_ha`, `avg_score`, `pct_covered`) switching to the full field polygons (`fields` layer, z9–13: `id`, `metrics:area`, `metrics:perimeter`, `score`). Four styles — count, coverage (default), avg-size, field-prob — live beside it in `styles/`; the per-cell aggregates are also published as [GeoParquet](https://data.source.coop/ftw/global-data-2e/vector/2025/cells_a5r7_2025.parquet).
-
-## Query it
-
-```python
-import duckdb
-con = duckdb.connect()
-con.execute("INSTALL spatial; LOAD spatial; INSTALL httpfs; LOAD httpfs;")
-url = "https://data.source.coop/ftw/global-data-2e/vector/2025/zone=31/utm31.parquet"
-con.sql(f"""
-    SELECT count(*) AS parcels,
-           round(sum("metrics:area") / 1e6, 1) AS km2,
-           round(avg(score), 1) AS avg_score
-    FROM read_parquet('{url}')
-""").show()
-```
-
-Read the whole year at once by globbing the partitions over `s3://` with `hive_partitioning=1`; an HTTP URL cannot expand a wildcard. The collection's `data` asset carries both forms.
-
-Coverage is not global. Only MGRS tiles with at least 1% cropland were processed, so a region below that threshold has no parcels here and an absence is not a prediction of absence. Inside a processed tile, parcels at least 70% io-lulc 2024 water (inland water, aquaculture ponds, salt pans) and parcels with less than half their area on OpenStreetMap land (sea) were removed; no other land-cover or terrain rule applies, so scrub and built-up ground can still carry predicted parcels. Filter on `score` (the model's field probability × 100) to trade precision against recall.
+Data licence: [CC-BY-4.0](https://creativecommons.org/licenses/by/4.0/)

@@ -1,89 +1,89 @@
 {
-  "type": "Catalog",
-  "stac_version": "1.1.0",
-  "stac_extensions": [
-    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json"
-  ],
+  "description": "Per-year collections of two-band field and boundary probability Cloud-Optimized GeoTIFFs at 2.5 m, derived from Sentinel-2 imagery. The 2018, 2020, 2021, 2022, 2023, 2024 and 2025 collections describe the updated processing recipe. The other year links retain previously published collections; their presence does not indicate completion of the updated processing for those years. Use each year collection for its provenance and asset inventory.",
   "id": "raster",
-  "title": "FTW Global (2nd Edition) — Field & boundary probability rasters",
-  "description": "Per-year collections of field/boundary probability COGs at 2.5 m, 2017–2025: 67,197 tiles, 25.8 TB, browsable in the [data browser](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.",
   "links": [
     {
+      "href": "../catalog.json",
       "rel": "root",
-      "href": "../catalog.json",
-      "type": "application/json",
-      "title": "Fields of the World — Global Data (2nd Edition)"
-    },
-    {
-      "rel": "parent",
-      "href": "../catalog.json",
+      "title": "Fields of the World — Global Data",
       "type": "application/json"
     },
     {
-      "rel": "describedby",
+      "href": "../catalog.json",
+      "rel": "parent",
+      "type": "application/json"
+    },
+    {
       "href": "./README.md",
-      "type": "text/markdown",
-      "title": "Raster tree README"
+      "rel": "describedby",
+      "title": "Raster tree README",
+      "type": "text/markdown"
     },
     {
-      "rel": "agents",
       "href": "./AGENTS.md",
-      "type": "text/markdown",
-      "title": "Raster tree agent guide"
+      "rel": "agents",
+      "title": "Raster tree agent guide",
+      "type": "text/markdown"
     },
     {
-      "rel": "child",
       "href": "./2017/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field & Boundary Probabilities 2017 (COG)"
+      "rel": "child",
+      "title": "FTW Global — Field & Boundary Probabilities 2017 (COG)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2018/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field & Boundary Probabilities 2018 (COG)"
+      "rel": "child",
+      "title": "FTW Global — Field & Boundary Probabilities 2018 (COG)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2019/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field & Boundary Probabilities 2019 (COG)"
+      "rel": "child",
+      "title": "FTW Global — Field & Boundary Probabilities 2019 (COG)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2020/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field & Boundary Probabilities 2020 (COG)"
+      "rel": "child",
+      "title": "FTW Global — Field & Boundary Probabilities 2020 (COG)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2021/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field & Boundary Probabilities 2021 (COG)"
+      "rel": "child",
+      "title": "FTW Global — Field & Boundary Probabilities 2021 (COG)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2022/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field & Boundary Probabilities 2022 (COG)"
+      "rel": "child",
+      "title": "FTW Global — Field & Boundary Probabilities 2022 (COG)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2023/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field & Boundary Probabilities 2023 (COG)"
+      "rel": "child",
+      "title": "FTW Global — Field & Boundary Probabilities 2023 (COG)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2024/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field & Boundary Probabilities 2024 (COG)"
+      "rel": "child",
+      "title": "FTW Global — Field & Boundary Probabilities 2024 (COG)",
+      "type": "application/json"
     },
     {
-      "rel": "child",
       "href": "./2025/collection.json",
-      "type": "application/json",
-      "title": "FTW Global — Field & Boundary Probabilities 2025 (COG)"
+      "rel": "child",
+      "title": "FTW Global — Field & Boundary Probabilities 2025 (COG)",
+      "type": "application/json"
     }
-  ]
+  ],
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.3.0/schema.json"
+  ],
+  "stac_version": "1.1.0",
+  "title": "FTW Global (2nd Edition) — Field & boundary probability rasters",
+  "type": "Catalog"
 }

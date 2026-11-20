@@ -103,6 +103,7 @@
       "href": "./utm01.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 1 — 2017 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2017 collection: 6,311 predicted field parcels in UTM zone 1, WGS 84, 3.7 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],
@@ -110,7 +111,7 @@
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2017/zone=01/utm01.parquet",
-          "title": "S3 URI (us-west-2, anonymous read)"
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
         }
       },
       "file:checksum": "12202c0bd83c0bb7efa090f5d76f82577f36dca5a9ebe96ab717db232746d4ef9b41"

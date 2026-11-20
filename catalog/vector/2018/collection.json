@@ -1,18 +1,217 @@
 {
-  "type": "Collection",
-  "stac_version": "1.1.0",
-  "stac_extensions": [
-    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
-    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
-    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
-    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
-    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json",
-    "https://schemas.portolan-sdi.org/incubating/partition/v1.0.0/schema.json"
-  ],
+  "assets": {
+    "cells-a5r7": {
+      "file:checksum": "12204e098812a984003a849fdeb3795d1a873800e275de5f05347993f06d60d8a6ce",
+      "file:size": 2200019,
+      "href": "./cells_a5r7_2018.parquet",
+      "roles": [
+        "data"
+      ],
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r7 cell aggregates 2018 (GeoParquet)",
+      "description": "Per-cell count, area_ha, avg_score, pct_covered — the z0–8 exploration layer, also useful for analysis."
+    },
+    "cells-pmtiles": {
+      "file:checksum": "1220478ef7953d8325d38d3e5d5d6c2fd8a3e050c32b72df63b1d13fa013f5d2398e",
+      "file:size": 131811917,
+      "href": "./cells-2018.pmtiles",
+      "roles": [
+        "visual"
+      ],
+      "type": "application/vnd.pmtiles",
+      "title": "A5 cell aggregates 2018, one resolution per zoom (PMTiles)",
+      "description": "A5 cells for drawing the year at global scale, with one resolution per zoom: r4 at the globe to r11 at zoom 7. Each cell carries count, area_ha, avg_score, pct_covered and density (fields per 1,000 km²)."
+    },
+    "mirror": {
+      "file:checksum": "1220d2770e9006dd691012cb83aa07c99a9f043a2498b6cb621185184e2defb88a40",
+      "file:size": 34717,
+      "href": "./items.parquet",
+      "roles": [
+        "collection-mirror",
+        "metadata"
+      ],
+      "type": "application/vnd.apache.parquet",
+      "title": "STAC GeoParquet mirror of the items",
+      "description": "All item metadata in one stac-geoparquet file, for bulk queries. Derived from the items; the item JSON stays normative."
+    },
+    "pmtiles": {
+      "file:checksum": "122018a758ba6920dc25fe53d3470bf2d8953139f60e632a86af290608e2523c825e",
+      "file:size": 38549287153,
+      "href": "./fields-2018.pmtiles",
+      "roles": [
+        "visual"
+      ],
+      "type": "application/vnd.pmtiles",
+      "title": "Fields 2018 — A5 r7 cells z0–8 → field polygons z9–13 (PMTiles)",
+      "description": "The year as vector tiles for web maps: A5 r7 cell aggregates from z0 to z8, handing over to the field polygons themselves from z9 to z13. Layers `cells` and `fields`; draw it with one of the `style` assets."
+    },
+    "styles/avg-size": {
+      "file:checksum": "12203dc596a5a610b02d34b929418736055fa05a6c95c8505242d36e957f989e4bb7",
+      "file:size": 936,
+      "href": "./styles/avg-size.json",
+      "roles": [
+        "style"
+      ],
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Mean field size (A5 r7 → fields) (2018)",
+      "description": "MapLibre GL style (spec v8) over this year's PMTiles. Mean field size per A5 r7 cell (hectares, stepped bins) at z0–8; from z9 each 2018 field polygon is colored by its own size on the same bins."
+    },
+    "styles/count": {
+      "file:checksum": "12207b9aa9628742d7bccf9ccced589b14d7312145aa957b51863a7db0ea2c5b5d5a",
+      "file:size": 911,
+      "href": "./styles/count.json",
+      "roles": [
+        "style"
+      ],
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Field count (A5 r7 → fields) (2018)",
+      "description": "MapLibre GL style (spec v8) over this year's PMTiles. Fields per A5 r7 cell at z0–8 (stepped bins), handing over to the actual 2018 field polygons from z9."
+    },
+    "styles/coverage": {
+      "file:checksum": "1220b380d42f82c75c8ae111723ce45792f3dfc81e7fc2680087f54cd43f7f506a36",
+      "file:size": 933,
+      "href": "./styles/coverage.json",
+      "roles": [
+        "style",
+        "default"
+      ],
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Field coverage (A5 r7 → fields) (2018) — default",
+      "description": "MapLibre GL style (spec v8) over this year's PMTiles. Percent of each A5 r7 cell covered by 2018 fields at z0–8, handing over to the actual field polygons from z9."
+    },
+    "styles/field-prob": {
+      "file:checksum": "1220a45a3d02db19a2ec460627cda6cadf1e7378d0af3f6ba8d6300236a584bc8eb7",
+      "file:size": 901,
+      "href": "./styles/field-prob.json",
+      "roles": [
+        "style"
+      ],
+      "type": "application/vnd.mapbox.style+json",
+      "title": "Field probability (A5 r7 → fields) (2018)",
+      "description": "MapLibre GL style (spec v8) over this year's PMTiles. Mean parcel score (model field probability × 100) per A5 r7 cell at z0–8; from z9 each 2018 field polygon is colored by its own score on the same bins."
+    },
+    "thumbnail": {
+      "file:checksum": "122041af7cc302bd142e10bc9f30f0c2fed4848c733b1ed182bccfa19c0f1b797843",
+      "file:size": 327685,
+      "href": "./thumbnail.png",
+      "roles": [
+        "thumbnail"
+      ],
+      "title": "Fields 2018 rendered with the field count style",
+      "description": "Global preview of the 2018 fields, rendered from this collection's PMTiles with the field count style (`styles/count`).",
+      "type": "image/png"
+    },
+    "webcells-a5r10": {
+      "file:checksum": "12206ec6f93b8cbb6361f1cb776db25430746c6e8f5b239b258204f36ba64950550a",
+      "file:size": 60226857,
+      "href": "./webcells/cells_a5r10_2018.parquet",
+      "roles": [
+        "data"
+      ],
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r10 cell aggregates 2018 (GeoParquet)",
+      "description": "One A5 resolution of the 2018 cell aggregates, r10, bucketed straight from the parcel centroids. Columns `a5_cell`, `count`, `density` (fields per 1,000 km²), `area_ha`, `avg_score`, `pct_covered`, `geometry`. This is the layer drawn at zoom 6 of `cells-2018.pmtiles`; r7 is the same aggregate as `cells_a5r7_2018.parquet`."
+    },
+    "webcells-a5r11": {
+      "file:checksum": "1220e1b4afcaaa64bd8cb3a31afece5e54f270f888941ae922631823cc82394216e2",
+      "file:size": 172167995,
+      "href": "./webcells/cells_a5r11_2018.parquet",
+      "roles": [
+        "data"
+      ],
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r11 cell aggregates 2018 (GeoParquet)",
+      "description": "One A5 resolution of the 2018 cell aggregates, r11, bucketed straight from the parcel centroids. Columns `a5_cell`, `count`, `density` (fields per 1,000 km²), `area_ha`, `avg_score`, `pct_covered`, `geometry`. This is the layer drawn at zoom 7 of `cells-2018.pmtiles`; r7 is the same aggregate as `cells_a5r7_2018.parquet`."
+    },
+    "webcells-a5r4": {
+      "file:checksum": "1220553dd5e4de827b3610dac7b9df3f4c9825132dde2cab74273181234c9ed4ae0e",
+      "file:size": 225624,
+      "href": "./webcells/cells_a5r4_2018.parquet",
+      "roles": [
+        "data"
+      ],
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r4 cell aggregates 2018 (GeoParquet)",
+      "description": "One A5 resolution of the 2018 cell aggregates, r4, bucketed from the centres of the r7 cells, because A5's hierarchy is not geometrically nested. Columns `a5_cell`, `count`, `density` (fields per 1,000 km²), `area_ha`, `avg_score`, `pct_covered`, `geometry`. This is the layer drawn at zoom 0 of `cells-2018.pmtiles`; r7 is the same aggregate as `cells_a5r7_2018.parquet`."
+    },
+    "webcells-a5r5": {
+      "file:checksum": "1220956336e109778ac7a25d381b90f2e809bfd99c79dccf8da01cd7d71332f24507",
+      "file:size": 396689,
+      "href": "./webcells/cells_a5r5_2018.parquet",
+      "roles": [
+        "data"
+      ],
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r5 cell aggregates 2018 (GeoParquet)",
+      "description": "One A5 resolution of the 2018 cell aggregates, r5, bucketed from the centres of the r7 cells, because A5's hierarchy is not geometrically nested. Columns `a5_cell`, `count`, `density` (fields per 1,000 km²), `area_ha`, `avg_score`, `pct_covered`, `geometry`. This is the layer drawn at zoom 1 of `cells-2018.pmtiles`; r7 is the same aggregate as `cells_a5r7_2018.parquet`."
+    },
+    "webcells-a5r6": {
+      "file:checksum": "12208feee67b8a3ff9c111bc4e37ef315d631c76a03962d9c551ab1e5d7b0f5e0799",
+      "file:size": 704893,
+      "href": "./webcells/cells_a5r6_2018.parquet",
+      "roles": [
+        "data"
+      ],
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r6 cell aggregates 2018 (GeoParquet)",
+      "description": "One A5 resolution of the 2018 cell aggregates, r6, bucketed from the centres of the r7 cells, because A5's hierarchy is not geometrically nested. Columns `a5_cell`, `count`, `density` (fields per 1,000 km²), `area_ha`, `avg_score`, `pct_covered`, `geometry`. This is the layer drawn at zoom 2 of `cells-2018.pmtiles`; r7 is the same aggregate as `cells_a5r7_2018.parquet`."
+    },
+    "webcells-a5r7": {
+      "file:checksum": "1220cc1f68f43a8d57802854dc4931c243eaa590c33b0a7cf11ce956eabd5895fbb3",
+      "file:size": 2332817,
+      "href": "./webcells/cells_a5r7_2018.parquet",
+      "roles": [
+        "data"
+      ],
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r7 cell aggregates 2018 (GeoParquet)",
+      "description": "One A5 resolution of the 2018 cell aggregates, r7, bucketed straight from the parcel centroids. Columns `a5_cell`, `count`, `density` (fields per 1,000 km²), `area_ha`, `avg_score`, `pct_covered`, `geometry`. This is the layer drawn at zoom 3 of `cells-2018.pmtiles`; r7 is the same aggregate as `cells_a5r7_2018.parquet`."
+    },
+    "webcells-a5r8": {
+      "file:checksum": "122096843c1c0fccb53542d51d4dc6822f2e2672d06997f0feb21e8afa868e65ae57",
+      "file:size": 7255522,
+      "href": "./webcells/cells_a5r8_2018.parquet",
+      "roles": [
+        "data"
+      ],
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r8 cell aggregates 2018 (GeoParquet)",
+      "description": "One A5 resolution of the 2018 cell aggregates, r8, bucketed straight from the parcel centroids. Columns `a5_cell`, `count`, `density` (fields per 1,000 km²), `area_ha`, `avg_score`, `pct_covered`, `geometry`. This is the layer drawn at zoom 4 of `cells-2018.pmtiles`; r7 is the same aggregate as `cells_a5r7_2018.parquet`."
+    },
+    "webcells-a5r9": {
+      "file:checksum": "1220627f753339f7213e0ab64520e0e3a3c7bb32760ecefb456c574ef3d6f72e03cc",
+      "file:size": 21169992,
+      "href": "./webcells/cells_a5r9_2018.parquet",
+      "roles": [
+        "data"
+      ],
+      "type": "application/vnd.apache.parquet",
+      "title": "A5 r9 cell aggregates 2018 (GeoParquet)",
+      "description": "One A5 resolution of the 2018 cell aggregates, r9, bucketed straight from the parcel centroids. Columns `a5_cell`, `count`, `density` (fields per 1,000 km²), `area_ha`, `avg_score`, `pct_covered`, `geometry`. This is the layer drawn at zoom 5 of `cells-2018.pmtiles`; r7 is the same aggregate as `cells_a5r7_2018.parquet`."
+    }
+  },
+  "description": "The extraction recipe uses mean field probability 0.10, fills enclosed holes strictly smaller than 100 m² and requires at least 900 m². Independent crop filtering evaluates parcels from 900 to 5,000,000 m² and removes those with less than 5% overlap with the native 2017/2020/2024 Impact Observatory crop union; unknown or incomplete observations and parcels outside those size bounds are retained by this filter. The embedded processing description below also records downstream vector cleanup, including its separate 20 m² hole rule. These stages have different purposes and thresholds.\n\nPredicted agricultural field boundaries for 2018: 207,793,034 parcels (6,884,688 km² of field area) in 60 per-UTM-zone GeoParquet files, 94.3 GiB total. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2018), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2018/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2018 Q1-Q4, 4 quarters x B04/B03/B02/B08), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.5+R10+F10+G2+H100lt+A900+q1), 5 m coverage simplification, parcels > 5 km2 removed, parcels at least 70% Impact Observatory io-lulc 2024 water (inland water, aquaculture ponds, salt pans) removed, parcels with less than 50% of their area on OpenStreetMap land polygons (sea) removed, parcels and parts under 900 m2 removed, interior holes under 20 m2 filled. Attributes are for filtering. Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror). The full pipeline, from mosaic download to this file, is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.\n\n**Reading all 60 partitions at once.** The glob is `s3://ftw/global-data-2e/vector/2018/zone=*/utm*.parquet` (`partition:glob`), served anonymously by the [Source Cooperative data proxy](https://docs.source.coop/data-proxy) at endpoint `data.source.coop` — same keys as the HTTPS URLs, no credentials and no region. Expanding a wildcard needs a listing, which plain HTTPS does not offer, so the `s3://` form is the one to paste into DuckDB, GDAL or fsspec; `storage:schemes` carries the endpoint and the path-style setting. In DuckDB: `CREATE SECRET (TYPE s3, PROVIDER config, ENDPOINT 'data.source.coop', URL_STYLE 'path');` then `SELECT zone, count(*) FROM read_parquet('s3://ftw/global-data-2e/vector/2018/zone=*/utm*.parquet', hive_partitioning=1) GROUP BY zone;` — `hive_partitioning=1` is what makes `zone` a column. One partition at a time is a plain HTTPS read of `https://data.source.coop/ftw/global-data-2e/vector/2018/zone=NN/utmNN.parquet`, and each partition is an item of this collection with its own size and checksum.",
+  "extent": {
+    "spatial": {
+      "bbox": [
+        [
+          -176.5652757108658,
+          -55.15248561436539,
+          179.6382683385303,
+          79.25779526096169
+        ]
+      ]
+    },
+    "temporal": {
+      "interval": [
+        [
+          "2018-01-01T00:00:00Z",
+          "2018-12-31T23:59:59Z"
+        ]
+      ]
+    }
+  },
   "id": "ftw-s2-2018",
-  "title": "FTW Global — Field Boundaries 2018 (GeoParquet)",
-  "description": "Predicted agricultural field boundaries for 2018: 129,911,998 parcels (6,936,734 km² of field area) in 54 per-UTM-zone GeoParquet files, 84.5 GiB total. Explore the year on the [interactive map](https://research.taylorgeospatial.org/global-ftw-2e/web/#year=2018), walk its metadata in the [Portolan browser](https://browser.portolan-sdi.org/#/external/data.source.coop/ftw/global-data-2e/vector/2018/collection.json), or download the files from [Source Cooperative](https://source.coop/ftw/global-data-2e). Part of [Fields of the World](https://fieldsofthe.world) — agricultural field boundaries delineated from Sentinel-2 imagery.\n\n**How this was made.** Fields of The World (FTW) model on Sentinel-2 quarterly cloudless mosaics (CDSE sentinel-2-global-mosaics, 2018 Q1-Q4, 4 quarters x B04/B03/B02/B08 in the model's input order), 2.5 m field/boundary probabilities, BoundaryVote instance post-processing (nbg-pb-h0.01-t0.5+R25+F10+G2+A900+q1), 5 m coverage simplification, holes under 20 m2 filled. Removed: parcels > 5 km2 (after the seam union), parcels at least 70% Impact Observatory io-lulc 2024 water (inland water, aquaculture ponds, salt pans), parcels with less than half their area on OpenStreetMap land polygons (sea). Source imagery: the [TGE Labs Sentinel-2 quarterly cloudless mosaics](https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/) (CDSE mirror). The full pipeline, from mosaic download to this file, is documented in [pipeline/README.md](https://github.com/fieldsoftheworld/ftw-global-data-catalog/blob/main/pipeline/README.md).\n\nThe schema follows [fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml) and [vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml): columns id, collection, geometry, bbox, metrics:area, metrics:perimeter, score, determination:datetime, determination:method — see `table:columns` for definitions.",
-  "license": "CC-BY-4.0",
   "keywords": [
     "agriculture",
     "field boundaries",
@@ -22,6 +221,451 @@
     "Sentinel-2",
     "GeoParquet",
     "2018"
+  ],
+  "license": "CC-BY-4.0",
+  "links": [
+    {
+      "href": "../../catalog.json",
+      "rel": "root",
+      "title": "Fields of the World — Global Data",
+      "type": "application/json"
+    },
+    {
+      "href": "../catalog.json",
+      "rel": "parent",
+      "type": "application/json"
+    },
+    {
+      "href": "https://creativecommons.org/licenses/by/4.0/",
+      "rel": "license",
+      "title": "CC-BY-4.0",
+      "type": "text/html"
+    },
+    {
+      "href": "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/",
+      "rel": "derived_from",
+      "title": "TGE Labs Sentinel-2 quarterly cloudless mosaics",
+      "type": "text/html"
+    },
+    {
+      "href": "./README.md",
+      "rel": "describedby",
+      "title": "Collection README",
+      "type": "text/markdown"
+    },
+    {
+      "href": "./AGENTS.md",
+      "rel": "agents",
+      "title": "Collection agent guide",
+      "type": "text/markdown"
+    },
+    {
+      "href": "https://github.com/fiboa/specification",
+      "rel": "describedby",
+      "title": "fiboa specification (core parcel fields)",
+      "type": "text/html"
+    },
+    {
+      "href": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
+      "rel": "vcs",
+      "title": "Catalog source repository (metadata and pipeline)",
+      "type": "text/html"
+    },
+    {
+      "href": "./utm01/utm01.json",
+      "rel": "item",
+      "title": "UTM zone 1",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm02/utm02.json",
+      "rel": "item",
+      "title": "UTM zone 2",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm03/utm03.json",
+      "rel": "item",
+      "title": "UTM zone 3",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm04/utm04.json",
+      "rel": "item",
+      "title": "UTM zone 4",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm05/utm05.json",
+      "rel": "item",
+      "title": "UTM zone 5",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm06/utm06.json",
+      "rel": "item",
+      "title": "UTM zone 6",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm07/utm07.json",
+      "rel": "item",
+      "title": "UTM zone 7",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm08/utm08.json",
+      "rel": "item",
+      "title": "UTM zone 8",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm09/utm09.json",
+      "rel": "item",
+      "title": "UTM zone 9",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm10/utm10.json",
+      "rel": "item",
+      "title": "UTM zone 10",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm11/utm11.json",
+      "rel": "item",
+      "title": "UTM zone 11",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm12/utm12.json",
+      "rel": "item",
+      "title": "UTM zone 12",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm13/utm13.json",
+      "rel": "item",
+      "title": "UTM zone 13",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm14/utm14.json",
+      "rel": "item",
+      "title": "UTM zone 14",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm15/utm15.json",
+      "rel": "item",
+      "title": "UTM zone 15",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm16/utm16.json",
+      "rel": "item",
+      "title": "UTM zone 16",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm17/utm17.json",
+      "rel": "item",
+      "title": "UTM zone 17",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm18/utm18.json",
+      "rel": "item",
+      "title": "UTM zone 18",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm19/utm19.json",
+      "rel": "item",
+      "title": "UTM zone 19",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm20/utm20.json",
+      "rel": "item",
+      "title": "UTM zone 20",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm21/utm21.json",
+      "rel": "item",
+      "title": "UTM zone 21",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm22/utm22.json",
+      "rel": "item",
+      "title": "UTM zone 22",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm23/utm23.json",
+      "rel": "item",
+      "title": "UTM zone 23",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm24/utm24.json",
+      "rel": "item",
+      "title": "UTM zone 24",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm25/utm25.json",
+      "rel": "item",
+      "title": "UTM zone 25",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm26/utm26.json",
+      "rel": "item",
+      "title": "UTM zone 26",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm27/utm27.json",
+      "rel": "item",
+      "title": "UTM zone 27",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm28/utm28.json",
+      "rel": "item",
+      "title": "UTM zone 28",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm29/utm29.json",
+      "rel": "item",
+      "title": "UTM zone 29",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm30/utm30.json",
+      "rel": "item",
+      "title": "UTM zone 30",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm31/utm31.json",
+      "rel": "item",
+      "title": "UTM zone 31",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm32/utm32.json",
+      "rel": "item",
+      "title": "UTM zone 32",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm33/utm33.json",
+      "rel": "item",
+      "title": "UTM zone 33",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm34/utm34.json",
+      "rel": "item",
+      "title": "UTM zone 34",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm35/utm35.json",
+      "rel": "item",
+      "title": "UTM zone 35",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm36/utm36.json",
+      "rel": "item",
+      "title": "UTM zone 36",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm37/utm37.json",
+      "rel": "item",
+      "title": "UTM zone 37",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm38/utm38.json",
+      "rel": "item",
+      "title": "UTM zone 38",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm39/utm39.json",
+      "rel": "item",
+      "title": "UTM zone 39",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm40/utm40.json",
+      "rel": "item",
+      "title": "UTM zone 40",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm41/utm41.json",
+      "rel": "item",
+      "title": "UTM zone 41",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm42/utm42.json",
+      "rel": "item",
+      "title": "UTM zone 42",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm43/utm43.json",
+      "rel": "item",
+      "title": "UTM zone 43",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm44/utm44.json",
+      "rel": "item",
+      "title": "UTM zone 44",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm45/utm45.json",
+      "rel": "item",
+      "title": "UTM zone 45",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm46/utm46.json",
+      "rel": "item",
+      "title": "UTM zone 46",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm47/utm47.json",
+      "rel": "item",
+      "title": "UTM zone 47",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm48/utm48.json",
+      "rel": "item",
+      "title": "UTM zone 48",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm49/utm49.json",
+      "rel": "item",
+      "title": "UTM zone 49",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm50/utm50.json",
+      "rel": "item",
+      "title": "UTM zone 50",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm51/utm51.json",
+      "rel": "item",
+      "title": "UTM zone 51",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm52/utm52.json",
+      "rel": "item",
+      "title": "UTM zone 52",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm53/utm53.json",
+      "rel": "item",
+      "title": "UTM zone 53",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm54/utm54.json",
+      "rel": "item",
+      "title": "UTM zone 54",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm55/utm55.json",
+      "rel": "item",
+      "title": "UTM zone 55",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm56/utm56.json",
+      "rel": "item",
+      "title": "UTM zone 56",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm57/utm57.json",
+      "rel": "item",
+      "title": "UTM zone 57",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm58/utm58.json",
+      "rel": "item",
+      "title": "UTM zone 58",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm59/utm59.json",
+      "rel": "item",
+      "title": "UTM zone 59",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./utm60/utm60.json",
+      "rel": "item",
+      "title": "UTM zone 60",
+      "type": "application/geo+json"
+    },
+    {
+      "href": "./fields-2018.pmtiles",
+      "pmtiles:layers": [
+        "cells",
+        "fields"
+      ],
+      "rel": "pmtiles",
+      "type": "application/vnd.pmtiles"
+    }
+  ],
+  "partition:file_count": 60,
+  "storage:schemes": {
+    "source-coop-s3": {
+      "type": "custom-s3",
+      "platform": "https://data.source.coop",
+      "bucket": "ftw",
+      "region": "us-west-2",
+      "requester_pays": false,
+      "title": "Source Cooperative data proxy (S3-compatible, anonymous)",
+      "description": "Anonymous read and anonymous listing, no credentials and no region needed; the keys match the public HTTPS URLs one for one. Clients must override the endpoint and address it path-style, which is what this platform URL without a `{bucket}` placeholder asks for: in DuckDB `CREATE SECRET (TYPE s3, PROVIDER config, ENDPOINT 'data.source.coop', URL_STYLE 'path');`, in GDAL `AWS_S3_ENDPOINT=data.source.coop` with `AWS_VIRTUAL_HOSTING=FALSE` and `AWS_NO_SIGN_REQUEST=YES`, and for the AWS CLI `--endpoint-url https://data.source.coop --no-sign-request`. The proxy is in beta; a bulk pull may be faster straight from the underlying bucket, `s3://us-west-2.opendata.source.coop/ftw/global-data-2e/`, which holds the same objects under the same keys."
+    }
+  },
+  "partition:glob": "s3://ftw/global-data-2e/vector/2018/zone=*/utm*.parquet",
+  "partition:keys": [
+    {
+      "name": "zone",
+      "type": "string"
+    }
+  ],
+  "partition:scheme": "hive",
+  "portolan:styles": [
+    "styles/count",
+    "styles/coverage",
+    "styles/avg-size",
+    "styles/field-prob"
   ],
   "providers": [
     {
@@ -35,26 +679,17 @@
       "url": "https://taylorgeospatial.org/"
     }
   ],
-  "extent": {
-    "spatial": {
-      "bbox": [
-        [
-          -175.35161676026448,
-          -46.83662412801349,
-          179.8118490715629,
-          65.82062940047486
-        ]
-      ]
-    },
-    "temporal": {
-      "interval": [
-        [
-          "2018-01-01T00:00:00Z",
-          "2018-12-31T23:59:59Z"
-        ]
-      ]
-    }
-  },
+  "stac_extensions": [
+    "https://schemas.portolan-sdi.org/portolan/v0.3.0/schema.json",
+    "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
+    "https://stac-extensions.github.io/table/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/file/v2.1.0/schema.json",
+    "https://stac-extensions.github.io/web-map-links/v1.3.0/schema.json",
+    "https://schemas.portolan-sdi.org/incubating/partition/v1.0.0/schema.json",
+    "https://stac-extensions.github.io/alternate-assets/v1.2.0/schema.json",
+    "https://stac-extensions.github.io/storage/v2.0.0/schema.json"
+  ],
+  "stac_version": "1.1.0",
   "summaries": {
     "proj:code": [
       "EPSG:4326"
@@ -62,559 +697,51 @@
   },
   "table:columns": [
     {
+      "description": "Parcel identifier, unique per collection ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
       "name": "id",
-      "type": "string",
-      "description": "Parcel identifier, unique per collection ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+      "type": "string"
     },
     {
+      "description": "The vecorel collection the parcel belongs to (constant per year, e.g. `ftw-s2-2025`).",
       "name": "collection",
-      "type": "string",
-      "description": "The vecorel collection the parcel belongs to (constant per year, e.g. `ftw-s2-2025`)."
+      "type": "string"
     },
     {
+      "description": "Parcel footprint (WKB Polygon/MultiPolygon, WGS 84).",
       "name": "geometry",
-      "type": "binary",
-      "description": "Parcel footprint (WKB Polygon/MultiPolygon, WGS 84)."
+      "type": "binary"
     },
     {
+      "description": "Bounding box of the parcel (xmin, ymin, xmax, ymax).",
       "name": "bbox",
-      "type": "struct",
-      "description": "Bounding box of the parcel (xmin, ymin, xmax, ymax)."
+      "type": "struct"
     },
     {
+      "description": "Area of the parcel in square meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics).",
       "name": "metrics:area",
-      "type": "float",
-      "description": "Area of the parcel in square meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
+      "type": "float"
     },
     {
+      "description": "Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics).",
       "name": "metrics:perimeter",
-      "type": "float",
-      "description": "Perimeter of the parcel in meters ([vecorel 0.1.0](https://vecorel.org/specification/v0.1.0/schema.yaml) geometry-metrics)."
+      "type": "float"
     },
     {
+      "description": "Mean model field probability inside the parcel, × 100 rounded (0–100).",
       "name": "score",
-      "type": "uint8",
-      "description": "Mean model field probability inside the parcel, × 100 rounded (0–100)."
+      "type": "uint8"
     },
     {
+      "description": "The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
       "name": "determination:datetime",
-      "type": "timestamp",
-      "description": "The prediction year's UTC start marker, constant per year ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
+      "type": "timestamp"
     },
     {
+      "description": "Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml)).",
       "name": "determination:method",
-      "type": "string",
-      "description": "Constant `auto-imagery` ([fiboa 0.3.0](https://fiboa.org/specification/v0.3.0/schema.yaml))."
-    }
-  ],
-  "partition:scheme": "hive",
-  "partition:keys": [
-    {
-      "name": "zone",
       "type": "string"
     }
   ],
-  "partition:glob": "./zone=*/utm*.parquet",
-  "partition:file_count": 54,
-  "portolan:styles": [
-    "styles/count",
-    "styles/coverage",
-    "styles/avg-size",
-    "styles/field-prob"
-  ],
-  "links": [
-    {
-      "rel": "root",
-      "href": "../../catalog.json",
-      "type": "application/json",
-      "title": "Fields of the World — Global Data (2nd Edition)"
-    },
-    {
-      "rel": "parent",
-      "href": "../catalog.json",
-      "type": "application/json"
-    },
-    {
-      "rel": "license",
-      "href": "https://creativecommons.org/licenses/by/4.0/",
-      "type": "text/html",
-      "title": "CC-BY-4.0"
-    },
-    {
-      "rel": "derived_from",
-      "href": "https://source.coop/tge-labs/sentinel-2-quarterly-cloudless-mosaics/",
-      "type": "text/html",
-      "title": "TGE Labs Sentinel-2 quarterly cloudless mosaics"
-    },
-    {
-      "rel": "describedby",
-      "href": "./README.md",
-      "type": "text/markdown",
-      "title": "Collection README"
-    },
-    {
-      "rel": "agents",
-      "href": "./AGENTS.md",
-      "type": "text/markdown",
-      "title": "Collection agent guide"
-    },
-    {
-      "rel": "describedby",
-      "href": "https://github.com/fiboa/specification",
-      "type": "text/html",
-      "title": "fiboa specification (core parcel fields)"
-    },
-    {
-      "rel": "vcs",
-      "href": "https://github.com/fieldsoftheworld/ftw-global-data-catalog",
-      "type": "text/html",
-      "title": "Catalog source repository (metadata and pipeline)"
-    },
-    {
-      "rel": "pmtiles",
-      "href": "./fields-2018.pmtiles",
-      "type": "application/vnd.pmtiles",
-      "title": "Fields 2018 (cells z0–8 → fields z9–13)",
-      "pmtiles:layers": [
-        "cells",
-        "fields"
-      ]
-    },
-    {
-      "rel": "item",
-      "href": "./zone=01/utm01.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 1"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=04/utm04.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 4"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=05/utm05.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 5"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=10/utm10.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 10"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=11/utm11.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 11"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=12/utm12.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 12"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=13/utm13.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 13"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=14/utm14.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 14"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=15/utm15.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 15"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=16/utm16.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 16"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=17/utm17.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 17"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=18/utm18.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 18"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=19/utm19.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 19"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=20/utm20.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 20"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=21/utm21.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 21"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=22/utm22.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 22"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=23/utm23.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 23"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=24/utm24.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 24"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=25/utm25.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 25"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=26/utm26.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 26"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=27/utm27.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 27"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=28/utm28.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 28"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=29/utm29.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 29"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=30/utm30.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 30"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=31/utm31.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 31"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=32/utm32.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 32"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=33/utm33.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 33"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=34/utm34.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 34"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=35/utm35.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 35"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=36/utm36.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 36"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=37/utm37.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 37"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=38/utm38.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 38"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=39/utm39.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 39"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=40/utm40.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 40"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=41/utm41.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 41"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=42/utm42.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 42"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=43/utm43.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 43"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=44/utm44.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 44"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=45/utm45.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 45"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=46/utm46.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 46"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=47/utm47.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 47"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=48/utm48.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 48"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=49/utm49.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 49"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=50/utm50.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 50"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=51/utm51.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 51"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=52/utm52.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 52"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=53/utm53.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 53"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=54/utm54.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 54"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=55/utm55.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 55"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=56/utm56.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 56"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=57/utm57.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 57"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=58/utm58.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 58"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=59/utm59.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 59"
-    },
-    {
-      "rel": "item",
-      "href": "./zone=60/utm60.json",
-      "type": "application/geo+json",
-      "title": "UTM zone 60"
-    }
-  ],
-  "assets": {
-    "data": {
-      "href": "https://data.source.coop/ftw/global-data-2e/vector/2018/zone=*/utm*.parquet",
-      "type": "application/vnd.apache.parquet",
-      "title": "All 2018 field boundaries (GeoParquet glob, hive-partitioned by zone)",
-      "description": "One glob over every zone partition. Read it with `hive_partitioning=1` to get `zone` as a column. Expanding the wildcard needs the `s3` alternate below, because an HTTP URL cannot be globbed; per-file sizes and checksums live on the items.",
-      "roles": [
-        "data"
-      ],
-      "alternate": {
-        "s3": {
-          "href": "s3://us-west-2.opendata.source.coop/ftw/global-data-2e/vector/2018/zone=*/utm*.parquet",
-          "title": "S3 glob (us-west-2, anonymous read) — the form DuckDB can expand"
-        }
-      }
-    },
-    "pmtiles": {
-      "href": "./fields-2018.pmtiles",
-      "type": "application/vnd.pmtiles",
-      "title": "Fields 2018 — A5 r7 cells z0–8 → field polygons z9–13 (PMTiles)",
-      "roles": [
-        "visual"
-      ],
-      "file:size": 28243485220,
-      "file:checksum": "12202ecf0be380972fb076db8cbd829b30ad891fe9aa974983efc130d0ec7bf033f9"
-    },
-    "cells": {
-      "href": "./cells_a5r7_2018.parquet",
-      "type": "application/vnd.apache.parquet",
-      "title": "A5 r7 cell aggregates 2018 (GeoParquet)",
-      "description": "Per-cell count, area_ha, avg_score, pct_covered — the z0–8 exploration layer, also useful for analysis.",
-      "roles": [
-        "data"
-      ],
-      "file:size": 1598768,
-      "file:checksum": "1220a4970d1228977b122f855a1d120c9336e45fe119200c1f26acdfc910e9a80b1f"
-    },
-    "cells-pmtiles": {
-      "href": "./cells-2018.pmtiles",
-      "type": "application/vnd.pmtiles",
-      "title": "A5 cell aggregates 2018, one resolution per zoom (PMTiles)",
-      "description": "A5 cells for drawing the year at global scale, with one resolution per zoom: r4 at the globe to r11 at zoom 7. Each cell carries count, area_ha, avg_score, pct_covered and density (fields per 1,000 km²). About 140 MB per year.",
-      "roles": [
-        "visual"
-      ],
-      "file:size": 139345903,
-      "file:checksum": "122053bfd4c68bfbad5a38ec6cac0979a0bf88f7346a113ce4155bcd7fd9e7c91f87"
-    },
-    "styles/count": {
-      "href": "./styles/count.json",
-      "type": "application/vnd.mapbox.style+json",
-      "title": "Field count (A5 r7 → fields) (2018)",
-      "roles": [
-        "style"
-      ],
-      "file:size": 1322,
-      "file:checksum": "1220803332762f6cf37ff2559f33bc58f1a851512cdf7d757c0cf90998f3b8712b18"
-    },
-    "styles/coverage": {
-      "href": "./styles/coverage.json",
-      "type": "application/vnd.mapbox.style+json",
-      "title": "Field coverage (A5 r7 → fields) (2018) — default",
-      "roles": [
-        "style",
-        "default"
-      ],
-      "file:size": 1364,
-      "file:checksum": "122060bf5203643bc3d5aaee3b0b35a1dc4c62ba9e0812bd023d0dc432ab225ea367"
-    },
-    "styles/avg-size": {
-      "href": "./styles/avg-size.json",
-      "type": "application/vnd.mapbox.style+json",
-      "title": "Mean field size (A5 r7 → fields) (2018)",
-      "roles": [
-        "style"
-      ],
-      "file:size": 1645,
-      "file:checksum": "12200707925b5331bbd520b43d8398fdd7cd56e70eaaf2a7be22c55b4c775a2cab9b"
-    },
-    "styles/field-prob": {
-      "href": "./styles/field-prob.json",
-      "type": "application/vnd.mapbox.style+json",
-      "title": "Field probability (A5 r7 → fields) (2018)",
-      "roles": [
-        "style"
-      ],
-      "file:size": 1394,
-      "file:checksum": "1220c4e67a7fd4a4bb8a4cce89c1b7eac82d81820395d9958dc306e5095e8a5334d1"
-    },
-    "thumbnail": {
-      "href": "./thumbnail.png",
-      "type": "image/png",
-      "title": "Fields 2018 rendered with the field count style",
-      "roles": [
-        "thumbnail"
-      ],
-      "file:size": 240285,
-      "file:checksum": "122026c8bfb8c6e4643262fd3390ed4433a1cfbe7e46b67a6f91cfd0c7da768890ea"
-    },
-    "mirror": {
-      "href": "./items.parquet",
-      "type": "application/vnd.apache.parquet",
-      "title": "STAC GeoParquet mirror of the items",
-      "description": "All item metadata in one stac-geoparquet file, for bulk queries. Derived from the items; the item JSON stays normative.",
-      "roles": [
-        "collection-mirror",
-        "metadata"
-      ],
-      "file:size": 34402,
-      "file:checksum": "122076c9e41995617092c8c55d0db73babd283dd5b1a90b270de4a0593d3a2217d29"
-    }
-  }
+  "title": "FTW Global — Field Boundaries 2018 (GeoParquet)",
+  "type": "Collection"
 }

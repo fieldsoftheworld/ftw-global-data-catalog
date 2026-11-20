@@ -103,6 +103,7 @@
       "href": "./utm23.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 23 — 2017 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2017 collection: 963,071 predicted field parcels in UTM zone 23, WGS 84, 1,007 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],
@@ -110,7 +111,7 @@
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2017/zone=23/utm23.parquet",
-          "title": "S3 URI (us-west-2, anonymous read)"
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
         }
       },
       "file:checksum": "1220ae3a818f7252f085611c38753ee60ffbe2b9c8b3366853a8af2a8499ff5ac480"

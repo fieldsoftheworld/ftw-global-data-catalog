@@ -103,6 +103,7 @@
       "href": "./utm60.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 60 — 2017 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2017 collection: 566,790 predicted field parcels in UTM zone 60, WGS 84, 449 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],
@@ -110,7 +111,7 @@
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2017/zone=60/utm60.parquet",
-          "title": "S3 URI (us-west-2, anonymous read)"
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
         }
       },
       "file:checksum": "12204b8d807dd9bb10367d26b442776f6fc2a624f7a8444b94d8f12a7d1a77980ce6"

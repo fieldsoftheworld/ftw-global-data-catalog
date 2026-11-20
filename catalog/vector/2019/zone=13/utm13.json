@@ -103,6 +103,7 @@
       "href": "./utm13.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 13 — 2019 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2019 collection: 1,028,460 predicted field parcels in UTM zone 13, WGS 84, 1.2 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],
@@ -110,7 +111,7 @@
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2019/zone=13/utm13.parquet",
-          "title": "S3 URI (us-west-2, anonymous read)"
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
         }
       },
       "file:checksum": "1220ecd7ad25300bf1349362a0effa645dd7dd042b6923c5bcc7d146fb482e5d280b"

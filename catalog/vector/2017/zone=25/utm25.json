@@ -103,6 +103,7 @@
       "href": "./utm25.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 25 — 2017 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2017 collection: 146,042 predicted field parcels in UTM zone 25, WGS 84, 117 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],
@@ -110,7 +111,7 @@
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2017/zone=25/utm25.parquet",
-          "title": "S3 URI (us-west-2, anonymous read)"
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
         }
       },
       "file:checksum": "12205a85650703e1b8b16ca401eefc94c6d086dcdc684206f6603b65995903834fa0"

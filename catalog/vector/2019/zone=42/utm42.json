@@ -103,6 +103,7 @@
       "href": "./utm42.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 42 — 2019 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2019 collection: 2,365,950 predicted field parcels in UTM zone 42, WGS 84, 1.5 GiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],
@@ -110,7 +111,7 @@
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2019/zone=42/utm42.parquet",
-          "title": "S3 URI (us-west-2, anonymous read)"
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
         }
       },
       "file:checksum": "1220e4df6a884426ab635241e9756681cbad3b4fbcb066bdde275a6a6a73cd71e521"

@@ -103,6 +103,7 @@
       "href": "./utm26.parquet",
       "type": "application/vnd.apache.parquet",
       "title": "UTM zone 26 — 2019 field boundaries (GeoParquet)",
+      "description": "One zone partition of the 2019 collection: 45,199 predicted field parcels in UTM zone 26, WGS 84, 26 MiB. Columns are described in this item's `table:columns`.",
       "roles": [
         "data"
       ],
@@ -110,7 +111,7 @@
       "alternate": {
         "s3": {
           "href": "s3://ftw/global-data-2e/vector/2019/zone=26/utm26.parquet",
-          "title": "S3 URI (us-west-2, anonymous read)"
+          "title": "S3 URI via the Source Cooperative data proxy (endpoint data.source.coop, anonymous read)"
         }
       },
       "file:checksum": "1220615b9aa46eaa8d71ca8907822a8d5b009b2663208ef386a714fe6140228c9bc1"

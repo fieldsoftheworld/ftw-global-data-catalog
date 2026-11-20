@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-"""Every relative link and asset href resolves.
+"""Every relative link and asset href resolves, and the one external
+structural link resolves over HTTP.
 
 This catches the most common hand-edit mistake: adding a child link before the
 directory it points at exists. Structural links always resolve on disk, so a
@@ -66,6 +67,12 @@ DATA_SUFFIXES = (
 )
 HEAD_WORKERS = 16
 UA = "Mozilla/5.0 (ftw-global-data-catalog link check)"
+
+# Link relations that may legitimately point at another published catalog,
+# and are therefore checked over HTTP rather than on disk. `self` is not one:
+# it names this catalog's own published location, which a pre-publish gate
+# cannot require to be live yet.
+EXTERNAL_STRUCTURAL = {"child", "parent", "item", "collection"}
 
 # Per-family HEAD budget. "all" checks every href; an integer caps each
 # (collection directory, asset key) family at that many.
@@ -195,7 +202,24 @@ for path, doc in documents:
 
     for link in doc.get("links", []):
         href = link.get("href", "")
-        if not href or is_remote(href):
+        if not href:
+            continue
+        if is_remote(href):
+            # One structural link leaves this catalog: the root's `child`
+            # link to the published 1st-edition catalog. Nothing else holds
+            # it. It resolves over HTTP rather than on disk, and rashid skips
+            # it too, because an absolute href outside the root `self` base
+            # gives the validator no file tree to resolve against (core.md,
+            # "A root catalog that links a child in a different bucket
+            # therefore gets no check on that link"). So HEAD it live.
+            if (link.get("rel") in EXTERNAL_STRUCTURAL
+                    and href.startswith(("http://", "https://"))):
+                if CI_LIGHT:
+                    skipped += 1
+                else:
+                    key = f"link:{link.get('rel')}"
+                    to_head.append((family(path, key), rel_path, key,
+                                    href, None))
             continue
         if (path.parent / href).resolve().exists():
             checked += 1

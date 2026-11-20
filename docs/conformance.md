@@ -14,17 +14,19 @@ widened allow-list is a false claim about what this catalog conforms to.
 
 ## The rashid version floor
 
-The gate needs rashid `>=0.1.8,<0.2.0`. It reads `rashid --version` and fails
+The gate needs rashid `>=0.4.0,<0.5.0`. It reads `rashid --version` and fails
 outside that range. It also fails when rashid is absent, and prints the install
 command. A skip would report a green run for a catalog that no validator read.
 
-The floor is 0.1.8 because it is the first rashid that accepts a Portolan
-v0.2.0 root `self` link (v0.1.1 forbids that link and v0.2.0 recommends it,
-PORTO-CORE-081). This catalog declares v0.2.0, so an older rashid reports
-errors on a correct catalog. The same range is in the CI install step.
+The floor is 0.4.0 because it is the first rashid that bundles the Portolan
+**v0.3.0** profile this catalog declares. An older one applies the v0.2 rule
+set, so it never runs the rules the catalog was migrated to meet — the
+one-file data asset (PORTO-FMT-065) and the listable `partition:glob`
+(PORTO-FMT-064) — and reports a v0.3.0 schema URI as a version it does not
+know. The same range is in the CI install step.
 
-The upper bound stops an unreviewed 0.2 rule set from changing what this gate
-means. Raise both bounds together when you move to 0.2, and read the new rules
+The upper bound stops an unreviewed 0.5 rule set from changing what this gate
+means. Raise both bounds together when you move to 0.5, and read the new rules
 first.
 
 This file also records workarounds for the other validator CI runs. Those are
@@ -36,11 +38,11 @@ something.
 
 | Rule | Where | Why accepted | In `ACCEPTED`? | Tracking |
 |---|---|---|---|---|
-| PTL-VIZ-002 | `raster/{2017..2025}/collection.json` | The visualization derivative is a pre-rendered RGB JPEG COG (roles `visual`,`overview`,`cloud-optimized`); its styling is baked into the pixels at build time, so no client-side style document exists for a `style` asset to name. The colormap is documented in each README and in `pipeline/make_overview.py`. | yes (9× error) | [rashid#202](https://github.com/portolan-sdi/rashid/issues/202) |
 | PTL-DAT-009 | the 67,197 published 2e score COGs, `raster/{2017..2025}/.../{tile}.tif` | They were written without embedded band statistics. 26 TB cannot be rewritten in place without destroying the COG layout, and the writers are fixed, so the next generation complies. See the section below. | **no** — a data rule, never reached by the gate (see below) | — |
 
-The structural rows (and only those) match `ACCEPTED` in
-`tests/test_portolan_conformance.py` exactly.
+`ACCEPTED` in `tests/test_portolan_conformance.py` is **empty**, and the one
+structural row that used to be in it (PTL-VIZ-002) is closed rather than
+waived — see the section below. No structural rule is waived in this catalog.
 
 <!--
 When you accept one, add a row and a section explaining it.
@@ -54,7 +56,7 @@ waive nothing while reading as if the gate had seen the deviation and let it
 pass. The row is the whole record. Say so in the row, as PTL-DAT-009 does.
 -->
 
-### PTL-VIZ-002: the raster browse overview has no style document
+### PTL-VIZ-002: the raster browse overview has no style document (closed)
 
 Each raster year collection carries an `overview.tif` with roles `visual`,
 `overview`, `cloud-optimized`. PTL-VIZ-002 wants a visualization asset to name
@@ -63,11 +65,36 @@ RGB JPEG COG, so the colormap is applied at build time and baked into the
 pixels rather than evaluated by a client. A `style` asset pointing at a
 MapLibre document would be a false claim about how the image is drawn.
 
+**It no longer fires, and the waiver is gone.** The asset used to declare
+`image/tiff; application=geotiff`, the plain GeoTIFF media type, while the
+profile's media-type table requires the COG type for a COG — which this file
+is, as its `cloud-optimized` role claims and as its internal overviews
+confirm when read back over `/vsicurl`. The v0.3 migration corrected the type
+to `image/tiff; application=geotiff; profile=cloud-optimized`, and rashid
+0.4.0 then stops reading the asset as a derivative that needs a MapLibre
+style: a COG's styling is the classified-vs-continuous raster question, not
+the PMTiles one. Measured both ways — flipping that one media type back on
+`raster/2017/collection.json` brings the finding straight back, 1×. The
+seven re-processed years arrived from the publisher already declaring the
+COG media type, so only 2017 and 2019 needed the correction. `ACCEPTED` is
+empty, and this section stays as the record of why the rule
+used to fire.
+
 The colormap is documented instead — in each year's README.md and in
 `pipeline/make_overview.py`, which is the code that applies it. The rule as
 written does not distinguish a client-styled asset from a baked one; filed as
 [rashid#202](https://github.com/portolan-sdi/rashid/issues/202). Nine
-findings, one per year.
+findings when every year declared the plain GeoTIFF media type.
+
+Portolan v0.3.0 does not close this. Its Visualization Styles section still
+says "Styling for continuous and multiband rasters is still under discussion"
+and points at `specs/incubating/raster-styling.md`, and the one raster style
+form the version does define is the classified case — a COG colour table with
+`classification:classes`, which does not apply here: these are continuous
+probability surfaces, and v0.3 says a continuous raster SHOULD NOT carry
+`classification:classes` (PORTO-FMT-059). So the waiver stands until the
+incubating raster-styling document lands, and `classification:classes` is
+deliberately absent from both the probability COGs and the overview.
 
 ### PTL-DAT-009: the published 2e score COGs carry no embedded band statistics
 
@@ -186,8 +213,10 @@ items had none. It is closed by publishing the connectivity, not by waiving
 the rule — the items are grouped under browse subcatalogs (user ruling
 2026-10-02; docs/plan.md Phase 4 has the layout). Verified: `rashid check
 catalog --no-data` over the full nine-year tree reports **no PTL-COL-005 at
-all**, and the only error-severity rule left is PTL-VIZ-002 (9×, the waiver
-above), so the gate passes with `ACCEPTED` exactly `{"PTL-VIZ-002"}`. The
+all**. That run was made under rashid 0.1.8, when PTL-VIZ-002 was the one
+error-severity rule left and the only entry in `ACCEPTED`; both are gone
+under v0.3.0 (see the section above), so the gate now passes with `ACCEPTED`
+empty. The
 measurements that chose that shape are kept below, because they also bound
 what may and may not be changed about it later.
 
@@ -213,8 +242,8 @@ What that costs, and how each gate carries it:
   published catalog, so `tests/test_portolan_conformance.py` **refuses to
   run on a checkout without the generated tree**: under `CI_LIGHT=1` it is
   a documented skip, and locally it fails with the regenerate command.
-  `ACCEPTED` stays exactly `{"PTL-VIZ-002"}` — no finding is waived,
-  because no run that could produce those findings is accepted as valid.
+  `ACCEPTED` stays empty — no finding is waived, because no run that could
+  produce those findings is accepted as valid.
 - **The real conformance gate is pre-publish**: `pipeline/rashid_check.sbatch`
   runs the full nine-year tree (2 h 20 m measured, login nodes CPU-kill it)
   after regeneration, before `tools/publish.py --confirm`.
@@ -368,14 +397,199 @@ because that gate asserts four named rules. This gate asserts no stac-check
 rule. It needs the opposite property. A pin holds the exemption open after the
 upstream fix ships.
 
-### portolan check --live HEADs partition-glob asset hrefs literally
+### portolan check --live HEADed partition-glob asset hrefs literally (closed)
 
-The year collections carry a `data` asset whose href is the partition glob
-(`./zone=*/utm*.parquet`) beside `partition:glob`, as the partition
-extension defines. `portolan check --live` HEAD-requests that href
-literally, and a `*` URL returns no usable Content-Length, so PTL-LIV-002
-reports one error per collection. The catalog is correct — rashid conforms,
-and every partition member is HEAD-verified individually through its item's
-own data asset (tests/test_links.py). Tracked upstream:
-https://github.com/portolan-sdi/portolan-cli/issues/914;
-remove this section when the checker learns to expand or skip glob hrefs.
+The year collections used to carry a `data` asset whose href was the partition
+glob, beside `partition:glob`. `portolan check --live` HEAD-requested that
+href literally, and a `*` URL returns no usable Content-Length, so PTL-LIV-002
+reported one error per collection
+([portolan-cli#914](https://github.com/portolan-sdi/portolan-cli/issues/914)).
+
+Portolan v0.3.0 removed the construct: a data asset links to exactly one file
+and its href MUST NOT contain `*` or `[` (PORTO-FMT-065), so the glob now
+lives only in `partition:glob`, where it belongs. The glob asset is gone from
+every year collection, and with it this finding. Nothing in the catalog
+advertises a wildcard href any more, and every partition member is still
+HEAD-verified individually through its item's own data asset
+(`tests/test_links.py`).
+
+## The Portolan v0.3.0 migration (2026-11-20)
+
+What changed in the catalog, with the requirement each change answers:
+
+| Change | Requirement |
+|---|---|
+| Schema URI `v0.2.0` → `v0.3.0` on the root, both tree catalogs and all 18 collections | PORTO-CORE-006, PORTO-CORE-009 |
+| The vector year collections' glob `data` asset removed; the glob lives in `partition:glob` alone, and the collection description names it | PORTO-FMT-065 |
+| `partition:glob` rewritten from the relative `./zone=*/utm*.parquet` to `s3://ftw/global-data-2e/...`, listable through the Source Cooperative data proxy | PORTO-FMT-064, PORTO-FMT-075 |
+| `storage:schemes` added to the vector collections (storage extension v2.0.0, `type: custom-s3`, endpoint `https://data.source.coop`, path-style). rashid resolves the glob through it: without the entry the listing is denied, measured | PORTO-FMT-066 |
+| `title` and `description` filled on every asset that lacked them: 528 item data assets, and per year `pmtiles`, `thumbnail`, `coverage`, `mirror`, `cells-a5r7`, `cells-pmtiles`, eight `webcells-a5r*` and four `styles/*` | PORTO-CORE-088 |
+| The raster `overview` asset re-typed from `image/tiff; application=geotiff` to the COG media type, and given `start_datetime`/`end_datetime` | the media-type table in core.md; PORTO-FMT-072 |
+| `item_assets` definitions and the generated raster item assets given descriptions | PORTO-CORE-088 |
+
+Not changed, with the reason:
+
+- **No `classification:classes`.** The probability COGs and the overview are
+  continuous surfaces, and PORTO-FMT-059 says a continuous raster SHOULD NOT
+  carry classes. See the PTL-VIZ-002 section.
+- **No `nodata` on the probability COGs.** PORTO-FMT-073 asks satellite and
+  aerial *imagery* to declare nodata. These are model output where 0 is a real
+  value — 0% field probability — so declaring nodata 0 would tell clients to
+  drop real pixels. `pipeline/make_overview.py` records the same reasoning for
+  the mosaic, which does declare nodata 0 because its black border is genuinely
+  absent data.
+- **The whole-year https glob is not advertised as an asset.** It never worked
+  as one (HTTP cannot list, so the wildcard never expanded), and v0.3 forbids
+  it. The per-partition https URL and the s3 glob are both in the collection
+  description, the README and AGENTS.md.
+- **`file:checksum` on `overview.tif` for 2017 and 2019** stays absent, under
+  the existing "no `file:checksum` on the raster COG assets" policy above: a
+  multi-GB mosaic each, ~4.3 GB to read for the two. The seven re-processed
+  years' overviews arrived from the publisher with checksums, so PTL-AST-003
+  is down from 27 findings to 2, and it is a warning, so the gate stays honest
+  without an `ACCEPTED` entry.
+- **PTL-CAT-001** (warning, 9×) still fires on the vector year collections:
+  each holds 54 or 60 `item` links with no subcatalog grouping them. Grouping
+  them would change 528 published item URLs for a browse nicety; the raster
+  tree is grouped because it has thousands of items a year, not dozens.
+
+### The 1st-edition `child` link 404s until ftw-data-catalog republishes
+
+The root's `child` link to the 1st edition points at
+`https://data.source.coop/ftw/global-data/first-edition/catalog.json`.
+`fieldsoftheworld/ftw-data-catalog` is becoming the FTW root catalog at
+`ftw/global-data` and moving the 1st edition down into `first-edition/`
+([ftw-data-catalog#11](https://github.com/fieldsoftheworld/ftw-data-catalog/pull/11)),
+so that href is the post-restructure location and returns 404 until that PR
+merges and republishes. `ftw/global-data/catalog.json`, the pre-restructure
+location, still answers 200 today.
+
+rashid reports nothing either way: the href is outside this catalog's root
+`self` base, so the validator has no file tree to resolve it against
+(core.md, "A root catalog that links a child in a different bucket therefore
+gets no check on that link"). The live mode of `tests/test_links.py` does
+check it, and reports one error until the restructure lands. CI does not see
+it — `CI_LIGHT=1` skips every href whose bytes are not in the checkout — so
+this is a finding for whoever runs the gate locally before publishing. Do not
+publish this catalog's root until the link resolves.
+
+### catalog/ now mirrors the published catalog (2026-11-20)
+
+`catalog/` **is** the published catalog, and for most of 2026 this
+repository's generators were what wrote it. That stopped being true before
+this migration: the current generation was produced by the pipeline in
+`taylor-geospatial/global-ftw-2e`, which is private and whose generator
+changes are not here. Git described the previous generation, the bucket
+served the current one, and the two had drifted:
+
+| | git `main` before this branch | published, adopted here |
+|---|---|---|
+| vector partitions a year | 54 | **60** for 2018 and 2020–2025 |
+| raster tiles a year | ~7,466 | **~14,580** for the same years |
+| vector item paths | `vector/{year}/zone=NN/utmNN.json` | `vector/{year}/utmNN/utmNN.json` for those years |
+| collection-level vector assets | 10 | 18 — `cells-a5r7` replaces `cells`, and `webcells-a5r4` … `webcells-a5r11` are new |
+| grand total parcels | 1,242,648,258 | **1,773,302,757** |
+
+The published copy is authoritative, so this branch adopted it: every tracked
+metadata object was fetched from
+`https://data.source.coop/ftw/global-data-2e/` and replaced its committed
+version. 682 objects, every one size-checked against the bucket listing it
+came from. The manifest:
+
+```
+tracked in git main : 640
+published (adopted) : 682
+identical           : 169     (all of 2017 and 2019, and the shared assets)
+changed             :  93
+only in git main    : 378     vector/{7 years}/zone=NN/utmNN.json
+only published      : 420     vector/{7 years}/utmNN/utmNN.json
+```
+
+2017 and 2019 came back byte-identical, which is the same result this branch
+had already proved by regenerating those two years. The 378 `zone=NN/utmNN.json`
+item files are the previous generation's items for the seven re-processed
+years. They are **still in the bucket** — publishing never deletes — but the
+published collections do not link them, so they are orphans and this
+repository no longer tracks them. Pruning them from the bucket is a separate
+decision for the data owner.
+
+### The generators cannot reproduce this tree, and what still holds
+
+`tools/build_vector_items.py` and `tools/build_raster_items.py` describe the
+previous generation. Do not run them over `catalog/` expecting a no-op:
+
+- They read `index/vector.parquet` and `index/raster.parquet`, which now
+  describe the current generation, so a run would rewrite every year's
+  numbers, and they write items to `zone=NN/`, not `utmNN/`.
+- They know nothing about the `webcells-a5r*` assets or `cells-a5r7`.
+- `build_raster_items.py collections` derives its `child` links from the
+  gitignored item tree, so a checkout without that tree emits year
+  collections with no children at all.
+
+These equivalence claims still hold, and were re-checked on this branch:
+
+- The **2017 and 2019** vector collections, items, READMEs and AGENTS.md are
+  what `build_vector_items.py` produces, byte for byte — the published copies
+  and a generator run agree.
+- The **2017 and 2019** raster collections, READMEs and AGENTS.md are what
+  `build_raster_items.py collections` produces, byte for byte, when its child
+  links are supplied from the committed tree.
+
+These no longer hold, and are the work waiting on the upstream generator:
+
+- Every other year's vector and raster metadata. The pipeline changes that
+  produce it are in `taylor-geospatial/global-ftw-2e` and are to be
+  upstreamed into this repository; no code was copied from there.
+
+Until they are, the fields this repository owns are re-applied by
+`tools/apply_v03_metadata.py`, which is idempotent and gated by
+`tests/test_v03_metadata.py` — a `--check` run that fails when `catalog/`
+stops matching what the script says it should be. That is what replaces
+"edit the generator and re-run it" for the years the generators no longer
+describe. The script is also the specification of what to upstream: every
+field in it is one the published tree lacked.
+
+Two generator traps were closed on the way, both of the "a re-run silently
+drops metadata" kind that `tiles_meta_for` already guarded against:
+`build_vector_items.py` reads the item `file:checksum` values back out of the
+committed items when no `--checksums` sidecar is given, and
+`build_raster_items.py` reads the `mirror` digest back out of the committed
+collection when the staged `items.parquet` is absent.
+
+### The published summary tables disagreed with the published collections
+
+`catalog/README.md` and `catalog/vector/README.md` carry a
+`| Year | Processing | Raster tiles | Predicted parcels |` table. As
+published, its last column disagreed with the collections for four years:
+
+| Year | Published table | Collection, year README and items | Difference |
+|---|---:|---:|---:|
+| 2018 | 207,772,743 | 207,793,034 | 20,291 |
+| 2023 | 217,506,501 | 217,529,063 | 22,562 |
+| 2024 | 204,609,812 | 204,629,903 | 20,091 |
+| 2025 | 225,519,173 | 225,542,717 | 23,544 |
+
+2020, 2021 and 2022 agree. The collections, the year READMEs and the item
+`table:row_count` values all agree with each other, so the table is the
+outlier; `tools/apply_v03_metadata.py` corrects it from the sum over the
+items. `tests/test_counts.py` is the gate that found this, and it reads every
+copy of every count back — 1,060 conditional checks on the current tree.
+Reported for the pipeline that writes those tables; the cause is upstream, not
+here.
+
+### What `tests/test_counts.py` stopped requiring, and why
+
+Two shapes of document are now in the tree. This repository's year README
+leads with `**N parcels** in K per-UTM-zone GeoParquet files (G GiB)`; the
+published one for a re-processed year leads with `N parcels in K UTM-zone
+files` and has no GiB, no "largest zone" sentence, and an AGENTS.md with no
+counts at all. The gate therefore checks each number **where it appears**
+rather than requiring every document to state every number. What stayed
+unconditional: the collection description's parcel count and GiB, the year
+README's leading count, the summary-table rows, and the two repo-level grand
+totals. What became conditional: the item `properties.description` counts,
+the "largest zone" sentence, the AGENTS.md count, and the grand total in
+`catalog/README.md`, `catalog/vector/README.md` and `catalog/catalog.json`,
+none of which the published documents state any more. The gate prints how
+many conditional checks ran, so a document quietly losing its numbers shows
+up as that number falling.

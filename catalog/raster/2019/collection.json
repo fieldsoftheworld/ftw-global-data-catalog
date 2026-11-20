@@ -2,7 +2,7 @@
   "type": "Collection",
   "stac_version": "1.1.0",
   "stac_extensions": [
-    "https://schemas.portolan-sdi.org/portolan/v0.2.0/schema.json",
+    "https://schemas.portolan-sdi.org/portolan/v0.3.0/schema.json",
     "https://stac-extensions.github.io/projection/v2.0.0/schema.json",
     "https://stac-extensions.github.io/raster/v2.0.0/schema.json",
     "https://stac-extensions.github.io/file/v2.1.0/schema.json"
@@ -181,7 +181,7 @@
       "rel": "root",
       "href": "../../catalog.json",
       "type": "application/json",
-      "title": "Fields of the World — Global Data (2nd Edition)"
+      "title": "Fields of the World — Global Data"
     },
     {
       "rel": "parent",
@@ -542,6 +542,7 @@
       "href": "./thumbnail.webp",
       "type": "image/webp",
       "title": "Global field-probability overview 2019",
+      "description": "Small WebP render of the 2019 overview COG, the card image for this collection.",
       "roles": [
         "thumbnail",
         "overview"
@@ -553,6 +554,7 @@
       "href": "./thumbnail.png",
       "type": "image/png",
       "title": "Tile coverage shaded by field fraction (2019)",
+      "description": "One square per published 2019 tile, shaded by the tile's field pixel fraction (`ftw:field_frac`), so the map shows which MGRS tiles were processed and how much field each holds. Drawn from `index/raster.parquet`, not from the COGs.",
       "roles": [
         "overview"
       ],
@@ -561,14 +563,16 @@
     },
     "overview": {
       "href": "./overview.tif",
-      "type": "image/tiff; application=geotiff",
+      "type": "image/tiff; application=geotiff; profile=cloud-optimized",
       "title": "Global field-probability overview 2019 (COG)",
-      "description": "The whole year mosaicked and colormapped at overview resolution, so the collection renders at global scale.",
+      "description": "The whole year mosaicked and colormapped at overview resolution, so the collection renders at global scale. 8-bit RGB, JPEG-compressed, in Web Mercator (EPSG:3857), with nodata 0 and an internal transparency mask; the colormap is documented in this collection's README.",
       "roles": [
         "visual",
         "overview",
         "cloud-optimized"
       ],
+      "start_datetime": "2019-01-01T00:00:00Z",
+      "end_datetime": "2019-12-31T23:59:59Z",
       "file:size": 2161055143
     },
     "mirror": {
